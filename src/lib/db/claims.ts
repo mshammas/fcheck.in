@@ -66,22 +66,34 @@ export interface NewClaim {
   fingerprint: string;
   canonicalText: string;
   sourceType: SourceType;
-  /** Never 'published' — publication requires admin sign-off. */
-  status: Exclude<ClaimRow['status'], 'published'>;
+  /** 'published' is rejected for anything but `external` — see insertClaim. */
+  status: ClaimRow['status'];
   verdict: Verdict | null;
   confidence: number | null;
 }
 
 export async function insertClaim(db: D1Database, claim: NewClaim): Promise<ClaimRow> {
+  // The editorial rule, enforced here rather than trusted to callers: a verdict
+  // fcheck.in generated may never go live on its own. An `external` claim may —
+  // its verdict belongs to an attributed human fact-checker, and surfacing
+  // their published work is not us publishing ours.
+  if (claim.status === 'published' && claim.sourceType !== 'external') {
+    throw new Error(
+      `Refusing to publish a ${claim.sourceType} claim. Only external reports go live without ` +
+        'admin approval; originals are published through the admin surface.'
+    );
+  }
+
   const id = newId();
   const createdAt = nowIso();
+  const publishedAt = claim.status === 'published' ? createdAt : null;
 
   await db
     .prepare(
       `INSERT INTO claims
          (id, fingerprint, canonical_text, source_type, status, verdict, confidence,
           submission_count, published_at, promoted_from, promoted_at, last_rechecked_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, NULL, NULL, NULL, NULL, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, NULL, NULL, ?)`
     )
     .bind(
       id,
@@ -91,6 +103,7 @@ export async function insertClaim(db: D1Database, claim: NewClaim): Promise<Clai
       claim.status,
       claim.verdict,
       claim.confidence,
+      publishedAt,
       createdAt
     )
     .run();
@@ -104,7 +117,7 @@ export async function insertClaim(db: D1Database, claim: NewClaim): Promise<Clai
     verdict: claim.verdict,
     confidence: claim.confidence,
     submission_count: 1,
-    published_at: null,
+    published_at: publishedAt,
     promoted_from: null,
     promoted_at: null,
     last_rechecked_at: null,

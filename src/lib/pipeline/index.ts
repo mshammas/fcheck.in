@@ -111,10 +111,10 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
       fingerprint,
       canonicalText,
       sourceType: 'external',
-      // TYPE 2 results are live for the user immediately, but `published` is
-      // reserved for admin-approved originals — an external report sits in
-      // under_review until an editor either promotes or supersedes it.
-      status: 'under_review',
+      // TYPE 2 is live immediately: the verdict is the external fact-checker's,
+      // fully attributed, with no AI verdict layered on top. An editor may
+      // later publish an fcheck.in original that supersedes it (TYPE 2 → 1).
+      status: 'published',
       verdict: best.verdict,
       confidence: null,
     });
