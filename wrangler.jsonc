@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fcheck-in",
+  "compatibility_date": "2026-01-15",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // `main` and `assets` are deliberately absent: @astrojs/cloudflare drives
+  // @cloudflare/vite-plugin, which builds the worker entry and static assets
+  // and writes the deploy config itself. Setting them here makes `astro sync`
+  // fail before the first build, when dist/ does not yet exist.
+
+  "observability": {
+    "enabled": true
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fcheck",
+      "database_id": "401c7e62-024e-4df0-a51d-e24a802d9418",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Secrets (ANTHROPIC_API_KEY, GOOGLE_FACT_CHECK_API_KEY) come from .dev.vars
+  // locally and `wrangler secret put` in production. Never put them here.
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+
+  "env": {
+    "staging": {
+      "name": "fcheck-in-staging",
+      "vars": { "ENVIRONMENT": "staging" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "fcheck-staging",
+          "database_id": "PLACEHOLDER_RUN_WRANGLER_D1_CREATE",
+          "migrations_dir": "migrations"
+        }
+      ]
+    }
+  }
+}

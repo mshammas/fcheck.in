@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Homepage (Mobile Wireframe)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand: #0D9488; --brand-dark: #0F766E; --brand-light: #F0FDFA; --brand-mid: #99F6E4;
+      --text-primary: #0F172A; --text-secondary: #475569; --text-muted: #94A3B8;
+      --border: #E2E8F0; --surface: #FFFFFF; --bg: #F8FAFC;
+      --v-false-text:  #B91C1C; --v-false-bg:  #FEF2F2; --v-false-border:  #FECACA;
+      --v-misld-text:  #B45309; --v-misld-bg:  #FFFBEB; --v-misld-border:  #FDE68A;
+      --v-true-text:   #15803D; --v-true-bg:   #F0FDF4; --v-true-border:   #BBF7D0;
+      --v-unvr-text:   #475569; --v-unvr-bg:   #F8FAFC; --v-unvr-border:   #CBD5E1;
+      --v-outd-text:   #1D4ED8; --v-outd-bg:   #EFF6FF; --v-outd-border:   #BFDBFE;
+      --v-satr-text:   #6D28D9; --v-satr-bg:   #F5F3FF; --v-satr-border:   #DDD6FE;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body:  'Inter', sans-serif;
+      --r: 12px; --r-sm: 8px; --r-xs: 6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow:    0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: #CBD5E1;
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── WF NAV BAR ─────────────────────────────────────── */
+    .wf-topnav {
+      position: sticky; top: 0; z-index: 1000;
+      background: #0F172A; height: 36px; padding: 0 16px;
+      display: flex; align-items: center;
+      font-family: var(--font-body); font-size: 12px;
+      overflow-x: auto; scrollbar-width: none; white-space: nowrap;
+    }
+    .wf-topnav::-webkit-scrollbar { display: none; }
+    .wf-tnav-label { font-weight: 700; color: #0D9488; margin-right: 10px; font-size: 11px; flex-shrink: 0; }
+    .wf-tnav-group { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-right: 5px; flex-shrink: 0; }
+    .wf-tnav-link { color: #94A3B8; text-decoration: none; margin-right: 8px; flex-shrink: 0; transition: color 0.15s; }
+    .wf-tnav-link:hover { color: #F1F5F9; }
+    .wf-tnav-dim { color: #334155; cursor: default; pointer-events: none; font-style: italic; margin-right: 8px; flex-shrink: 0; }
+    .wf-tnav-cur { color: white; font-weight: 600; }
+    .wf-tnav-sep { color: #1E293B; margin-right: 8px; flex-shrink: 0; }
+    .wf-tnav-index { color: #0D9488; font-weight: 600; text-decoration: none; flex-shrink: 0; margin-left: auto; padding-left: 16px; }
+    .wf-tnav-index:hover { color: #5EEAD4; }
+
+    /* ── PHONE FRAME ─────────────────────────────────── */
+    .phone {
+      max-width: 390px; margin: 0 auto;
+      background: white;
+      min-height: calc(100vh - 36px);
+      box-shadow: 0 0 0 1px #94A3B8, 0 8px 40px rgba(0,0,0,0.22);
+      display: flex; flex-direction: column;
+      overflow: clip;
+    }
+
+    /* ── HEADER ──────────────────────────────────────── */
+    header {
+      position: sticky; top: 36px; z-index: 200;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      height: 54px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: var(--font-brand); font-weight: 800; font-size: 17px;
+      color: var(--text-primary); text-decoration: none;
+      display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+    }
+    .logo-mark {
+      width: 26px; height: 26px; background: var(--brand); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 13px; font-weight: 800;
+    }
+    .logo-accent { color: var(--brand); }
+
+    .mode-toggle {
+      display: flex; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px; gap: 2px; flex: 1; max-width: 200px;
+    }
+    .mode-toggle button {
+      font-family: var(--font-body); font-size: 12px; font-weight: 600;
+      flex: 1; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer;
+      transition: all 0.18s; color: var(--text-muted); background: transparent;
+      white-space: nowrap;
+    }
+    .mode-toggle button.active {
+      background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm);
+    }
+    .hamburger {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-secondary);
+      width: 36px; height: 36px; border-radius: var(--r-xs);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+
+    /* ── HERO / SEARCH MODE ──────────────────────────── */
+    #search-mode { display: block; flex: 1; }
+    #editorial-mode { display: none; flex: 1; }
+
+    .hero {
+      background: linear-gradient(160deg, var(--brand-light) 0%, #FFFFFF 65%);
+      padding: 28px 20px 24px;
+      text-align: center;
+    }
+    .hero-wordmark {
+      font-family: var(--font-brand); font-weight: 800; font-size: 32px;
+      color: var(--brand); letter-spacing: -1px; margin-bottom: 4px; line-height: 1;
+    }
+    .hero-tagline { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+
+    .search-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 14px; padding: 5px 5px 5px 14px;
+      box-shadow: var(--shadow); transition: border-color 0.2s;
+    }
+    .search-bar:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,148,136,0.1), var(--shadow); }
+    .attach-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 17px; color: var(--text-muted); padding: 4px;
+      border-radius: 6px; flex-shrink: 0; line-height: 1;
+    }
+    .attach-btn:hover { color: var(--brand); }
+    .search-input {
+      flex: 1; border: none; outline: none;
+      font-family: var(--font-body); font-size: 14px;
+      color: var(--text-primary); background: transparent;
+      padding: 8px 0; min-width: 0;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-btn {
+      background: var(--brand); color: white; border: none; border-radius: 10px;
+      width: 42px; height: 42px; cursor: pointer; font-size: 17px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .search-btn:hover { background: var(--brand-dark); }
+
+    /* Detected chips */
+    .detected-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 10px; justify-content: center; min-height: 22px;
+    }
+    .detected-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 500;
+      color: var(--brand-dark); background: var(--brand-light);
+      border: 1px solid var(--brand-mid); border-radius: 20px; padding: 3px 9px;
+    }
+    .detected-hint { font-size: 11px; color: var(--text-muted); font-style: italic; }
+
+    /* Filter row */
+    .filter-row {
+      display: flex; gap: 8px; margin-top: 12px; justify-content: center;
+    }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500; color: var(--text-secondary);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 14px; cursor: pointer; white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .filter-chip:hover { border-color: var(--brand); color: var(--brand); }
+    .trust-note { margin-top: 12px; font-size: 11px; color: var(--text-muted); }
+    .trust-note strong { color: var(--brand); font-weight: 600; }
+
+    /* ── TRENDING ─────────────────────────────────── */
+    .trending { padding: 20px 20px 4px; }
+    .sec-head {
+      display: flex; align-items: baseline;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+    .sec-title { font-family: var(--font-brand); font-weight: 700; font-size: 16px; }
+    .sec-meta { font-size: 11px; color: var(--text-muted); }
+
+    .cards-scroll {
+      display: flex; gap: 12px;
+      overflow-x: auto; padding: 0 20px 12px;
+      margin: 0 -20px;
+      scroll-snap-type: x mandatory; scrollbar-width: none;
+    }
+    .cards-scroll::-webkit-scrollbar { display: none; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+      flex-shrink: 0; width: 168px; scroll-snap-align: start;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-img {
+      width: 100%; height: 96px;
+      background: linear-gradient(135deg, #F1F5F9, #E2E8F0);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 11px; font-style: italic;
+    }
+    .card-body { padding: 10px 12px 12px; }
+
+    .vbadge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 2px 7px; border-radius: 4px; margin-bottom: 6px;
+    }
+    .vbadge::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .vb-false      { color:var(--v-false-text); background:var(--v-false-bg); border:1px solid var(--v-false-border); }
+    .vb-misleading { color:var(--v-misld-text); background:var(--v-misld-bg); border:1px solid var(--v-misld-border); }
+    .vb-true       { color:var(--v-true-text);  background:var(--v-true-bg);  border:1px solid var(--v-true-border);  }
+    .vb-unverif    { color:var(--v-unvr-text);  background:var(--v-unvr-bg);  border:1px solid var(--v-unvr-border);  }
+    .vb-outdated   { color:var(--v-outd-text);  background:var(--v-outd-bg);  border:1px solid var(--v-outd-border);  }
+    .vb-satire     { color:var(--v-satr-text);  background:var(--v-satr-bg);  border:1px solid var(--v-satr-border);  }
+
+    .card-hl {
+      font-family: var(--font-brand); font-weight: 600; font-size: 11.5px; line-height: 1.4;
+      color: var(--text-primary); margin-bottom: 8px;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-foot { display: flex; align-items: center; justify-content: space-between; }
+    .sbadge { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .sb-own { color: var(--brand-dark); background: var(--brand-light); }
+    .sb-ext { color: var(--text-secondary); background: var(--bg); }
+    .card-date { font-size: 10px; color: var(--text-muted); }
+
+    .view-all { text-align: center; padding: 12px 20px 20px; }
+    .view-all a {
+      display: inline-block; font-size: 13px; font-weight: 600; color: var(--brand);
+      text-decoration: none; padding: 9px 24px;
+      border: 1.5px solid var(--brand-mid); border-radius: var(--r-sm);
+      background: var(--brand-light); width: 100%;
+    }
+
+    /* ── EDITORIAL MODE ──────────────────────────── */
+    .editorial { padding: 16px 20px 8px; flex: 1; }
+
+    .cat-pills {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      margin-bottom: 14px; scrollbar-width: none;
+    }
+    .cat-pills::-webkit-scrollbar { display: none; }
+    .cpill {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 14px; cursor: pointer; white-space: nowrap;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .cpill.active { background: var(--brand); color: white; border-color: var(--brand); }
+
+    .ed-filters { display: flex; gap: 8px; margin-bottom: 16px; }
+
+    .featured {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+      box-shadow: var(--shadow-sm); margin-bottom: 16px;
+    }
+    .featured-img {
+      width: 100%; height: 180px;
+      background: linear-gradient(135deg, #F1F5F9, #CBD5E1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 12px; font-style: italic;
+    }
+    .featured-body { padding: 14px 16px; }
+    .featured-source {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .featured-hl {
+      font-family: var(--font-brand); font-weight: 800; font-size: 16px; line-height: 1.3;
+      color: var(--text-primary); margin: 8px 0 8px;
+    }
+    .featured-excerpt {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 12px;
+    }
+    .read-btn {
+      display: inline-block; font-size: 12px; font-weight: 600; color: var(--brand);
+      text-decoration: none; padding: 7px 16px;
+      border: 1.5px solid var(--brand-mid); border-radius: var(--r-sm); background: var(--brand-light);
+    }
+
+    .latest-title { font-family: var(--font-brand); font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+
+    /* Latest list items: horizontal layout (thumb + text) */
+    .latest-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 0; border-bottom: 1px solid var(--bg);
+      cursor: pointer;
+    }
+    .latest-item:last-child { border-bottom: none; }
+    .latest-thumb {
+      width: 56px; height: 56px; flex-shrink: 0;
+      background: linear-gradient(135deg, #F1F5F9, #E2E8F0);
+      border-radius: var(--r-sm); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--text-muted); font-style: italic;
+    }
+    .latest-info { flex: 1; min-width: 0; }
+    .latest-hl {
+      font-family: var(--font-brand); font-weight: 600; font-size: 13px; line-height: 1.4;
+      color: var(--text-primary); margin: 4px 0 6px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .latest-meta { font-size: 11px; color: var(--text-muted); }
+    .latest-meta strong { color: var(--text-secondary); font-weight: 500; }
+
+    .load-more { text-align: center; padding: 16px 0 20px; }
+    .load-more a {
+      font-size: 13px; font-weight: 600; color: var(--brand);
+      text-decoration: none; padding: 9px 24px;
+      border: 1.5px solid var(--brand-mid); border-radius: var(--r-sm);
+      background: var(--brand-light); display: inline-block; width: 100%;
+    }
+
+    /* Stats inline */
+    .stats-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden; margin-bottom: 16px;
+    }
+    .stat-cell {
+      background: var(--surface); padding: 12px 8px; text-align: center;
+    }
+    .stat-value {
+      font-family: var(--font-brand); font-size: 20px; font-weight: 800; color: var(--brand);
+      line-height: 1;
+    }
+    .stat-label { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── BOTTOM NAV ──────────────────────────────── */
+    .bottom-nav {
+      position: sticky; bottom: 0; z-index: 200;
+      background: var(--surface); border-top: 1px solid var(--border);
+      display: flex; padding: 8px 0 18px;
+      flex-shrink: 0;
+    }
+    .bnav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 2px;
+      text-decoration: none; color: var(--text-muted);
+      padding: 4px 0; cursor: pointer; border: none; background: none;
+      font-family: var(--font-body);
+      transition: color 0.15s;
+    }
+    .bnav-item.active { color: var(--brand); }
+    .bnav-icon { font-size: 20px; line-height: 1.2; }
+    .bnav-label { font-size: 10px; font-weight: 600; }
+
+    /* ── BOTTOM SHEETS ───────────────────────────── */
+    .sheet-backdrop {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,0); pointer-events: none;
+      transition: background 0.3s;
+    }
+    .sheet-backdrop.open { background: rgba(0,0,0,0.5); pointer-events: all; }
+
+    .bottom-sheet {
+      position: fixed; bottom: 0; left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%; max-width: 390px; z-index: 500;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 0 0 32px;
+      transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+      max-height: 85vh; overflow-y: auto;
+    }
+    .bottom-sheet.open { transform: translateX(-50%) translateY(0); }
+
+    .sheet-handle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px 8px;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 4px;
+      position: absolute; left: 50%; transform: translateX(-50%); top: 10px;
+    }
+    .sheet-done {
+      font-size: 14px; font-weight: 600; color: var(--brand);
+      background: none; border: none; cursor: pointer;
+      margin-left: auto; padding: 4px 0;
+    }
+    .sheet-title {
+      font-family: var(--font-brand); font-weight: 700; font-size: 17px;
+      color: var(--text-primary); padding: 6px 20px 14px; border-bottom: 1px solid var(--border);
+    }
+    .sheet-search {
+      margin: 14px 20px 10px;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 14px;
+    }
+    .sheet-search input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-family: var(--font-body); font-size: 14px; color: var(--text-primary);
+    }
+    .sheet-search input::placeholder { color: var(--text-muted); }
+    .sheet-options { padding: 0 20px; }
+    .sheet-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 0; border-bottom: 1px solid var(--bg);
+      cursor: pointer; font-size: 14px; color: var(--text-secondary);
+    }
+    .sheet-option:last-child { border-bottom: none; }
+    .sheet-option input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: var(--brand); flex-shrink: 0; cursor: pointer;
+    }
+    .sheet-apply {
+      margin: 14px 20px 0;
+      width: calc(100% - 40px);
+      background: var(--brand); color: white;
+      border: none; border-radius: var(--r-sm);
+      padding: 13px; font-family: var(--font-body); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .sheet-apply:hover { background: var(--brand-dark); }
+  </style>
+</head>
+<body>
+
+<!-- ─── WF NAV ────────────────────────────────────────────── -->
+<div class="wf-topnav">
+  <span class="wf-tnav-label">WF</span>
+  <span class="wf-tnav-group">Desktop:</span>
+  <a class="wf-tnav-link" href="homepage.html">Home</a>
+  <a class="wf-tnav-link" href="results.html">Results</a>
+  <a class="wf-tnav-link" href="article.html">Article</a>
+  <a class="wf-tnav-link" href="admin.html">Admin</a>
+  <span class="wf-tnav-sep">·</span>
+  <span class="wf-tnav-group">📱 Mobile:</span>
+  <a class="wf-tnav-link wf-tnav-cur" href="mobile-homepage.html">Home</a>
+  <a class="wf-tnav-link" href="mobile-results.html">Results</a>
+  <a class="wf-tnav-link" href="mobile-article.html">Article</a>
+  <a class="wf-tnav-link" href="mobile-admin.html">Admin</a>
+  <span class="wf-tnav-sep">·</span>
+  <span class="wf-tnav-group">Design:</span>
+  <span class="wf-tnav-dim">Architecture</span>
+  <span class="wf-tnav-dim">Design System</span>
+  <span class="wf-tnav-dim">Pipeline</span>
+  <span class="wf-tnav-dim">Data Model</span>
+  <a class="wf-tnav-index" href="index.html">All pages →</a>
+</div>
+
+<!-- ─── PHONE FRAME ───────────────────────────────────────── -->
+<div class="phone">
+
+  <!-- HEADER -->
+  <header>
+    <a class="logo" href="#">
+      <div class="logo-mark">✓</div>
+      <span>f<span class="logo-accent">check</span>.in</span>
+    </a>
+    <div class="mode-toggle">
+      <button class="active" onclick="setMode('search',this)">Search</button>
+      <button onclick="setMode('editorial',this)">Editorial</button>
+    </div>
+    <button class="hamburger" title="Menu">≡</button>
+  </header>
+
+  <!-- ══ SEARCH MODE ══════════════════════════════════════ -->
+  <div id="search-mode">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-wordmark">fcheck.in</div>
+      <p class="hero-tagline">Fact-check anything. Instantly.</p>
+
+      <div class="search-bar" id="search-bar-wrap">
+        <button class="attach-btn" onclick="triggerAttach()" title="Attach">📎</button>
+        <input class="search-input" id="main-input" type="text"
+               placeholder="Paste text, link, or drop a file…"
+               oninput="detectContent(this.value)">
+        <button class="search-btn" title="Search">→</button>
+      </div>
+      <input type="file" id="file-input" multiple accept="image/*,video/*,audio/*,.pdf"
+             style="display:none" onchange="handleFiles(this.files)">
+
+      <div class="detected-row" id="detected-row">
+        <span class="detected-hint">Accepts text, links, images, video</span>
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-chip" onclick="openSheet('country-sheet')">🌍 Country: All</button>
+        <button class="filter-chip" onclick="openSheet('lang-sheet')">🗣 Lang: All</button>
+      </div>
+      <p class="trust-note">Powered by <strong>47 trusted fact-checkers</strong></p>
+    </section>
+
+    <!-- Trending -->
+    <div class="trending">
+      <div class="sec-head">
+        <span class="sec-title">Trending Now</span>
+        <span class="sec-meta">2h ago</span>
+      </div>
+    </div>
+
+    <div class="cards-scroll">
+      <div class="card">
+        <div class="card-img">[ image ]</div>
+        <div class="card-body">
+          <div class="vbadge vb-false">False</div>
+          <div class="card-hl">Drinking warm water does not cure viral infections, doctors confirm</div>
+          <div class="card-foot">
+            <span class="sbadge sb-own">✓ fcheck.in</span>
+            <span class="card-date">2h ago</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-img">[ image ]</div>
+        <div class="card-body">
+          <div class="vbadge vb-misleading">Misleading</div>
+          <div class="card-hl">Viral post about new tax on messaging apps lacks critical context</div>
+          <div class="card-foot">
+            <span class="sbadge sb-ext">AFP Fact Check</span>
+            <span class="card-date">5h ago</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-img">[ image ]</div>
+        <div class="card-body">
+          <div class="vbadge vb-false">False</div>
+          <div class="card-hl">No credible study links 5G towers to headaches, Reuters finds</div>
+          <div class="card-foot">
+            <span class="sbadge sb-ext">Reuters</span>
+            <span class="card-date">Yesterday</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-img">[ image ]</div>
+        <div class="card-body">
+          <div class="vbadge vb-false">False</div>
+          <div class="card-hl">Fabricated health minister quote circulating on WhatsApp</div>
+          <div class="card-foot">
+            <span class="sbadge sb-ext">Boom Live</span>
+            <span class="card-date">2d ago</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-img">[ image ]</div>
+        <div class="card-body">
+          <div class="vbadge vb-unverif">Unverifiable</div>
+          <div class="card-hl">Leaked document about fuel subsidy cannot be verified</div>
+          <div class="card-foot">
+            <span class="sbadge sb-own">✓ fcheck.in</span>
+            <span class="card-date">3d ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-all"><a href="mobile-results.html">View all reports →</a></div>
+
+  </div><!-- /search-mode -->
+
+  <!-- ══ EDITORIAL MODE ════════════════════════════════════ -->
+  <div id="editorial-mode">
+    <div class="editorial">
+
+      <div class="cat-pills">
+        <button class="cpill active" onclick="selectPill(this)">All</button>
+        <button class="cpill" onclick="selectPill(this)">Politics</button>
+        <button class="cpill" onclick="selectPill(this)">Health &amp; Medicine</button>
+        <button class="cpill" onclick="selectPill(this)">Science</button>
+        <button class="cpill" onclick="selectPill(this)">Social Media</button>
+        <button class="cpill" onclick="selectPill(this)">Finance</button>
+        <button class="cpill" onclick="selectPill(this)">Religion</button>
+        <button class="cpill" onclick="selectPill(this)">Technology</button>
+      </div>
+
+      <div class="ed-filters">
+        <button class="filter-chip" onclick="openSheet('country-sheet')">🌍 Country: All</button>
+        <button class="filter-chip" onclick="openSheet('lang-sheet')">🗣 Lang: All</button>
+      </div>
+
+      <!-- This week stats -->
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-value">1,240</div>
+          <div class="stat-label">Claims checked</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value">38</div>
+          <div class="stat-label">Reports</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value">47</div>
+          <div class="stat-label">Fact-checkers</div>
+        </div>
+      </div>
+
+      <!-- Featured article -->
+      <div class="featured">
+        <div class="featured-img">[ featured article image ]</div>
+        <div class="featured-body">
+          <div class="featured-source">Reuters Fact Check</div>
+          <div class="vbadge vb-false">False</div>
+          <div class="featured-hl">"Viral claim about fluoride in water comprehensively debunked by health authorities"</div>
+          <p class="featured-excerpt">A widely circulated voice note has been reviewed by WHO, NHS, and CDC. All three confirm there is no scientific basis for the claim.</p>
+          <a href="mobile-article.html" class="read-btn">Read full report →</a>
+        </div>
+      </div>
+
+      <!-- Latest reports list -->
+      <div class="latest-title">Latest Reports</div>
+
+      <div class="latest-item">
+        <div class="latest-thumb">[ img ]</div>
+        <div class="latest-info">
+          <div class="vbadge vb-misleading">Misleading</div>
+          <div class="latest-hl">Tax on messaging apps claim lacks critical context</div>
+          <div class="latest-meta"><strong>✓ fcheck.in</strong> · 3h ago</div>
+        </div>
+      </div>
+
+      <div class="latest-item">
+        <div class="latest-thumb">[ img ]</div>
+        <div class="latest-info">
+          <div class="vbadge vb-false">False</div>
+          <div class="latest-hl">5G tower health claims have no scientific basis</div>
+          <div class="latest-meta"><strong>AFP</strong> · 6h ago</div>
+        </div>
+      </div>
+
+      <div class="latest-item">
+        <div class="latest-thumb">[ img ]</div>
+        <div class="latest-info">
+          <div class="vbadge vb-false">False</div>
+          <div class="latest-hl">Fabricated health minister quote debunked</div>
+          <div class="latest-meta"><strong>Boom Live</strong> · 2d ago</div>
+        </div>
+      </div>
+
+      <div class="latest-item">
+        <div class="latest-thumb">[ img ]</div>
+        <div class="latest-info">
+          <div class="vbadge vb-true">True</div>
+          <div class="latest-hl">Confirmed: vaccination rates in the region exceeded 80%</div>
+          <div class="latest-meta"><strong>Full Fact</strong> · 3d ago</div>
+        </div>
+      </div>
+
+      <div class="latest-item">
+        <div class="latest-thumb">[ img ]</div>
+        <div class="latest-info">
+          <div class="vbadge vb-outdated">Outdated</div>
+          <div class="latest-hl">Travel restriction figures no longer reflect current policy</div>
+          <div class="latest-meta"><strong>✓ fcheck.in</strong> · Yesterday</div>
+        </div>
+      </div>
+
+      <div class="load-more"><a href="#">Load more reports →</a></div>
+
+    </div>
+  </div><!-- /editorial-mode -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <a class="bnav-item active" href="mobile-homepage.html">
+      <span class="bnav-icon">🔍</span>
+      <span class="bnav-label">Search</span>
+    </a>
+    <a class="bnav-item" href="#">
+      <span class="bnav-icon">📰</span>
+      <span class="bnav-label">Reports</span>
+    </a>
+    <a class="bnav-item" href="#">
+      <span class="bnav-icon">➕</span>
+      <span class="bnav-label">Submit</span>
+    </a>
+  </nav>
+
+</div><!-- /phone -->
+
+<!-- ─── BACKDROP ─────────────────────────────────────────── -->
+<div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
+
+<!-- ─── COUNTRY FILTER SHEET ─────────────────────────────── -->
+<div class="bottom-sheet" id="country-sheet">
+  <div style="position:relative; height:32px;">
+    <div class="sheet-handle"></div>
+  </div>
+  <div class="sheet-handle-row" style="padding-top:4px">
+    <span></span>
+    <button class="sheet-done" onclick="closeSheet()">Done</button>
+  </div>
+  <div class="sheet-title">Filter by Country</div>
+  <div class="sheet-search">
+    <span style="color:var(--text-muted)">🔍</span>
+    <input type="text" placeholder="Search countries…">
+  </div>
+  <div class="sheet-options">
+    <label class="sheet-option">
+      <input type="checkbox" checked> All countries
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> India
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> United Kingdom
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> United States
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Pakistan
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Nigeria
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Kenya
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Bangladesh
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> South Africa
+    </label>
+  </div>
+  <button class="sheet-apply" onclick="closeSheet()">Apply filters</button>
+</div>
+
+<!-- ─── LANGUAGE FILTER SHEET ────────────────────────────── -->
+<div class="bottom-sheet" id="lang-sheet">
+  <div style="position:relative; height:32px;">
+    <div class="sheet-handle"></div>
+  </div>
+  <div class="sheet-handle-row" style="padding-top:4px">
+    <span></span>
+    <button class="sheet-done" onclick="closeSheet()">Done</button>
+  </div>
+  <div class="sheet-title">Filter by Language</div>
+  <div class="sheet-search">
+    <span style="color:var(--text-muted)">🔍</span>
+    <input type="text" placeholder="Search languages…">
+  </div>
+  <div class="sheet-options">
+    <label class="sheet-option">
+      <input type="checkbox" checked> All languages
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> English
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Hindi
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Arabic
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Urdu
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Swahili
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> Bengali
+    </label>
+    <label class="sheet-option">
+      <input type="checkbox"> French
+    </label>
+  </div>
+  <button class="sheet-apply" onclick="closeSheet()">Apply filters</button>
+</div>
+
+<script>
+  // Mode toggle
+  function setMode(mode, btn) {
+    document.querySelectorAll('.mode-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('search-mode').style.display    = mode === 'search' ? 'block' : 'none';
+    document.getElementById('editorial-mode').style.display = mode === 'editorial' ? 'block' : 'none';
+    // Update bottom nav active state
+    const items = document.querySelectorAll('.bnav-item');
+    items.forEach(i => i.classList.remove('active'));
+    items[mode === 'search' ? 0 : 1].classList.add('active');
+  }
+
+  function selectPill(el) {
+    el.closest('.cat-pills').querySelectorAll('.cpill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Content detection
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  function detectContent(val) {
+    const row = document.getElementById('detected-row');
+    row.innerHTML = '';
+    if (!val.trim()) {
+      row.innerHTML = '<span class="detected-hint">Accepts text, links, images, video</span>';
+      return;
+    }
+    const urls = val.match(urlRegex) || [];
+    const hasText = val.replace(urlRegex, '').trim().length > 0;
+    if (hasText) addChip(row, '📝 Text detected');
+    urls.forEach(url => addChip(row, guessUrlType(url)));
+  }
+  function guessUrlType(url) {
+    if (/youtube|youtu\.be|tiktok|vimeo/i.test(url)) return '🎬 Video URL';
+    if (/twitter|x\.com|instagram|facebook/i.test(url)) return '🔗 Social post';
+    if (/\.(jpg|jpeg|png|gif|webp)/i.test(url)) return '🖼 Image URL';
+    return '🔗 URL detected';
+  }
+  function addChip(container, label) {
+    const chip = document.createElement('span');
+    chip.className = 'detected-chip';
+    chip.textContent = label;
+    container.appendChild(chip);
+  }
+
+  // File attach
+  function triggerAttach() { document.getElementById('file-input').click(); }
+  function handleFiles(files) {
+    const row = document.getElementById('detected-row');
+    const hint = row.querySelector('.detected-hint');
+    if (hint) hint.remove();
+    Array.from(files).forEach(file => {
+      const icon = file.type.startsWith('video') ? '🎬' : file.type.startsWith('audio') ? '🎵' : file.type.startsWith('image') ? '🖼' : '📄';
+      addChip(row, `${icon} ${file.name}`);
+    });
+  }
+
+  // Bottom sheets
+  function openSheet(id) {
+    document.querySelectorAll('.bottom-sheet').forEach(s => s.classList.remove('open'));
+    document.getElementById(id).classList.add('open');
+    document.getElementById('backdrop').classList.add('open');
+  }
+  function closeSheet() {
+    document.querySelectorAll('.bottom-sheet').forEach(s => s.classList.remove('open'));
+    document.getElementById('backdrop').classList.remove('open');
+  }
+</script>
+
+</body>
+</html>

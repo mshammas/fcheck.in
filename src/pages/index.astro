@@ -1,0 +1,186 @@
+---
+/**
+ * Homepage — search mode.
+ *
+ * Three clicks to a verdict: paste, submit, read. Nothing stands between the
+ * user and the check — no registration, no type selector, no mode picker.
+ *
+ * Ported from wireframes/homepage.html; mobile rules folded in from
+ * wireframes/mobile-homepage.html rather than living on a separate page.
+ */
+import Base from '../layouts/Base.astro';
+import SearchBar from '../components/SearchBar.astro';
+import TrendingCard from '../components/TrendingCard.astro';
+import { getDb } from '../lib/db/client';
+import { countActiveFactCheckers } from '../lib/db/factCheckers';
+import { getTrending } from '../lib/db/claims';
+import type { SourceType, Verdict } from '../lib/types';
+
+export const prerender = false;
+
+const db = getDb();
+const [factCheckerCount, trendingRows] = await Promise.all([
+  countActiveFactCheckers(db),
+  getTrending(db, 12),
+]);
+
+const trending = trendingRows.map((row) => {
+  const r = row as Record<string, any>;
+  const sourceType = r.source_type as SourceType;
+  return {
+    headline: r.headline as string,
+    verdict: r.verdict as Verdict | null,
+    sourceType,
+    // Only originals live at /article/[slug]. An external card goes to its
+    // TYPE 2 page, which is where the attribution and the link out live.
+    url: sourceType === 'original' && r.slug ? `/article/${r.slug}` : `/check/${r.claim_id}`,
+    publishedAt: r.published_at as string | null,
+    attribution: r.fact_checker_name
+      ? { name: r.fact_checker_name as string, tier: r.fact_checker_tier as 1 | 2, url: r.external_url as string | null }
+      : null,
+  };
+});
+---
+
+<Base title="fcheck.in — Fact-check anything. Instantly." showModeToggle={true}>
+  <div data-mode-panel="search">
+    <section class="hero">
+      <p class="hero-wordmark">fcheck.in</p>
+      <p class="hero-tagline">Fact-check anything. Instantly.</p>
+      <SearchBar factCheckerCount={factCheckerCount} />
+    </section>
+
+    <section class="trending">
+      <div class="sec-head">
+        <h2 class="sec-title">Trending Now</h2>
+        <span class="sec-meta">Reviewed reports only</span>
+      </div>
+
+      {
+        trending.length > 0 ? (
+          <div class="cards-row">
+            {trending.map((card) => (
+              <TrendingCard {...card} />
+            ))}
+          </div>
+        ) : (
+          <p class="empty">
+            No trending reports yet. Submit a claim above and it will be reviewed by our team.
+          </p>
+        )
+      }
+    </section>
+  </div>
+
+  <div data-mode-panel="editorial" hidden>
+    <section class="editorial-placeholder">
+      <h2>Editorial mode</h2>
+      <p>
+        The editorial view — featured report, latest reports grid, and region, category, country and
+        language filters — is not built yet. Switch back to Search to check a claim.
+      </p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .hero {
+    background: linear-gradient(160deg, var(--brand-light) 0%, #ffffff 60%);
+    padding: 88px 32px 72px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-wordmark {
+    font-family: var(--font-brand);
+    font-weight: 800;
+    font-size: 48px;
+    color: var(--brand);
+    letter-spacing: -1.5px;
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+
+  .hero-tagline {
+    font-size: 19px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+  }
+
+  .trending {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 52px 32px;
+  }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .sec-title {
+    font-family: var(--font-brand);
+    font-weight: 700;
+    font-size: 20px;
+  }
+
+  .sec-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Horizontal scroll on every width — the mobile wireframe's card rail
+     behaviour works just as well on desktop and avoids a second layout. */
+  .cards-row {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .cards-row::-webkit-scrollbar { display: none; }
+
+  .empty {
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--r);
+    padding: 28px;
+    text-align: center;
+  }
+
+  .editorial-placeholder {
+    max-width: 640px;
+    margin: 72px auto;
+    padding: 0 32px;
+    text-align: center;
+  }
+
+  .editorial-placeholder h2 {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .editorial-placeholder p {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 720px) {
+    .hero { padding: 44px 16px 40px; }
+    .hero-wordmark { font-size: 34px; letter-spacing: -1px; }
+    .hero-tagline { font-size: 15px; margin-bottom: 26px; }
+    .trending { padding: 32px 16px; }
+    /* Bleed the rail to the screen edge so the next card peeks — the mobile
+       wireframe's cue that the row scrolls. */
+    .cards-row {
+      margin: 0 -16px;
+      padding: 0 16px 4px;
+    }
+  }
+</style>

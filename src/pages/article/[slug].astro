@@ -1,0 +1,285 @@
+---
+/**
+ * Article page — full TYPE 1 report at a readable URL.
+ *
+ * Only published originals get a slug and reach this route. Anything else
+ * redirects to /check/[id], which renders its actual TYPE.
+ *
+ * ClaimReview schema markup is emitted so that other fact-checkers — and the
+ * Google Fact Check index we ourselves query in stage 5 — can find our work.
+ */
+import Base from '../../layouts/Base.astro';
+import VerdictBadge from '../../components/VerdictBadge.astro';
+import SourceBadge from '../../components/SourceBadge.astro';
+import { getDb } from '../../lib/db/client';
+import { getClaimById, getReportBySlug } from '../../lib/db/claims';
+import { parseEvidence, parseTags, VERDICT_LABELS, VERDICT_MEANINGS } from '../../lib/types';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const db = getDb();
+const report = slug ? await getReportBySlug(db, slug) : null;
+const claim = report ? await getClaimById(db, report.claim_id) : null;
+
+if (!report || !claim) {
+  return new Response('Report not found', { status: 404 });
+}
+
+// A claim can be promoted or rejected after publication; the article URL is
+// only correct while it is a live original.
+if (claim.source_type !== 'original' || claim.status !== 'published') {
+  return Astro.redirect(`/check/${claim.id}`, 302);
+}
+
+const evidence = parseEvidence(report.evidence);
+const tags = parseTags(report.tags);
+const published = new Date(report.published_at);
+
+const paragraphs = report.body.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+
+const claimReview = {
+  '@context': 'https://schema.org',
+  '@type': 'ClaimReview',
+  datePublished: report.published_at,
+  url: new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString(),
+  claimReviewed: claim.canonical_text,
+  author: { '@type': 'Organization', name: 'fcheck.in', url: 'https://fcheck.in' },
+  reviewRating: {
+    '@type': 'Rating',
+    ratingValue: claim.verdict === 'TRUE' ? 5 : claim.verdict === 'FALSE' ? 1 : 3,
+    bestRating: 5,
+    worstRating: 1,
+    alternateName: claim.verdict ? VERDICT_LABELS[claim.verdict] : 'Unrated',
+  },
+};
+---
+
+<Base title={`${report.headline} — fcheck.in`} description={report.summary}>
+  <article class="page">
+    <header class="head">
+      <VerdictBadge verdict={claim.verdict} size="lg" />
+      <h1>{report.headline}</h1>
+      <p class="summary">{report.summary}</p>
+
+      <div class="byline">
+        <SourceBadge />
+        <span class="date">
+          {published.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </span>
+        {report.country && <span class="pill">{report.country}</span>}
+        {report.language && <span class="pill">{report.language}</span>}
+      </div>
+    </header>
+
+    <section class="claim-box">
+      <p class="claim-label">The claim</p>
+      <p class="claim-text">{claim.canonical_text}</p>
+      {claim.verdict && <p class="claim-meaning">{VERDICT_MEANINGS[claim.verdict]}</p>}
+    </section>
+
+    <div class="body">
+      {
+        paragraphs.map((block) =>
+          block.startsWith('## ') ? <h2>{block.slice(3)}</h2> : <p>{block}</p>
+        )
+      }
+    </div>
+
+    {
+      evidence.length > 0 && (
+        <section class="sources">
+          <h2>Sources</h2>
+          <ol>
+            {evidence.map((item) => (
+              <li>
+                <a href={item.url} target="_blank" rel="noopener noreferrer">
+                  {item.source} <span aria-hidden="true">↗</span>
+                </a>
+                {item.date && <span class="src-date">{item.date}</span>}
+                <p>{item.snippet}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+
+    {
+      tags.length > 0 && (
+        <div class="tags">
+          {tags.map((tag) => (
+            <span class="pill">{tag}</span>
+          ))}
+        </div>
+      )
+    }
+
+    <footer class="foot">
+      <p>
+        This report was researched and reviewed by the fcheck.in editorial team. fcheck.in is
+        non-partisan — our sources and methodology are shown on every report. If you believe
+        something here is wrong, tell us and we will publish a correction in full.
+      </p>
+      <p class="back"><a href="/">← Check another claim</a></p>
+    </footer>
+  </article>
+
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(claimReview)} />
+</Base>
+
+<style>
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 32px 0;
+  }
+
+  .head { margin-bottom: 28px; }
+
+  .head h1 {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.28;
+    margin: 16px 0 12px;
+  }
+
+  .summary {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .byline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .date { font-size: 12px; color: var(--text-muted); }
+
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 3px 10px;
+  }
+
+  .claim-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--brand);
+    border-radius: var(--r-sm);
+    padding: 16px 18px;
+    margin-bottom: 28px;
+  }
+
+  .claim-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .claim-text {
+    font-family: var(--font-brand);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .claim-meaning {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  .body p {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 18px;
+  }
+
+  .body h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 30px 0 12px;
+  }
+
+  .sources {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    margin-top: 12px;
+  }
+
+  .sources h2 {
+    font-family: var(--font-brand);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  .sources ol {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .sources a {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brand-dark);
+    text-decoration: none;
+  }
+
+  .sources a:hover { text-decoration: underline; }
+
+  .src-date { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+
+  .sources p {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+
+  .foot {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .foot p {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  .back { margin-top: 14px; font-size: 14px; }
+  .back a { color: var(--brand); text-decoration: none; }
+
+  @media (max-width: 720px) {
+    .page { padding: 24px 16px 0; }
+    .head h1 { font-size: 25px; }
+    .summary { font-size: 15px; }
+    .body p { font-size: 15px; }
+  }
+</style>

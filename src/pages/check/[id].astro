@@ -1,0 +1,597 @@
+---
+/**
+ * Results page — renders whichever TYPE the claim currently resolves to.
+ *
+ * The TYPE is read from the database on every request, never cached. A user
+ * returning through a notification link after a promotion sees the new TYPE,
+ * not the one that existed when they submitted.
+ *
+ * Ported from wireframes/results.html (all four TYPE card layouts).
+ */
+import Base from '../../layouts/Base.astro';
+import TypeBand from '../../components/TypeBand.astro';
+import VerdictBadge from '../../components/VerdictBadge.astro';
+import SourceBadge from '../../components/SourceBadge.astro';
+import { getDb } from '../../lib/db/client';
+import { getClaimById, getPrimaryReport, getReportsForClaim } from '../../lib/db/claims';
+import { parseEvidence, parseTags, VERDICT_MEANINGS } from '../../lib/types';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const db = getDb();
+const claim = id ? await getClaimById(db, id) : null;
+
+if (!claim) {
+  return new Response('Claim not found', { status: 404 });
+}
+
+const [report, allReports] = await Promise.all([
+  getPrimaryReport(db, claim.id),
+  getReportsForClaim(db, claim.id),
+]);
+
+let factChecker: { name: string; homepage_url: string; tier: 1 | 2 } | null = null;
+if (report?.fact_checker_id) {
+  factChecker = await db
+    .prepare('SELECT name, homepage_url, tier FROM fact_checkers WHERE id = ?')
+    .bind(report.fact_checker_id)
+    .first<{ name: string; homepage_url: string; tier: 1 | 2 }>();
+}
+
+const evidence = parseEvidence(report?.evidence);
+const tags = parseTags(report?.tags);
+const alsoReportedBy = allReports.filter((r) => r.id !== report?.id && r.report_type === 'external');
+
+const type = claim.source_type;
+const showVerdict = type !== 'submitted' && claim.verdict !== null;
+const confidence = claim.confidence;
+
+const bandDetail =
+  type === 'external' && factChecker
+    ? `Reported by ${factChecker.name}`
+    : type === 'preliminary'
+      ? 'Awaiting editorial review'
+      : type === 'submitted'
+        ? 'In the review queue'
+        : null;
+
+const title = report?.headline ?? claim.canonical_text;
+---
+
+<Base title={`${title} — fcheck.in`} description={report?.summary ?? claim.canonical_text}>
+  <div class="page">
+    <p class="claim-label">The claim you submitted</p>
+    <blockquote class="claim-text">{claim.canonical_text}</blockquote>
+
+    <article class="result-card">
+      <TypeBand sourceType={type} detail={bandDetail} />
+
+      <div class="card-body">
+        {
+          type === 'preliminary' && (
+            <div class="banner prelim">
+              <span class="banner-icon" aria-hidden="true">⚠️</span>
+              <div>
+                <p class="banner-title">Preliminary check — AI analysis</p>
+                <p class="banner-desc">
+                  This is an AI-generated preliminary analysis. A reviewed report is in progress and
+                  will be checked by our team before it is published.
+                </p>
+              </div>
+            </div>
+          )
+        }
+
+        {
+          type === 'submitted' && (
+            <div class="banner submitted">
+              <span class="banner-icon" aria-hidden="true">🕐</span>
+              <div>
+                <p class="banner-title">Submitted for review</p>
+                <p class="banner-desc">
+                  We found limited information about this claim — not enough to give even a
+                  preliminary assessment. It has been submitted to our team.
+                </p>
+              </div>
+            </div>
+          )
+        }
+
+        {
+          showVerdict && (
+            <div class="verdict-row">
+              <VerdictBadge verdict={claim.verdict} size="lg" />
+              <span class="verdict-meaning">{VERDICT_MEANINGS[claim.verdict!]}</span>
+            </div>
+          )
+        }
+
+        {
+          type === 'preliminary' && confidence !== null && (
+            <div class="confidence">
+              <span class="conf-label">Confidence</span>
+              <div class="conf-track">
+                <div
+                  class:list={['conf-fill', confidence >= 75 ? 'high' : confidence >= 45 ? 'mid' : 'low']}
+                  style={`width:${confidence}%`}
+                />
+              </div>
+              <span class="conf-value">{confidence}%</span>
+            </div>
+          )
+        }
+
+        {report && <h1 class="headline">{report.headline}</h1>}
+        {report && <p class="summary">{report.summary}</p>}
+
+        {
+          type === 'external' && factChecker && (
+            <div class="attribution">
+              <span class="attr-label">Source</span>
+              <SourceBadge name={factChecker.name} tier={factChecker.tier} url={report?.external_url ?? factChecker.homepage_url} />
+              {report?.published_at && (
+                <span class="attr-date">{new Date(report.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              )}
+            </div>
+          )
+        }
+
+        {
+          type === 'original' && (
+            <div class="attribution">
+              <span class="attr-label">Reviewed and published by</span>
+              <SourceBadge />
+              {claim.published_at && (
+                <span class="attr-date">{new Date(claim.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              )}
+            </div>
+          )
+        }
+
+        {
+          evidence.length > 0 && (
+            <section class="evidence">
+              <h2 class="section-heading">
+                {type === 'preliminary' ? 'Sources found so far' : 'Evidence'}
+              </h2>
+              <ul class="evidence-list">
+                {evidence.map((item) => (
+                  <li class="evidence-item">
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" class="evidence-source">
+                      {item.source}
+                      <span aria-hidden="true">↗</span>
+                    </a>
+                    {item.date && <span class="evidence-date">{item.date}</span>}
+                    <p class="evidence-snippet">{item.snippet}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          type === 'submitted' && (
+            <p class="waiting">
+              Our team will investigate and publish a report when enough evidence is available.
+              This usually takes 24–72 hours, depending on the claim and the sources available.
+            </p>
+          )
+        }
+
+        {
+          (type === 'preliminary' || type === 'submitted') && (
+            <div class="notify">
+              <p class="notify-copy">
+                {type === 'preliminary'
+                  ? 'Get notified when the full reviewed report is published:'
+                  : 'Get notified when a report is published:'}
+              </p>
+              <form class="notify-row" data-claim-id={claim.id}>
+                <input
+                  class="notify-input"
+                  type="text"
+                  name="contact"
+                  placeholder="Email or WhatsApp number"
+                  aria-label="Email or WhatsApp number for notification"
+                />
+                <button type="submit" class="btn-primary">Notify me</button>
+              </form>
+              <p class="notify-status" role="status" hidden></p>
+            </div>
+          )
+        }
+
+        {
+          alsoReportedBy.length > 0 && (
+            <section class="also">
+              <h2 class="section-heading">Also reported by</h2>
+              <ul class="also-list">
+                {alsoReportedBy.map((r) => (
+                  <li>
+                    {r.external_url ? (
+                      <a href={r.external_url} target="_blank" rel="noopener noreferrer">
+                        {r.headline} <span aria-hidden="true">↗</span>
+                      </a>
+                    ) : (
+                      r.headline
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          tags.length > 0 && (
+            <div class="tags">
+              {tags.map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    </article>
+
+    <aside class="meta">
+      <dl>
+        <div><dt>Submissions</dt><dd>{claim.submission_count}</dd></div>
+        <div><dt>First seen</dt><dd>{new Date(claim.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</dd></div>
+        {claim.promoted_at && (
+          <div><dt>Last updated</dt><dd>{new Date(claim.promoted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</dd></div>
+        )}
+      </dl>
+      <p class="meta-note">
+        fcheck.in publishes only what can be sourced. Every report is reviewed by an editor before
+        publication, and corrections are published in full when we get something wrong.
+      </p>
+    </aside>
+
+    <p class="back"><a href="/">← Check another claim</a></p>
+  </div>
+</Base>
+
+<style>
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 36px 32px 0;
+  }
+
+  .claim-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .claim-text {
+    font-family: var(--font-brand);
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--text-primary);
+    border-left: 3px solid var(--border);
+    padding-left: 16px;
+    margin-bottom: 28px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .banner {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--r-sm);
+    border: 1px solid;
+  }
+
+  .banner.prelim { background: var(--type-3-bg); border-color: var(--type-3-bd); }
+  .banner.submitted { background: var(--type-4-bg); border-color: var(--type-4-bd); }
+
+  .banner-icon { font-size: 17px; line-height: 1.4; flex-shrink: 0; }
+
+  .banner-title {
+    font-family: var(--font-brand);
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+
+  .prelim .banner-title { color: var(--type-3-text); }
+  .submitted .banner-title { color: var(--type-4-text); }
+
+  .banner-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .verdict-meaning {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .confidence {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .conf-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+  }
+
+  .conf-track {
+    flex: 1;
+    height: 7px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 80px;
+  }
+
+  .conf-fill { height: 100%; border-radius: 4px; }
+  .conf-fill.high { background: var(--verdict-true-dot); }
+  .conf-fill.mid { background: var(--verdict-misleading-dot); }
+  .conf-fill.low { background: var(--verdict-false-dot); }
+
+  .conf-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .headline {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .summary {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .attribution {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  .attr-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+  }
+
+  .attr-date { font-size: 12px; color: var(--text-muted); }
+
+  .section-heading {
+    font-family: var(--font-brand);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .evidence { border-top: 1px solid var(--border); padding-top: 20px; }
+
+  .evidence-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .evidence-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+  }
+
+  .evidence-source {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand-dark);
+    text-decoration: none;
+  }
+
+  .evidence-source:hover { text-decoration: underline; }
+
+  .evidence-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 8px;
+  }
+
+  .evidence-snippet {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  .waiting {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .notify {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 16px;
+  }
+
+  .notify-copy {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .notify-row { display: flex; gap: 8px; }
+
+  .notify-input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .notify-input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+  }
+
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 18px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover { background: var(--brand-dark); }
+
+  .notify-status { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+
+  .also { border-top: 1px solid var(--border); padding-top: 20px; }
+  .also-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .also-list a { font-size: 13px; color: var(--brand-dark); text-decoration: none; }
+  .also-list a:hover { text-decoration: underline; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 3px 10px;
+  }
+
+  .meta {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+  }
+
+  .meta dl {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .meta dt {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .meta dd { font-size: 14px; font-weight: 600; }
+
+  .meta-note {
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .back { margin-top: 20px; font-size: 14px; }
+  .back a { color: var(--brand); text-decoration: none; }
+
+  @media (max-width: 720px) {
+    .page { padding: 22px 16px 0; }
+    .claim-text { font-size: 16px; }
+    .card-body { padding: 18px 16px; gap: 16px; }
+    .headline { font-size: 20px; }
+    .summary { font-size: 15px; }
+    .notify-row { flex-direction: column; }
+    .btn-primary { width: 100%; padding: 11px 18px; }
+    .meta dl { gap: 18px; }
+  }
+</style>
+
+<script>
+  // Subscribe to promotion notifications. TYPE 3 and TYPE 4 only — a published
+  // report has nothing left to notify about.
+  const form = document.querySelector<HTMLFormElement>('.notify-row');
+  const status = document.querySelector<HTMLElement>('.notify-status');
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = form.querySelector<HTMLInputElement>('.notify-input');
+    const contact = input?.value.trim();
+
+    if (!status) return;
+    status.hidden = false;
+
+    if (!contact) {
+      status.textContent = 'Enter an email address or phone number first.';
+      return;
+    }
+
+    // The subscribe endpoint is not built yet — say so rather than pretending
+    // the address was stored.
+    status.textContent = 'Notifications are not switched on yet — this claim is queued for review.';
+  });
+</script>

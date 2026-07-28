@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Processing Pipeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #0D9488; --brand-dark: #0F766E; --brand-light: #F0FDFA; --brand-mid: #99F6E4;
+      --text-primary: #0F172A; --text-secondary: #475569; --text-muted: #94A3B8;
+      --border: #E2E8F0; --surface: #FFFFFF; --bg: #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .wf-nav { position: sticky; top: 0; z-index: 1000; height: 36px; background: #0F172A; display: flex; align-items: center; padding: 0 12px; gap: 6px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; flex-shrink: 0; }
+    .wf-nav a { font-size: 11px; color: #94A3B8; text-decoration: none; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: var(--brand); color: white; }
+    .wf-nav .wf-divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+
+    .page-header { background: var(--text-primary); padding: 40px 48px 36px; }
+    .page-header-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-size: 12px; color: #64748B; margin-bottom: 12px; }
+    .breadcrumb a { color: var(--brand); text-decoration: none; }
+    .page-title { font-family: var(--font-brand); font-size: 28px; font-weight: 800; color: white; margin-bottom: 8px; }
+    .page-subtitle { font-size: 14px; color: #64748B; }
+    .content { max-width: 1100px; margin: 0 auto; padding: 40px 48px 80px; }
+    .section { margin-bottom: 56px; }
+    .section-title { font-family: var(--font-brand); font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; padding-bottom: 12px; border-bottom: 2px solid var(--brand); display: inline-block; }
+    .section-desc { font-size: 14px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 24px; }
+    code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text-primary); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--bg); }
+
+    /* PIPELINE */
+    .pipeline { display: flex; flex-direction: column; gap: 0; }
+    .pipe-stage {
+      display: grid; grid-template-columns: 48px 1fr;
+      gap: 0;
+    }
+    .pipe-track {
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 16px;
+    }
+    .pipe-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--brand); color: white;
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; z-index: 1;
+    }
+    .pipe-line {
+      width: 2px; background: var(--border);
+      flex: 1; min-height: 20px;
+    }
+    .pipe-last .pipe-line { display: none; }
+
+    .pipe-body {
+      padding: 16px 0 24px 16px;
+    }
+    .pipe-title {
+      font-family: var(--font-brand); font-size: 16px; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 4px;
+    }
+    .pipe-subtitle {
+      font-size: 12px; color: var(--text-muted); margin-bottom: 12px;
+    }
+    .pipe-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 14px 16px;
+    }
+    .pipe-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 10px; }
+    .pipe-desc:last-child { margin-bottom: 0; }
+
+    /* BRANCHES */
+    .branch-wrap {
+      display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;
+    }
+    .branch {
+      flex: 1; min-width: 200px;
+      border-radius: var(--r-sm); padding: 12px 14px;
+      border: 1px solid var(--border);
+    }
+    .branch-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .branch-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+    .branch-hit { background: var(--brand-light); border-color: var(--brand-mid); }
+    .branch-hit .branch-label { color: var(--brand-dark); }
+    .branch-miss { background: var(--bg); }
+    .branch-miss .branch-label { color: var(--text-muted); }
+    .branch-warn { background: #FFFBEB; border-color: #FDE68A; }
+    .branch-warn .branch-label { color: #92400E; }
+    .branch-amber { background: #FFFBEB; border-color: #FDE68A; }
+    .branch-amber .branch-label { color: #92400E; }
+    .branch-slate { background: #F8FAFC; border-color: #CBD5E1; }
+    .branch-slate .branch-label { color: #475569; }
+
+    /* TYPE BADGES */
+    .type-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 5px;
+      margin-left: 6px;
+    }
+    .tp1 { background: var(--brand-light); color: var(--brand-dark); border: 1px solid var(--brand-mid); }
+    .tp2 { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+    .tp3 { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+    .tp4 { background: #F8FAFC; color: #475569; border: 1px solid #CBD5E1; }
+
+    /* JOBS */
+    .job-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; }
+    .job-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .job-icon { font-size: 20px; }
+    .job-name { font-family: var(--font-brand); font-size: 14px; font-weight: 700; }
+    .job-schedule { font-size: 11px; color: var(--brand); font-family: var(--font-mono); background: var(--brand-light); padding: 2px 7px; border-radius: 4px; }
+    .job-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+    /* PROMOTION TABLE */
+    .promo-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+    .human-yes { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; }
+    .human-no  { color: #94A3B8; background: var(--bg); border: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html">Admin</a>
+  <div class="wf-divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html">📱 Article</a>
+  <a href="mobile-admin.html">📱 Admin</a>
+  <div class="wf-divider"></div>
+  <a href="architecture.html">Architecture</a>
+  <a href="design-system.html">Design System</a>
+  <a href="pipeline.html" class="active">Pipeline</a>
+  <a href="data-model.html">Data Model</a>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">fcheck.in wireframes</a> / Design Docs</div>
+    <div class="page-title">⚙️ Processing Pipeline</div>
+    <div class="page-subtitle">Claim ingestion → normalisation → fingerprint → search → AI → type assignment → admin review → publish</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- MAIN PIPELINE -->
+  <div class="section">
+    <div class="section-title">Main Pipeline</div>
+    <div class="section-desc">Every claim — from any channel — flows through this pipeline exactly once. Results are cached; future identical claims are served from the database without re-processing.</div>
+
+    <div class="pipeline">
+
+      <div class="pipe-stage">
+        <div class="pipe-track"><div class="pipe-num">1</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">Ingestion &amp; Normalisation</div>
+          <div class="pipe-subtitle">Worker: <code>/api/v1/check</code> or channel webhooks</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Receive raw input from any channel. Identify content types present (text, URL, image, video, audio, document). Extract text from images via OCR. Extract URLs embedded in text. Transcribe audio/video. Combine all components into a single unified claim package.</div>
+            <div class="pipe-desc" style="font-size:12px;color:#94A3B8"><strong>Input types handled:</strong> plain text, URL, image (OCR), video (frame extraction + transcription), audio (transcription), PDF/doc (text extraction), mixed combinations.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage">
+        <div class="pipe-track"><div class="pipe-num">2</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">Claim Extraction</div>
+          <div class="pipe-subtitle">Claude API — extract specific factual assertion(s)</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Pass the normalised claim package to Claude. Extract the core factual assertion(s) — the specific checkable claims, stripped of opinion or context. Generate a canonical text representation and a semantic embedding (fingerprint) for similarity matching.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage">
+        <div class="pipe-track"><div class="pipe-num">3</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">Fingerprint &amp; Cache Check</div>
+          <div class="pipe-subtitle">D1 — embedding similarity search</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Search D1 for semantically similar claim fingerprints. Exact string match is not required — semantically identical claims with different wording resolve to the same record. If a match is found with a published result, serve it immediately and skip the rest of the pipeline.</div>
+            <div class="branch-wrap">
+              <div class="branch branch-hit">
+                <div class="branch-label">✓ Cache hit</div>
+                <div class="branch-text">Return cached result. Record the new submission against the existing claim. Notify subscribers of any promotions since they last viewed.</div>
+              </div>
+              <div class="branch branch-miss">
+                <div class="branch-label">→ Cache miss</div>
+                <div class="branch-text">No match found. Continue to Stage 4.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage">
+        <div class="pipe-track"><div class="pipe-num">4</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">fcheck.in Database Search</div>
+          <div class="pipe-subtitle">D1 — full-text + embedding search across published articles</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Search the fcheck.in article database for a matching original report (TYPE 1). Uses both keyword and semantic search.</div>
+            <div class="branch-wrap">
+              <div class="branch branch-hit">
+                <div class="branch-label">✓ Match found<span class="type-pill tp1">TYPE 1</span></div>
+                <div class="branch-text">Return full fcheck.in article. Record submission. <strong>Pipeline ends here.</strong></div>
+              </div>
+              <div class="branch branch-miss">
+                <div class="branch-label">→ No match</div>
+                <div class="branch-text">Continue to Stage 5.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage">
+        <div class="pipe-track"><div class="pipe-num">5</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">External Fact-Checker Search</div>
+          <div class="pipe-subtitle">Google Fact Check Tools API + curated fact-checker crawlers</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Query the Google Fact Check Tools API (indexes ClaimReview markup from 100+ publishers). Simultaneously query curated Tier 1 and Tier 2 sources. Apply country and language filters from user request. Rank results by source tier, date, and verdict confidence.</div>
+            <div class="branch-wrap">
+              <div class="branch branch-hit">
+                <div class="branch-label">✓ Match found<span class="type-pill tp2">TYPE 2</span></div>
+                <div class="branch-text">Return best external result with full attribution. Store result in D1. Record submission. <strong>Pipeline ends here.</strong></div>
+              </div>
+              <div class="branch branch-miss">
+                <div class="branch-label">→ No match</div>
+                <div class="branch-text">Continue to Stage 6.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage">
+        <div class="pipe-track"><div class="pipe-num">6</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">AI Deep-Check</div>
+          <div class="pipe-subtitle">Claude API — source search, contradiction analysis, confidence scoring</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Run a deep AI analysis. Search the open web for primary sources (research papers, government data, authoritative statements). Identify contradictions or supporting evidence. Assess source quality and quantity. Produce a confidence score (0–100) and a preliminary verdict if confidence is sufficient.</div>
+            <div class="branch-wrap">
+              <div class="branch branch-warn">
+                <div class="branch-label">◐ Sufficient facts<span class="type-pill tp3">TYPE 3</span></div>
+                <div class="branch-text">AI has found enough to form a view. Generate preliminary response (clearly labeled) + draft article for admin queue. Store in D1. Offer "notify me when reviewed." <strong>Pipeline ends here.</strong></div>
+              </div>
+              <div class="branch branch-slate">
+                <div class="branch-label">○ Insufficient facts<span class="type-pill tp4">TYPE 4</span></div>
+                <div class="branch-text">Too little information to form a view. No verdict shown. Store in D1 as submitted. Offer "notify me when reviewed." Schedule re-check. <strong>Pipeline ends here.</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage pipe-last">
+        <div class="pipe-track"><div class="pipe-num" style="background:#15803D">✓</div><div class="pipe-line"></div></div>
+        <div class="pipe-body">
+          <div class="pipe-title">Store &amp; Respond</div>
+          <div class="pipe-subtitle">D1 write + channel-specific response formatter</div>
+          <div class="pipe-card">
+            <div class="pipe-desc">Persist the claim record (fingerprint, canonical text, result type, sources, confidence, submissions). Format the response for the originating channel: web JSON, WhatsApp message, Telegram reply, email, or API JSON. Increment submission count if the claim already existed.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STATUS PROMOTIONS -->
+  <div class="section">
+    <div class="section-title">Status Promotion Logic</div>
+    <div class="section-desc">Claims automatically promote upward when new information is found. Every promotion notifies all subscribed users.</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Transition</th><th>Trigger</th><th>Human required?</th><th>Subscriber notification</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="type-pill tp4">TYPE 4</span> → <span class="type-pill tp3">TYPE 3</span></td>
+            <td>Re-check job finds sufficient facts</td>
+            <td><span class="promo-badge human-no">No — queues draft</span></td>
+            <td>"An early analysis is ready for your claim"</td>
+          </tr>
+          <tr>
+            <td><span class="type-pill tp4">TYPE 4</span> → <span class="type-pill tp2">TYPE 2</span></td>
+            <td>Crawler finds authenticated external report</td>
+            <td><span class="promo-badge human-no">No — automatic</span></td>
+            <td>"A verified report is ready"</td>
+          </tr>
+          <tr>
+            <td><span class="type-pill tp3">TYPE 3</span> → <span class="type-pill tp1">TYPE 1</span></td>
+            <td>Admin approves draft</td>
+            <td><span class="promo-badge human-yes">Yes — admin approval</span></td>
+            <td>"Full reviewed report is now available"</td>
+          </tr>
+          <tr>
+            <td><span class="type-pill tp3">TYPE 3</span> → <span class="type-pill tp2">TYPE 2</span></td>
+            <td>Crawler finds external report before admin approves</td>
+            <td><span class="promo-badge human-no">No — automatic</span></td>
+            <td>"A verified report is ready" (draft stays in admin queue)</td>
+          </tr>
+          <tr>
+            <td><span class="type-pill tp2">TYPE 2</span> → <span class="type-pill tp1">TYPE 1</span></td>
+            <td>fcheck.in team publishes original report</td>
+            <td><span class="promo-badge human-yes">Yes — admin approval</span></td>
+            <td>"fcheck.in full report now available"</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BACKGROUND JOBS -->
+  <div class="section">
+    <div class="section-title">Background Jobs</div>
+    <div class="section-desc">Cloudflare Workers Cron Triggers. Run independently of user requests.</div>
+    <div class="job-grid">
+      <div class="job-card">
+        <div class="job-header">
+          <div class="job-icon">🔄</div>
+          <div>
+            <div class="job-name">Re-check Job</div>
+            <div class="job-schedule">every 6h</div>
+          </div>
+        </div>
+        <div class="job-desc">Re-runs AI deep-check on all TYPE 4 claims. If new sources have emerged that provide sufficient evidence, promotes to TYPE 3 and queues a draft for admin. Checks source age to avoid stale results.</div>
+      </div>
+      <div class="job-card">
+        <div class="job-header">
+          <div class="job-icon">🕷</div>
+          <div>
+            <div class="job-name">Crawler Job</div>
+            <div class="job-schedule">continuous / 15m intervals</div>
+          </div>
+        </div>
+        <div class="job-desc">Monitors authenticated fact-checker sources for new published reports. Matches each new report against stored claim fingerprints. Triggers TYPE 4→2 and TYPE 3→2 promotions automatically when matches are found.</div>
+      </div>
+      <div class="job-card">
+        <div class="job-header">
+          <div class="job-icon">📌</div>
+          <div>
+            <div class="job-name">Trending Queue Job</div>
+            <div class="job-schedule">every 30m</div>
+          </div>
+        </div>
+        <div class="job-desc">Checks non-pinned trending cards for expiry (48-hour countdown). Removes expired cards. Rotates next queued card into live position. Sends low-queue alert to admin if fewer than 5 non-pinned cards remain.</div>
+      </div>
+      <div class="job-card">
+        <div class="job-header">
+          <div class="job-icon">📊</div>
+          <div>
+            <div class="job-name">Trending Candidate Job</div>
+            <div class="job-schedule">every 1h</div>
+          </div>
+        </div>
+        <div class="job-desc">Surfaces trending candidates from the claim database. Ranks by: submission volume + recency + verdict weight (FALSE/MISLEADING rank higher). Only TYPE 1 and TYPE 2 claims are eligible. Populates the admin "Trending Candidates" queue.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN REVIEW FLOW -->
+  <div class="section">
+    <div class="section-title">Admin Review Flow</div>
+    <div class="section-desc">Human-in-the-loop step before any TYPE 1 article is published. No AI-generated report goes live without admin sign-off.</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Step</th><th>Admin action</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600">1. Draft arrives</td><td>Notification sent. Draft appears in queue sorted by: submission count, AI confidence, age.</td><td>Status: <code>draft</code></td></tr>
+          <tr><td style="font-weight:600">2. Admin opens draft</td><td>Status transitions. Admin sees: AI confidence score, submission count, sources, AI-generated verdict + headline + summary + evidence list.</td><td>Status: <code>under_review</code></td></tr>
+          <tr><td style="font-weight:600">3. Admin edits</td><td>Optionally edits verdict, headline, summary, evidence items, tags.</td><td>Fields updated in real time.</td></tr>
+          <tr><td style="font-weight:600">4a. Admin publishes</td><td>Clicks Publish. Article goes live as TYPE 1.</td><td>Status: <code>published</code>. All subscribers notified.</td></tr>
+          <tr><td style="font-weight:600">4b. Admin rejects</td><td>Clicks Reject. Claim is marked rejected (duplicate, low public interest, etc.).</td><td>Status: <code>rejected</code>. No notification sent.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

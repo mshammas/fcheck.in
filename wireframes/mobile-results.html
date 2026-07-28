@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Search Results (Mobile Wireframe)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #0D9488; --brand-dark: #0F766E; --brand-light: #F0FDFA; --brand-mid: #99F6E4;
+      --text-primary: #0F172A; --text-secondary: #475569; --text-muted: #94A3B8;
+      --border: #E2E8F0; --surface: #FFFFFF; --bg: #F8FAFC;
+      --v-false-text: #B91C1C; --v-false-bg: #FEF2F2; --v-false-border: #FECACA;
+      --v-misld-text: #B45309; --v-misld-bg: #FFFBEB; --v-misld-border: #FDE68A;
+      --v-true-text:  #15803D; --v-true-bg:  #F0FDF4; --v-true-border:  #BBF7D0;
+      --v-unvr-text:  #475569; --v-unvr-bg:  #F8FAFC; --v-unvr-border:  #CBD5E1;
+      --prelim-text: #92400E; --prelim-bg: #FFFBEB; --prelim-border: #FDE68A;
+      --submit-text: #1E40AF; --submit-bg: #EFF6FF; --submit-border: #BFDBFE;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body:  'Inter', sans-serif;
+      --r: 12px; --r-sm: 8px; --r-xs: 6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow:    0 4px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: var(--font-body); background: #CBD5E1; color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* ── WF NAV ─────────────────────────────────────────── */
+    .wf-topnav { position: sticky; top: 0; z-index: 1000; background: #0F172A; height: 36px; padding: 0 16px; display: flex; align-items: center; font-family: var(--font-body); font-size: 12px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+    .wf-topnav::-webkit-scrollbar { display: none; }
+    .wf-tnav-label { font-weight: 700; color: #0D9488; margin-right: 10px; font-size: 11px; flex-shrink: 0; }
+    .wf-tnav-group { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-right: 5px; flex-shrink: 0; }
+    .wf-tnav-link { color: #94A3B8; text-decoration: none; margin-right: 8px; flex-shrink: 0; }
+    .wf-tnav-link:hover { color: #F1F5F9; }
+    .wf-tnav-dim { color: #334155; cursor: default; pointer-events: none; font-style: italic; margin-right: 8px; flex-shrink: 0; }
+    .wf-tnav-cur { color: white; font-weight: 600; }
+    .wf-tnav-sep { color: #1E293B; margin-right: 8px; flex-shrink: 0; }
+    .wf-tnav-index { color: #0D9488; font-weight: 600; text-decoration: none; flex-shrink: 0; margin-left: auto; padding-left: 16px; }
+
+    /* ── PHONE ───────────────────────────────────────────── */
+    .phone { max-width: 390px; margin: 0 auto; background: var(--bg); min-height: calc(100vh - 36px); box-shadow: 0 0 0 1px #94A3B8, 0 8px 40px rgba(0,0,0,0.22); display: flex; flex-direction: column; overflow: clip; }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header { position: sticky; top: 36px; z-index: 200; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 16px; height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-shrink: 0; }
+    .logo { font-family: var(--font-brand); font-weight: 800; font-size: 17px; color: var(--text-primary); text-decoration: none; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    .logo-mark { width: 26px; height: 26px; background: var(--brand); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 800; }
+    .logo-accent { color: var(--brand); }
+    .hamburger { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text-secondary); width: 36px; height: 36px; border-radius: var(--r-xs); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* ── SEARCH ROW ──────────────────────────────────────── */
+    .search-row { background: white; padding: 12px 16px 8px; border-bottom: 1px solid var(--border); }
+    .search-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 5px 5px 5px 12px; transition: border-color 0.2s; }
+    .search-bar:focus-within { border-color: var(--brand); }
+    .attach-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
+    .search-input { flex: 1; border: none; outline: none; font-family: var(--font-body); font-size: 14px; color: var(--text-primary); background: transparent; padding: 6px 0; min-width: 0; }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-btn { background: var(--brand); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* detected chips in search row */
+    .detected-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .detected-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--brand-dark); background: var(--brand-light); border: 1px solid var(--brand-mid); border-radius: 20px; padding: 2px 8px; }
+
+    /* filter chips */
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .fchip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; cursor: pointer; }
+    .fchip.active { color: var(--brand-dark); background: var(--brand-light); border-color: var(--brand-mid); }
+    .fchip .x { color: var(--text-muted); margin-left: 2px; }
+
+    /* ── TYPE SWITCHER ───────────────────────────────────── */
+    .type-switcher { background: #1E293B; padding: 10px 16px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+    .type-switcher::-webkit-scrollbar { display: none; }
+    .ts-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748B; margin-right: 8px; }
+    .ts-btn { font-family: var(--font-body); font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; color: #94A3B8; background: #334155; margin-right: 6px; transition: all 0.15s; }
+    .ts-btn:hover { color: white; background: #475569; }
+    .ts-btn.active { color: white; background: var(--brand); }
+
+    /* ── MAIN CONTENT ────────────────────────────────────── */
+    .results-main { flex: 1; padding: 16px; }
+
+    /* Primary result card */
+    .primary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 16px; }
+
+    .source-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .source-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .source-own { color: var(--brand-dark); background: var(--brand-light); border: 1px solid var(--brand-mid); }
+    .source-ext { color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); }
+    .reviewed-date { font-size: 11px; color: var(--text-muted); }
+
+    .vbadge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; }
+    .vbadge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .vb-false      { color:var(--v-false-text); background:var(--v-false-bg); border:1px solid var(--v-false-border); }
+    .vb-misleading { color:var(--v-misld-text); background:var(--v-misld-bg); border:1px solid var(--v-misld-border); }
+    .vb-true       { color:var(--v-true-text);  background:var(--v-true-bg);  border:1px solid var(--v-true-border);  }
+    .vb-unverif    { color:var(--v-unvr-text);  background:var(--v-unvr-bg);  border:1px solid var(--v-unvr-border);  }
+
+    .result-headline { font-family: var(--font-brand); font-weight: 700; font-size: 18px; line-height: 1.3; color: var(--text-primary); margin-bottom: 10px; }
+    .result-summary { font-size: 14px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 12px; }
+
+    .source-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .source-pills-label { font-size: 11px; color: var(--text-muted); }
+    .spill { font-size: 11px; font-weight: 600; color: var(--brand-dark); background: var(--brand-light); border: 1px solid var(--brand-mid); border-radius: 4px; padding: 2px 7px; text-decoration: none; }
+
+    .cta-row { display: flex; flex-direction: column; gap: 8px; }
+    .btn-primary { display: flex; align-items: center; justify-content: center; gap: 6px; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: white; background: var(--brand); border: none; border-radius: var(--r-sm); padding: 12px 16px; cursor: pointer; text-decoration: none; width: 100%; transition: background 0.15s; }
+    .btn-primary:hover { background: var(--brand-dark); }
+    .btn-secondary { display: flex; align-items: center; justify-content: center; gap: 6px; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--brand); background: var(--brand-light); border: 1.5px solid var(--brand-mid); border-radius: var(--r-sm); padding: 11px 16px; cursor: pointer; text-decoration: none; width: 100%; transition: background 0.15s; }
+
+    .primary-card-body { padding: 16px; }
+
+    /* Trust tier (TYPE 2) */
+    .trust-tier { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .trust-bar-wrap { display: flex; gap: 2px; }
+    .trust-seg { width: 16px; height: 5px; border-radius: 2px; background: var(--border); }
+    .trust-seg.filled { background: var(--brand); }
+    .trust-tier-label { font-size: 11px; color: var(--text-muted); }
+
+    /* External note */
+    .ext-note { display: flex; align-items: flex-start; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; margin-top: 12px; }
+    .ext-note-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+    .ext-note-text a { color: var(--brand); font-weight: 600; text-decoration: none; }
+
+    /* TYPE 3 — Preliminary */
+    .prelim-banner { background: var(--prelim-bg); border-bottom: 1px solid var(--prelim-border); padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .prelim-icon { font-size: 18px; flex-shrink: 0; }
+    .prelim-title { font-family: var(--font-brand); font-weight: 700; font-size: 14px; color: var(--prelim-text); margin-bottom: 2px; }
+    .prelim-desc { font-size: 12px; color: var(--prelim-text); opacity: 0.85; line-height: 1.5; }
+
+    .confidence-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .conf-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+    .conf-bar-wrap { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .conf-bar { height: 100%; border-radius: 4px; }
+    .conf-bar.high { width: 88%; background: var(--v-false-text); }
+    .conf-bar.medium { width: 55%; background: var(--v-misld-text); }
+    .conf-value { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+
+    .findings-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .finding-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+    .finding-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+    .notify-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 14px; }
+    .notify-box p { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+    .notify-row { display: flex; gap: 8px; }
+    .notify-input { flex: 1; border: 1.5px solid var(--border); border-radius: var(--r-sm); padding: 9px 12px; font-family: var(--font-body); font-size: 13px; color: var(--text-primary); outline: none; }
+    .notify-input:focus { border-color: var(--brand); }
+    .notify-input::placeholder { color: var(--text-muted); }
+    .btn-notify { background: var(--brand); color: white; border: none; border-radius: var(--r-sm); padding: 9px 14px; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+    /* TYPE 4 — Submitted */
+    .submit-banner { background: var(--submit-bg); border-bottom: 1px solid var(--submit-border); padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .submit-icon { font-size: 18px; flex-shrink: 0; }
+    .submit-title { font-family: var(--font-brand); font-weight: 700; font-size: 14px; color: var(--submit-text); margin-bottom: 2px; }
+    .submit-desc { font-size: 12px; color: var(--submit-text); opacity: 0.85; line-height: 1.5; }
+
+    /* Also reported by */
+    .section-label { font-family: var(--font-brand); font-weight: 700; font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; }
+
+    .also-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 0 16px 10px; margin: 0 -16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .also-scroll::-webkit-scrollbar { display: none; }
+    .also-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px; flex-shrink: 0; width: 120px; scroll-snap-align: start; box-shadow: var(--shadow-sm); }
+    .also-source { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+    .also-date { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+    .also-link { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 600; color: var(--brand); text-decoration: none; }
+
+    /* Related */
+    .related-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--bg); cursor: pointer; }
+    .related-item:last-child { border-bottom: none; }
+    .rel-thumb { width: 52px; height: 52px; flex-shrink: 0; background: linear-gradient(135deg, #F1F5F9, #E2E8F0); border-radius: var(--r-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); font-style: italic; }
+    .rel-info { flex: 1; min-width: 0; }
+    .rel-hl { font-family: var(--font-brand); font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text-primary); margin: 3px 0 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .rel-meta { font-size: 11px; color: var(--text-muted); }
+    .sbadge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+    .sb-own { color: var(--brand-dark); background: var(--brand-light); }
+    .sb-ext { color: var(--text-secondary); background: var(--bg); }
+
+    /* ── BOTTOM NAV ──────────────────────────────────── */
+    .bottom-nav { position: sticky; bottom: 0; z-index: 200; background: var(--surface); border-top: 1px solid var(--border); display: flex; padding: 8px 0 18px; flex-shrink: 0; }
+    .bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: var(--text-muted); padding: 4px 0; cursor: pointer; border: none; background: none; font-family: var(--font-body); transition: color 0.15s; }
+    .bnav-item.active { color: var(--brand); }
+    .bnav-icon { font-size: 20px; line-height: 1.2; }
+    .bnav-label { font-size: 10px; font-weight: 600; }
+
+    .section-gap { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<!-- WF NAV -->
+<div class="wf-topnav">
+  <span class="wf-tnav-label">WF</span>
+  <span class="wf-tnav-group">Desktop:</span>
+  <a class="wf-tnav-link" href="homepage.html">Home</a>
+  <a class="wf-tnav-link" href="results.html">Results</a>
+  <a class="wf-tnav-link" href="article.html">Article</a>
+  <a class="wf-tnav-link" href="admin.html">Admin</a>
+  <span class="wf-tnav-sep">·</span>
+  <span class="wf-tnav-group">📱 Mobile:</span>
+  <a class="wf-tnav-link" href="mobile-homepage.html">Home</a>
+  <a class="wf-tnav-link wf-tnav-cur" href="mobile-results.html">Results</a>
+  <a class="wf-tnav-link" href="mobile-article.html">Article</a>
+  <a class="wf-tnav-link" href="mobile-admin.html">Admin</a>
+  <span class="wf-tnav-sep">·</span>
+  <span class="wf-tnav-group">Design:</span>
+  <span class="wf-tnav-dim">Architecture</span>
+  <span class="wf-tnav-dim">Design System</span>
+  <span class="wf-tnav-dim">Pipeline</span>
+  <span class="wf-tnav-dim">Data Model</span>
+  <a class="wf-tnav-index" href="index.html">All pages →</a>
+</div>
+
+<div class="phone">
+
+  <!-- HEADER -->
+  <header>
+    <a class="logo" href="mobile-homepage.html">
+      <div class="logo-mark">✓</div>
+      <span>f<span class="logo-accent">check</span>.in</span>
+    </a>
+    <button class="hamburger">≡</button>
+  </header>
+
+  <!-- SEARCH ROW -->
+  <div class="search-row">
+    <div class="search-bar">
+      <button class="attach-btn">📎</button>
+      <input class="search-input" type="text" value="Does warm water cure viral infections?">
+      <button class="search-btn">→</button>
+    </div>
+    <div class="detected-row">
+      <span class="detected-chip">📝 Text detected</span>
+    </div>
+    <div class="filter-row">
+      <div class="fchip active">🌍 India <span class="x">×</span></div>
+      <div class="fchip active">🗣 English <span class="x">×</span></div>
+    </div>
+  </div>
+
+  <!-- TYPE SWITCHER -->
+  <div class="type-switcher">
+    <span class="ts-label">Result type:</span>
+    <button class="ts-btn active" onclick="showType('t1',this)">TYPE 1 — fcheck.in</button>
+    <button class="ts-btn" onclick="showType('t2',this)">TYPE 2 — External</button>
+    <button class="ts-btn" onclick="showType('t3',this)">TYPE 3 — Preliminary</button>
+    <button class="ts-btn" onclick="showType('t4',this)">TYPE 4 — Submitted</button>
+  </div>
+
+  <!-- RESULTS MAIN -->
+  <div class="results-main">
+
+    <!-- ── TYPE 1 ─────────────────────────────────────────── -->
+    <div id="t1">
+      <div class="primary-card">
+        <div class="primary-card-body">
+          <div class="source-row">
+            <span class="source-tag source-own">✓ fcheck.in</span>
+            <span class="reviewed-date">Mar 2026</span>
+          </div>
+          <div class="vbadge vb-false">False</div>
+          <div class="result-headline">"Drinking warm water does not cure viral infections, doctors confirm"</div>
+          <p class="result-summary">Multiple virologists and the WHO confirm there is no scientific basis for this claim. Warm water can soothe a sore throat but cannot kill viruses.</p>
+          <div class="source-pills">
+            <span class="source-pills-label">Sources:</span>
+            <a class="spill" href="#">WHO</a>
+            <a class="spill" href="#">Lancet</a>
+            <a class="spill" href="#">CDC</a>
+          </div>
+          <div class="cta-row">
+            <a class="btn-primary" href="mobile-article.html">Read full report →</a>
+            <button class="btn-secondary">📤 Share TL;DR</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <div class="section-label">Also reported by</div>
+        <div class="also-scroll">
+          <div class="also-card">
+            <div class="also-source">Boom Live</div>
+            <div class="vbadge vb-false" style="margin:0">False</div>
+            <div class="also-date">Mar 2026</div>
+            <a class="also-link" href="#">View →</a>
+          </div>
+          <div class="also-card">
+            <div class="also-source">AFP Fact Check</div>
+            <div class="vbadge vb-false" style="margin:0">False</div>
+            <div class="also-date">Feb 2026</div>
+            <a class="also-link" href="#">View →</a>
+          </div>
+          <div class="also-card">
+            <div class="also-source">Full Fact</div>
+            <div class="vbadge vb-false" style="margin:0">False</div>
+            <div class="also-date">Jan 2026</div>
+            <a class="also-link" href="#">View →</a>
+          </div>
+          <div class="also-card">
+            <div class="also-source">Snopes</div>
+            <div class="vbadge vb-false" style="margin:0">False</div>
+            <div class="also-date">2020</div>
+            <a class="also-link" href="#">View →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <div class="section-label">Related fact-checks</div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-false" style="margin-bottom:3px">False</div>
+            <div class="rel-hl">Garlic does not kill viruses or boost immunity against COVID</div>
+            <div class="rel-meta"><span class="sbadge sb-own">✓ fcheck.in</span> · 1w ago</div>
+          </div>
+        </div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-misleading" style="margin-bottom:3px">Misleading</div>
+            <div class="rel-hl">Steam inhalation claim contains partial truth but overstates effects</div>
+            <div class="rel-meta"><span class="sbadge sb-ext">Reuters</span> · 2w ago</div>
+          </div>
+        </div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-false" style="margin-bottom:3px">False</div>
+            <div class="rel-hl">Vitamin C megadoses shown ineffective against viral infections</div>
+            <div class="rel-meta"><span class="sbadge sb-ext">Snopes</span> · 3w ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TYPE 2 ─────────────────────────────────────────── -->
+    <div id="t2" style="display:none">
+      <div class="primary-card">
+        <div class="primary-card-body">
+          <div class="source-row">
+            <span class="source-tag source-ext">📰 Reuters Fact Check</span>
+            <span class="reviewed-date">Feb 2026</span>
+          </div>
+          <div class="trust-tier">
+            <div class="trust-bar-wrap">
+              <div class="trust-seg filled"></div><div class="trust-seg filled"></div>
+              <div class="trust-seg filled"></div><div class="trust-seg filled"></div>
+              <div class="trust-seg filled"></div><div class="trust-seg"></div>
+              <div class="trust-seg"></div>
+            </div>
+            <span class="trust-tier-label">Tier 1 source</span>
+          </div>
+          <div class="vbadge vb-false">False</div>
+          <div class="result-headline">"No credible study links 5G towers to headaches, Reuters finds"</div>
+          <p class="result-summary">Reuters reviewed the original study cited in the claim and found it was neither peer-reviewed nor conducted by the named institution. 5G operates within established safety limits.</p>
+          <div class="source-pills">
+            <span class="source-pills-label">Sources:</span>
+            <a class="spill" href="#">Reuters</a>
+            <a class="spill" href="#">WHO</a>
+            <a class="spill" href="#">ICNIRP</a>
+          </div>
+          <div class="cta-row">
+            <a class="btn-primary" href="#">View original at Reuters →</a>
+            <button class="btn-secondary">📤 Share TL;DR</button>
+          </div>
+          <div class="ext-note">
+            <span>💡</span>
+            <div class="ext-note-text">fcheck.in doesn't have its own report on this claim yet. <a href="#">Submit it for fcheck.in review →</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <div class="section-label">Also reported by</div>
+        <div class="also-scroll">
+          <div class="also-card">
+            <div class="also-source">Full Fact</div>
+            <div class="vbadge vb-false" style="margin:0">False</div>
+            <div class="also-date">Jan 2026</div>
+            <a class="also-link" href="#">View →</a>
+          </div>
+          <div class="also-card">
+            <div class="also-source">Snopes</div>
+            <div class="vbadge vb-false" style="margin:0">False</div>
+            <div class="also-date">Dec 2025</div>
+            <a class="also-link" href="#">View →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <div class="section-label">Related fact-checks</div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-false" style="margin-bottom:3px">False</div>
+            <div class="rel-hl">5G towers do not cause birds to fall from the sky</div>
+            <div class="rel-meta"><span class="sbadge sb-ext">AFP</span> · 1mo ago</div>
+          </div>
+        </div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-misleading" style="margin-bottom:3px">Misleading</div>
+            <div class="rel-hl">Radiation from phones and towers — what the evidence actually says</div>
+            <div class="rel-meta"><span class="sbadge sb-own">✓ fcheck.in</span> · 2mo ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TYPE 3 — PRELIMINARY ───────────────────────────── -->
+    <div id="t3" style="display:none">
+      <div class="primary-card">
+        <div class="prelim-banner">
+          <span class="prelim-icon">⚠️</span>
+          <div>
+            <div class="prelim-title">Preliminary Check — AI Analysis</div>
+            <div class="prelim-desc">No reviewed report found. This is an AI-generated early analysis. A full report is being prepared for human review.</div>
+          </div>
+        </div>
+        <div class="primary-card-body">
+          <div class="confidence-row">
+            <span class="conf-label">Confidence:</span>
+            <div class="conf-bar-wrap"><div class="conf-bar high"></div></div>
+            <span class="conf-value">88% — Likely False</span>
+          </div>
+          <div style="font-family:var(--font-brand);font-weight:700;font-size:14px;margin-bottom:10px;color:var(--text-primary)">What our analysis found:</div>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-icon">✗</span> Fluoride in water is a public health measure for dental health, documented since the 1940s — not population control.</li>
+            <li class="finding-item"><span class="finding-icon">✗</span> No peer-reviewed study supports a link between regulated fluoride levels and any behavioural effect.</li>
+            <li class="finding-item"><span class="finding-icon">✗</span> Claim originates from sources identified in prior fact-checks as having low credibility.</li>
+          </ul>
+          <div class="source-pills" style="margin-bottom:14px">
+            <span class="source-pills-label">Early sources:</span>
+            <a class="spill" href="#">WHO</a>
+            <a class="spill" href="#">CDC</a>
+            <a class="spill" href="#">NHS</a>
+          </div>
+          <div class="notify-box">
+            <p>Get notified when the full reviewed report is published:</p>
+            <div class="notify-row">
+              <input class="notify-input" type="text" placeholder="Email or WhatsApp number">
+              <button class="btn-notify">Notify me</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <div class="section-label">Related fact-checks</div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-false" style="margin-bottom:3px">False</div>
+            <div class="rel-hl">Government mind control through tap water — prior claim debunked</div>
+            <div class="rel-meta"><span class="sbadge sb-ext">Snopes</span> · 2019</div>
+          </div>
+        </div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-false" style="margin-bottom:3px">False</div>
+            <div class="rel-hl">Fluoride health risk claims lack scientific support, WHO confirms</div>
+            <div class="rel-meta"><span class="sbadge sb-ext">Reuters</span> · 1yr ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TYPE 4 — SUBMITTED ─────────────────────────────── -->
+    <div id="t4" style="display:none">
+      <div class="primary-card">
+        <div class="submit-banner">
+          <span class="submit-icon">🕐</span>
+          <div>
+            <div class="submit-title">Submitted for Review</div>
+            <div class="submit-desc">We couldn't find enough verified information about this claim to give a preliminary assessment right now.</div>
+          </div>
+        </div>
+        <div class="primary-card-body">
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px">Our team will investigate and publish a report when sufficient evidence is available. This typically takes 24–72 hours.</p>
+          <div class="notify-box">
+            <p>Get notified when a report is published:</p>
+            <div class="notify-row">
+              <input class="notify-input" type="text" placeholder="Email or WhatsApp number">
+              <button class="btn-notify">Notify me</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <div class="section-label">While you wait — related fact-checks</div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-false" style="margin-bottom:3px">False</div>
+            <div class="rel-hl">Similar local governance claim debunked last month</div>
+            <div class="rel-meta"><span class="sbadge sb-own">✓ fcheck.in</span> · 1mo ago</div>
+          </div>
+        </div>
+        <div class="related-item">
+          <div class="rel-thumb">[ img ]</div>
+          <div class="rel-info">
+            <div class="vbadge vb-misleading" style="margin-bottom:3px">Misleading</div>
+            <div class="rel-hl">Video manipulation techniques used in viral political clips</div>
+            <div class="rel-meta"><span class="sbadge sb-ext">AFP</span> · 2mo ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /results-main -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a class="bnav-item active" href="mobile-homepage.html">
+      <span class="bnav-icon">🔍</span>
+      <span class="bnav-label">Search</span>
+    </a>
+    <a class="bnav-item" href="#">
+      <span class="bnav-icon">📰</span>
+      <span class="bnav-label">Reports</span>
+    </a>
+    <a class="bnav-item" href="#">
+      <span class="bnav-icon">➕</span>
+      <span class="bnav-label">Submit</span>
+    </a>
+  </nav>
+
+</div><!-- /phone -->
+
+<script>
+  function showType(type, btn) {
+    ['t1','t2','t3','t4'].forEach(t => {
+      document.getElementById(t).style.display = t === type ? 'block' : 'none';
+    });
+    document.querySelectorAll('.ts-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>

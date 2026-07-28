@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fcheck.in — Astro dev",
+      "description": "Astro dev server running on the Cloudflare Workers runtime (workerd) via @astrojs/cloudflare. D1 binding is served from local .wrangler state. This is the main app.",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 4321,
+      "url": "http://localhost:4321"
+    },
+    {
+      "name": "fcheck.in — built worker preview",
+      "description": "Production build served by wrangler dev. Use to verify the deployed bundle before `npm run deploy`.",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "port": 8787,
+      "url": "http://localhost:8787"
+    },
+    {
+      "name": "Wireframes (reference)",
+      "description": "Static design wireframes and design docs. Reference only — the real app is the Astro dev server above.",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4000"],
+      "port": 4000,
+      "url": "http://localhost:4000"
+    }
+  ]
+}

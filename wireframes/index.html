@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Wireframe Index</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:       #0D9488;
+      --brand-dark:  #0F766E;
+      --brand-light: #F0FDFA;
+      --brand-mid:   #99F6E4;
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-muted:     #94A3B8;
+      --border:  #E2E8F0;
+      --surface: #FFFFFF;
+      --bg:      #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body:  'Inter', sans-serif;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow:    0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ──────────────────────────────────── */
+    header {
+      background: var(--text-primary);
+      padding: 28px 40px 24px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; margin-bottom: 8px;
+    }
+    .logo-mark {
+      width: 32px; height: 32px; background: var(--brand);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px; font-weight: 800;
+    }
+    .logo-name {
+      font-family: var(--font-brand); font-weight: 800; font-size: 20px; color: white;
+    }
+    .logo-name span { color: var(--brand); }
+    header p {
+      font-size: 14px; color: #64748B;
+    }
+
+    /* ── MAIN ────────────────────────────────────── */
+    main { max-width: 1000px; margin: 0 auto; padding: 40px; }
+
+    .section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text-muted);
+      margin-bottom: 16px; margin-top: 36px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+
+    .page-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 20px;
+      box-shadow: var(--shadow-sm); cursor: pointer;
+      text-decoration: none; display: block;
+      transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+      position: relative; overflow: hidden;
+    }
+    .page-card:hover { box-shadow: var(--shadow); border-color: var(--brand-mid); transform: translateY(-2px); }
+    .page-card.disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+    .card-icon { font-size: 24px; margin-bottom: 12px; line-height: 1; }
+    .card-title {
+      font-family: var(--font-brand); font-weight: 700; font-size: 15px;
+      color: var(--text-primary); margin-bottom: 4px;
+    }
+    .card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px;
+      margin-top: 10px;
+    }
+    .badge-done { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; }
+    .badge-todo { color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); }
+
+    .card-corner {
+      position: absolute; top: 0; right: 0;
+      width: 0; height: 0;
+      border-style: solid;
+      border-width: 0 28px 28px 0;
+      border-color: transparent var(--brand-light) transparent transparent;
+    }
+    .card-corner-done { border-color: transparent #BBF7D0 transparent transparent; }
+
+    footer {
+      text-align: center; padding: 32px 40px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    footer a { color: var(--brand); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <div class="logo-mark">✓</div>
+    <span class="logo-name">f<span>check</span>.in</span>
+  </a>
+  <p>Wireframes &amp; Design Docs — Working index. Click any card to open.</p>
+</header>
+
+<main>
+
+  <!-- DESKTOP WIREFRAMES -->
+  <div class="section-label">Desktop Wireframes</div>
+  <div class="grid">
+
+    <a class="page-card" href="homepage.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🏠</div>
+      <div class="card-title">Homepage</div>
+      <div class="card-desc">Search mode &amp; Editorial mode. Smart input detection, trending cards.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="results.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Search Results</div>
+      <div class="card-desc">All four response types — Type 1, 2, 3 (Preliminary), 4 (Submitted).</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="article.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">📰</div>
+      <div class="card-title">Article</div>
+      <div class="card-desc">Full fact-check report. Claim artifacts, evidence accordion, share TL;DR.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="admin.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Admin Dashboard</div>
+      <div class="card-desc">Overview, Draft Queue, Draft Review, Trending Queue management.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+  </div>
+
+  <!-- MOBILE WIREFRAMES -->
+  <div class="section-label">📱 Mobile Wireframes</div>
+  <div class="grid">
+
+    <a class="page-card" href="mobile-homepage.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🏠</div>
+      <div class="card-title">Homepage — Mobile</div>
+      <div class="card-desc">Search + Editorial, bottom nav, horizontal trending cards, filter bottom sheets.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="mobile-results.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Results — Mobile</div>
+      <div class="card-desc">All four response types. Compact single-column layout.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="mobile-article.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">📰</div>
+      <div class="card-title">Article — Mobile</div>
+      <div class="card-desc">Full article, sticky Share TL;DR button, share bottom sheet.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="mobile-admin.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Admin — Mobile</div>
+      <div class="card-desc">Tab-based nav, draft queue, full-screen review, trending queue.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+  </div>
+
+  <!-- DESIGN DOCS -->
+  <div class="section-label">Design Docs</div>
+  <div class="grid">
+
+    <a class="page-card" href="architecture.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🏗</div>
+      <div class="card-title">Backend Architecture</div>
+      <div class="card-desc">Cloudflare Pages/Workers/D1, AI pipeline, WhatsApp/Telegram bots, API design.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="design-system.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🎨</div>
+      <div class="card-title">Design System</div>
+      <div class="card-desc">Colour palette, typography, components, verdict badge system, spacing.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="pipeline.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Processing Pipeline</div>
+      <div class="card-desc">Claim ingestion → AI analysis → Type assignment → Admin review → Publish flow.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+    <a class="page-card" href="data-model.html">
+      <div class="card-corner card-corner-done"></div>
+      <div class="card-icon">🗄</div>
+      <div class="card-title">Data Model</div>
+      <div class="card-desc">D1 schema — claims, reports, sources, subscribers, channels, audit log.</div>
+      <div class="badge badge-done">✓ Done</div>
+    </a>
+
+  </div>
+
+</main>
+
+<footer>
+  fcheck.in — internal wireframe workspace ·
+  <a href="https://fcheck.in" target="_blank">fcheck.in</a>
+</footer>
+
+</body>
+</html>

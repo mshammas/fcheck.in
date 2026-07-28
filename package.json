@@ -1,0 +1,28 @@
+{
+  "name": "fcheck-in",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro build && wrangler dev",
+    "deploy": "astro build && wrangler deploy",
+    "check": "wrangler types && astro check",
+    "db:migrate": "wrangler d1 migrations apply fcheck --local",
+    "db:migrate:remote": "wrangler d1 migrations apply fcheck --remote",
+    "db:query": "wrangler d1 execute fcheck --local --command",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@astrojs/cloudflare": "^14.1.5",
+    "astro": "^7.1.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.1.2",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.114.0"
+  }
+}

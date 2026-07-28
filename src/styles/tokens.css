@@ -1,0 +1,129 @@
+/* ══════════════════════════════════════════════════════════════
+   fcheck.in — design tokens
+   Source of truth: wireframes/design-system.html
+   Always use tokens. Never a raw hex value in a component.
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand ─────────────────────────────────────────────── */
+  --brand:       #0D9488;  /* primary CTA, links, active states */
+  --brand-dark:  #0F766E;  /* hover on brand elements */
+  --brand-light: #F0FDFA;  /* subtle brand fills, chip backgrounds */
+  --brand-mid:   #99F6E4;  /* brand borders, dividers */
+
+  /* ── Text ──────────────────────────────────────────────── */
+  --text-primary:   #0F172A;  /* headlines, body copy, nav backgrounds */
+  --text-secondary: #475569;  /* supporting copy, descriptions */
+  --text-muted:     #94A3B8;  /* timestamps, meta, disabled labels */
+
+  /* ── Surfaces ──────────────────────────────────────────── */
+  --surface: #FFFFFF;  /* cards, modals, sheets */
+  --bg:      #F8FAFC;  /* page background, secondary fills */
+  --border:  #E2E8F0;  /* all borders and dividers */
+
+  /* ── Typography ────────────────────────────────────────── */
+  --font-brand: 'Plus Jakarta Sans', system-ui, sans-serif;  /* headings, brand */
+  --font-body:  'Inter', system-ui, sans-serif;              /* body, UI, data */
+  --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Radius ────────────────────────────────────────────── */
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r:      12px;
+  --r-pill: 20px;
+
+  /* ── Shadows ───────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.07);
+  --shadow:    0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.09), 0 4px 8px rgba(0, 0, 0, 0.05);
+
+  /* ── Verdict colours ───────────────────────────────────────
+     Six standardised verdicts. Each has text / background / border.
+     Values are fixed by the design system verdict table. */
+  --verdict-false-text:  #B91C1C;
+  --verdict-false-bg:    #FEF2F2;
+  --verdict-false-bd:    #FECACA;
+  --verdict-false-dot:   #EF4444;
+
+  --verdict-misleading-text: #B45309;
+  --verdict-misleading-bg:   #FFFBEB;
+  --verdict-misleading-bd:   #FDE68A;
+  --verdict-misleading-dot:  #F97316;
+
+  --verdict-true-text: #15803D;
+  --verdict-true-bg:   #F0FDF4;
+  --verdict-true-bd:   #BBF7D0;
+  --verdict-true-dot:  #22C55E;
+
+  --verdict-unverifiable-text: #475569;
+  --verdict-unverifiable-bg:   #F8FAFC;
+  --verdict-unverifiable-bd:   #CBD5E1;
+  --verdict-unverifiable-dot:  #8B5CF6;
+
+  --verdict-outdated-text: #1D4ED8;
+  --verdict-outdated-bg:   #EFF6FF;
+  --verdict-outdated-bd:   #BFDBFE;
+  --verdict-outdated-dot:  #EAB308;
+
+  --verdict-satire-text: #6D28D9;
+  --verdict-satire-bg:   #F5F3FF;
+  --verdict-satire-bd:   #DDD6FE;
+  --verdict-satire-dot:  #EC4899;
+
+  /* ── Response type indicators ──────────────────────────────
+     TYPE 1 brand teal · TYPE 2 blue · TYPE 3 amber · TYPE 4 slate */
+  --type-1-text: var(--brand-dark);
+  --type-1-bg:   var(--brand-light);
+  --type-1-bd:   var(--brand-mid);
+
+  --type-2-text: #1D4ED8;
+  --type-2-bg:   #EFF6FF;
+  --type-2-bd:   #BFDBFE;
+
+  --type-3-text: #92400E;
+  --type-3-bg:   #FFFBEB;
+  --type-3-bd:   #FDE68A;
+
+  --type-4-text: #475569;
+  --type-4-bg:   #F8FAFC;
+  --type-4-bd:   #CBD5E1;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Base reset — shared by every page
+   ══════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-brand);
+  line-height: 1.3;
+}
+
+a { color: var(--brand); }
+
+img, video { max-width: 100%; }
+
+button { font-family: inherit; }
+
+/* Respect users who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

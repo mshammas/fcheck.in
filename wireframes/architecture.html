@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Backend Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:       #0D9488; --brand-dark: #0F766E; --brand-light: #F0FDFA; --brand-mid: #99F6E4;
+      --text-primary: #0F172A; --text-secondary: #475569; --text-muted: #94A3B8;
+      --border: #E2E8F0; --surface: #FFFFFF; --bg: #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* WF NAV */
+    .wf-nav { position: sticky; top: 0; z-index: 1000; height: 36px; background: #0F172A; display: flex; align-items: center; padding: 0 12px; gap: 6px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; flex-shrink: 0; }
+    .wf-nav a { font-size: 11px; color: #94A3B8; text-decoration: none; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: var(--brand); color: white; }
+    .wf-nav .wf-divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+
+    /* LAYOUT */
+    .page-header { background: var(--text-primary); padding: 40px 48px 36px; }
+    .page-header-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-size: 12px; color: #64748B; margin-bottom: 12px; }
+    .breadcrumb a { color: var(--brand); text-decoration: none; }
+    .page-title { font-family: var(--font-brand); font-size: 28px; font-weight: 800; color: white; margin-bottom: 8px; }
+    .page-subtitle { font-size: 14px; color: #64748B; }
+
+    .content { max-width: 1100px; margin: 0 auto; padding: 40px 48px 80px; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 56px; }
+    .section-title { font-family: var(--font-brand); font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; padding-bottom: 12px; border-bottom: 2px solid var(--brand); display: inline-block; }
+    .section-desc { font-size: 14px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 24px; }
+
+    /* INFRA DIAGRAM */
+    .infra-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .infra-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px; }
+    .infra-col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px; }
+    .infra-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; background: var(--bg); border-radius: var(--r-sm); margin-bottom: 8px; }
+    .infra-item:last-child { margin-bottom: 0; }
+    .infra-icon { font-size: 18px; flex-shrink: 0; line-height: 1.3; }
+    .infra-item-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .infra-item-desc { font-size: 11px; color: var(--text-muted); }
+
+    /* FLOW DIAGRAM */
+    .flow-row { display: flex; align-items: center; gap: 0; margin-bottom: 4px; flex-wrap: wrap; }
+    .flow-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+    .flow-box.brand { background: var(--brand-light); border-color: var(--brand-mid); color: var(--brand-dark); }
+    .flow-box.dark { background: var(--text-primary); border-color: var(--text-primary); color: white; }
+    .flow-box.warn { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+    .flow-arrow { font-size: 16px; color: var(--text-muted); padding: 0 8px; flex-shrink: 0; }
+    .flow-label { font-size: 10px; color: var(--text-muted); padding: 0 4px; }
+
+    /* INTEGRATION CARDS */
+    .integrations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .int-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; box-shadow: var(--shadow-sm); }
+    .int-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .int-icon { font-size: 22px; }
+    .int-name { font-family: var(--font-brand); font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .int-tier { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--brand); background: var(--brand-light); border: 1px solid var(--brand-mid); padding: 1px 6px; border-radius: 4px; }
+    .int-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
+    .int-detail { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); background: var(--bg); border-radius: var(--r-sm); padding: 6px 8px; }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--bg); }
+    .td-name { font-weight: 600; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; }
+    .td-tech { color: var(--brand-dark); font-weight: 600; }
+    code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text-primary); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); }
+
+    /* EDGE ZONE */
+    .edge-zone { background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: var(--r); padding: 24px; color: white; margin-bottom: 24px; }
+    .edge-zone-title { font-family: var(--font-brand); font-size: 13px; font-weight: 700; color: var(--brand); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .edge-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .edge-item { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--r-sm); padding: 12px; }
+    .edge-item-name { font-size: 13px; font-weight: 700; color: white; margin-bottom: 3px; }
+    .edge-item-desc { font-size: 11px; color: #64748B; line-height: 1.4; }
+
+    /* ALERT BOX */
+    .info-box { background: var(--brand-light); border: 1px solid var(--brand-mid); border-radius: var(--r-sm); padding: 14px 16px; font-size: 13px; color: var(--brand-dark); line-height: 1.6; margin-bottom: 16px; }
+    .info-box strong { font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html">Admin</a>
+  <div class="wf-divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html">📱 Article</a>
+  <a href="mobile-admin.html">📱 Admin</a>
+  <div class="wf-divider"></div>
+  <a href="architecture.html" class="active">Architecture</a>
+  <a href="design-system.html">Design System</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="data-model.html">Data Model</a>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">fcheck.in wireframes</a> / Design Docs</div>
+    <div class="page-title">🏗 Backend Architecture</div>
+    <div class="page-subtitle">Cloudflare edge stack · AI pipeline · Bot integrations · API design</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- INFRASTRUCTURE OVERVIEW -->
+  <div class="section">
+    <div class="section-title">Infrastructure Overview</div>
+    <div class="section-desc">All layers run on Cloudflare's edge network — no traditional server infrastructure. Workers execute at the nearest PoP to the user.</div>
+
+    <div class="edge-zone">
+      <div class="edge-zone-title">☁ Cloudflare Edge Network</div>
+      <div class="edge-items">
+        <div class="edge-item">
+          <div class="edge-item-name">Cloudflare Pages</div>
+          <div class="edge-item-desc">Static asset hosting + CI/CD. GitHub push → auto-deploy. Preview deployments per branch.</div>
+        </div>
+        <div class="edge-item">
+          <div class="edge-item-name">Cloudflare Workers</div>
+          <div class="edge-item-desc">Serverless functions. Handle API routes, bot webhooks, AI pipeline, background jobs. V8 isolates — cold start ~0ms.</div>
+        </div>
+        <div class="edge-item">
+          <div class="edge-item-name">Cloudflare D1</div>
+          <div class="edge-item-desc">SQLite at edge. Claim store, reports, fact-checkers, subscribers, audit log. Free tier: 5GB storage, 25M reads/day.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="infra-grid">
+      <div class="infra-col">
+        <div class="infra-col-label">Frontend</div>
+        <div class="infra-item">
+          <div class="infra-icon">⚡</div>
+          <div>
+            <div class="infra-item-name">Astro (preferred) or SvelteKit</div>
+            <div class="infra-item-desc">Content-optimised framework. Ships minimal JS. Builds to static + SSR endpoints.</div>
+          </div>
+        </div>
+        <div class="infra-item">
+          <div class="infra-icon">📦</div>
+          <div>
+            <div class="infra-item-name">Cloudflare Pages</div>
+            <div class="infra-item-desc">CDN-hosted builds. GitHub CI/CD. Preview URLs per PR.</div>
+          </div>
+        </div>
+      </div>
+      <div class="infra-col">
+        <div class="infra-col-label">API &amp; Workers</div>
+        <div class="infra-item">
+          <div class="infra-icon">🔌</div>
+          <div>
+            <div class="infra-item-name">Cloudflare Workers</div>
+            <div class="infra-item-desc">REST API, bot webhooks, AI pipeline orchestration, background job scheduler.</div>
+          </div>
+        </div>
+        <div class="infra-item">
+          <div class="infra-icon">⏱</div>
+          <div>
+            <div class="infra-item-name">Workers Cron Triggers</div>
+            <div class="infra-item-desc">Re-check job (every 6h). Crawler job (continuous). Trending card expiry check.</div>
+          </div>
+        </div>
+      </div>
+      <div class="infra-col">
+        <div class="infra-col-label">Data &amp; AI</div>
+        <div class="infra-item">
+          <div class="infra-icon">🗄</div>
+          <div>
+            <div class="infra-item-name">Cloudflare D1</div>
+            <div class="infra-item-desc">Primary SQLite DB. Claims, reports, fact-checkers, subscribers.</div>
+          </div>
+        </div>
+        <div class="infra-item">
+          <div class="infra-icon">🤖</div>
+          <div>
+            <div class="infra-item-name">Claude API (Anthropic)</div>
+            <div class="infra-item-desc">Claim extraction, fact analysis, confidence scoring, TL;DR generation, draft report writing.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REQUEST FLOWS -->
+  <div class="section">
+    <div class="section-title">Request Flows</div>
+    <div class="section-desc">Three primary entry paths, all converging on the same Workers pipeline.</div>
+
+    <div class="table-wrap" style="margin-bottom:16px">
+      <table>
+        <thead><tr><th>Entry point</th><th>Receives</th><th>Worker endpoint</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td class="td-name">Web / PWA</td><td>Text, URL, file upload (image/video/audio/doc)</td><td><code>POST /api/check</code></td><td>JSON → rendered page</td></tr>
+          <tr><td class="td-name">WhatsApp Bot</td><td>Webhook: text, image, video, voice note</td><td><code>POST /webhooks/whatsapp</code></td><td>WhatsApp reply message</td></tr>
+          <tr><td class="td-name">Telegram Bot</td><td>Webhook: text, photo, video, document</td><td><code>POST /webhooks/telegram</code></td><td>Telegram reply message</td></tr>
+          <tr><td class="td-name">Browser Extension</td><td>Selected text, page URL, right-click image</td><td><code>POST /api/check</code></td><td>JSON → inline overlay</td></tr>
+          <tr><td class="td-name">Email</td><td>Forwarded email to check@fcheck.in</td><td><code>POST /webhooks/email</code></td><td>Reply email with verdict</td></tr>
+          <tr><td class="td-name">API (programmatic)</td><td>JSON payload</td><td><code>POST /api/v1/check</code></td><td>Structured JSON</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box"><strong>Unified pipeline:</strong> All entry points normalize their input and call the same internal pipeline Worker. Output is formatted for the originating channel after the pipeline runs.</div>
+  </div>
+
+  <!-- EXTERNAL INTEGRATIONS -->
+  <div class="section">
+    <div class="section-title">External Integrations</div>
+    <div class="section-desc">Services called by Workers during the pipeline. All calls are made server-side — API keys never leave the edge.</div>
+
+    <div class="integrations-grid">
+      <div class="int-card">
+        <div class="int-header">
+          <div class="int-icon">🤖</div>
+          <div>
+            <div class="int-name">Claude API</div>
+            <div class="int-tier">Anthropic</div>
+          </div>
+        </div>
+        <div class="int-desc">Claim extraction, contradiction analysis, confidence scoring, draft report generation, TL;DR share text.</div>
+        <div class="int-detail">api.anthropic.com · claude-3-5-sonnet</div>
+      </div>
+      <div class="int-card">
+        <div class="int-header">
+          <div class="int-icon">🔍</div>
+          <div>
+            <div class="int-name">Google Fact Check Tools API</div>
+            <div class="int-tier">External search</div>
+          </div>
+        </div>
+        <div class="int-desc">Indexes ClaimReview markup from 100+ publishers. First call in every external fact-checker search. Returns structured claim matches.</div>
+        <div class="int-detail">factchecktools.googleapis.com/v1alpha1</div>
+      </div>
+      <div class="int-card">
+        <div class="int-header">
+          <div class="int-icon">💬</div>
+          <div>
+            <div class="int-name">WhatsApp Business API</div>
+            <div class="int-tier">Bot channel</div>
+          </div>
+        </div>
+        <div class="int-desc">Receive forwards (text, image, video, voice) via webhook. Send verdict replies. Managed via Meta Business Platform.</div>
+        <div class="int-detail">graph.facebook.com/v18.0</div>
+      </div>
+      <div class="int-card">
+        <div class="int-header">
+          <div class="int-icon">✈️</div>
+          <div>
+            <div class="int-name">Telegram Bot API</div>
+            <div class="int-tier">Bot channel</div>
+          </div>
+        </div>
+        <div class="int-desc">Receive messages via webhook. Same claim handling as WhatsApp. Reply with verdict + link.</div>
+        <div class="int-detail">api.telegram.org/bot{token}</div>
+      </div>
+      <div class="int-card">
+        <div class="int-header">
+          <div class="int-icon">📧</div>
+          <div>
+            <div class="int-name">Email Inbound (Cloudflare Email Routing)</div>
+            <div class="int-tier">Bot channel</div>
+          </div>
+        </div>
+        <div class="int-desc">Forward emails sent to check@fcheck.in to a Worker. Extract claim from body. Reply with verdict.</div>
+        <div class="int-detail">Cloudflare Email Workers</div>
+      </div>
+      <div class="int-card">
+        <div class="int-header">
+          <div class="int-icon">🔔</div>
+          <div>
+            <div class="int-name">Push Notifications</div>
+            <div class="int-tier">Subscriber alerts</div>
+          </div>
+        </div>
+        <div class="int-desc">Notify subscribers when a TYPE 3/4 claim is promoted. Web Push for PWA users; WhatsApp/Telegram message for bot subscribers.</div>
+        <div class="int-detail">Web Push API + bot message</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API DESIGN -->
+  <div class="section">
+    <div class="section-title">API Design</div>
+    <div class="section-desc">Public REST API. All endpoints return JSON. Authentication via Bearer token for write endpoints.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST</code></td><td class="td-name">/api/v1/check</td><td>None (public)</td><td>Submit a claim for fact-checking. Returns TYPE 1–4 response with verdict, confidence, sources.</td></tr>
+          <tr><td><code>GET</code></td><td class="td-name">/api/v1/claims/:id</td><td>None</td><td>Retrieve a specific claim by ID.</td></tr>
+          <tr><td><code>GET</code></td><td class="td-name">/api/v1/search?q=…</td><td>None</td><td>Search published claims by text similarity.</td></tr>
+          <tr><td><code>POST</code></td><td class="td-name">/api/v1/subscribe</td><td>None</td><td>Subscribe to notifications for a claim ID via email or phone.</td></tr>
+          <tr><td><code>GET</code></td><td class="td-name">/api/v1/trending</td><td>None</td><td>Return current trending queue (pinned + active cards).</td></tr>
+          <tr><td><code>POST</code></td><td class="td-name">/api/admin/drafts/:id/publish</td><td>Admin token</td><td>Publish a reviewed draft as a TYPE 1 article.</td></tr>
+          <tr><td><code>POST</code></td><td class="td-name">/api/admin/drafts/:id/reject</td><td>Admin token</td><td>Reject a draft.</td></tr>
+          <tr><td><code>PUT</code></td><td class="td-name">/api/admin/drafts/:id</td><td>Admin token</td><td>Update draft fields (verdict, headline, summary, evidence).</td></tr>
+          <tr><td><code>POST</code></td><td class="td-name">/api/admin/trending</td><td>Admin token</td><td>Add a card to the trending queue.</td></tr>
+          <tr><td><code>DELETE</code></td><td class="td-name">/api/admin/trending/:id</td><td>Admin token</td><td>Remove a card from the trending queue.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DEPLOYMENT -->
+  <div class="section">
+    <div class="section-title">Deployment Pipeline</div>
+    <div class="section-desc">GitHub → Cloudflare Pages CI/CD. Workers deployed via Wrangler CLI or GitHub Actions.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Branch / Trigger</th><th>Action</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr><td><code>push → main</code></td><td>Build + deploy frontend &amp; Workers</td><td>Production (fcheck.in)</td></tr>
+          <tr><td><code>push → staging</code></td><td>Build + deploy frontend &amp; Workers</td><td>staging.fcheck.in</td></tr>
+          <tr><td><code>pull_request</code></td><td>Build only, preview URL generated</td><td>PR preview (*.pages.dev)</td></tr>
+          <tr><td><code>wrangler deploy</code></td><td>Deploy Workers only</td><td>Configured environment</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

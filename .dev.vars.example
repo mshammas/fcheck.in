@@ -1,0 +1,9 @@
+# Copy to .dev.vars and fill in. .dev.vars is gitignored — never commit real keys.
+# In production these are set with: wrangler secret put <NAME>
+
+# Anthropic — claim extraction (Haiku 4.5) and AI deep-check (Sonnet 5)
+ANTHROPIC_API_KEY="sk-ant-..."
+
+# Google Fact Check Tools API — external fact-checker search (TYPE 2)
+# https://console.cloud.google.com → enable "Fact Check Tools API" → create API key
+GOOGLE_FACT_CHECK_API_KEY="AIza..."

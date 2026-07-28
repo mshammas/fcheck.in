@@ -1,0 +1,64 @@
+---
+/**
+ * Response type indicator — the first thing a user should read on a result.
+ * It tells them where the answer came from and how much to trust it.
+ *
+ *   TYPE 1  teal   ✓  fcheck.in original, reviewed
+ *   TYPE 2  blue   ⬢  external authenticated fact-checker
+ *   TYPE 3  amber  ◐  AI preliminary, provisional
+ *   TYPE 4  slate  ○  submitted, no verdict
+ */
+import type { SourceType } from '../lib/types';
+import { TYPE_NUMBER } from '../lib/types';
+
+interface Props {
+  sourceType: SourceType;
+  /** Shown after the label — e.g. an external source name. */
+  detail?: string | null;
+}
+
+const { sourceType, detail = null } = Astro.props;
+
+const COPY: Record<SourceType, { icon: string; label: string }> = {
+  original:    { icon: '✓', label: 'fcheck.in Original' },
+  external:    { icon: '⬢', label: 'External Authenticated' },
+  preliminary: { icon: '◐', label: 'Preliminary (AI)' },
+  submitted:   { icon: '○', label: 'Submitted for Review' },
+};
+
+const n = TYPE_NUMBER[sourceType];
+const { icon, label } = COPY[sourceType];
+---
+
+<div class:list={['type-band', `t-${n}`]}>
+  <span class="icon" aria-hidden="true">{icon}</span>
+  <span class="label">TYPE {n} — {label}</span>
+  {detail && <span class="detail">{detail}</span>}
+</div>
+
+<style>
+  .type-band {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid;
+  }
+
+  .icon { font-size: 13px; line-height: 1; }
+  .detail {
+    font-weight: 500;
+    opacity: 0.85;
+    letter-spacing: 0;
+  }
+  .detail::before { content: '·'; margin-right: 8px; }
+
+  .t-1 { color: var(--type-1-text); background: var(--type-1-bg); border-color: var(--type-1-bd); }
+  .t-2 { color: var(--type-2-text); background: var(--type-2-bg); border-color: var(--type-2-bd); }
+  .t-3 { color: var(--type-3-text); background: var(--type-3-bg); border-color: var(--type-3-bd); }
+  .t-4 { color: var(--type-4-text); background: var(--type-4-bg); border-color: var(--type-4-bd); }
+</style>

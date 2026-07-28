@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Admin Dashboard Wireframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:        #0D9488;
+      --brand-dark:   #0F766E;
+      --brand-light:  #F0FDFA;
+      --brand-mid:    #99F6E4;
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-muted:     #94A3B8;
+      --border:   #E2E8F0;
+      --surface:  #FFFFFF;
+      --bg:       #F8FAFC;
+
+      /* Sidebar */
+      --sidebar-bg:      #0F172A;
+      --sidebar-text:    #94A3B8;
+      --sidebar-hover:   #1E293B;
+      --sidebar-active:  #1E293B;
+      --sidebar-accent:  #0D9488;
+
+      /* Verdicts */
+      --v-false-text:  #B91C1C; --v-false-bg:  #FEF2F2; --v-false-border:  #FECACA;
+      --v-misld-text:  #B45309; --v-misld-bg:  #FFFBEB; --v-misld-border:  #FDE68A;
+      --v-true-text:   #15803D; --v-true-bg:   #F0FDF4; --v-true-border:   #BBF7D0;
+      --v-unvr-text:   #475569; --v-unvr-bg:   #F8FAFC; --v-unvr-border:   #CBD5E1;
+
+      /* Status */
+      --alert-bg:    #FFFBEB; --alert-border: #FDE68A; --alert-text: #92400E;
+      --info-bg:     #EFF6FF; --info-border:  #BFDBFE; --info-text:  #1E40AF;
+      --success-bg:  #F0FDF4; --success-border:#BBF7D0; --success-text:#15803D;
+
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body:  'Inter', sans-serif;
+      --r:    10px;
+      --r-sm:  6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow:    0 4px 12px rgba(0,0,0,0.07);
+    }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--bg);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      display: flex; min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ──────────────────────────────────────────── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--sidebar-bg);
+      display: flex; flex-direction: column;
+      position: fixed; top: 36px; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid #1E293B;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-mark {
+      width: 28px; height: 28px; background: var(--brand); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    .logo-text-wrap {
+      display: flex; flex-direction: column;
+    }
+    .logo-name {
+      font-family: var(--font-brand); font-weight: 800; font-size: 16px;
+      color: white; line-height: 1;
+    }
+    .logo-name span { color: var(--brand); }
+    .logo-admin {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: #334155; margin-top: 3px;
+    }
+
+    .sidebar-nav {
+      flex: 1; padding: 12px 10px;
+      overflow-y: auto;
+    }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #334155;
+      padding: 12px 10px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: var(--r-sm);
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+      color: var(--sidebar-text); font-size: 14px; font-weight: 500;
+      text-decoration: none; margin-bottom: 1px;
+      position: relative;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active { background: var(--sidebar-active); color: white; }
+    .nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 6px; bottom: 6px;
+      width: 3px; background: var(--brand); border-radius: 0 2px 2px 0;
+    }
+    .nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+    .nav-badge {
+      margin-left: auto; font-size: 11px; font-weight: 700;
+      background: var(--brand); color: white;
+      border-radius: 10px; padding: 1px 7px; flex-shrink: 0;
+    }
+    .nav-badge.warn { background: #D97706; }
+
+    .sidebar-user {
+      padding: 14px 16px;
+      border-top: 1px solid #1E293B;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--brand); display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13px; font-weight: 600; color: white; }
+    .user-role { font-size: 11px; color: #475569; }
+    .logout-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 16px; color: #475569; transition: color 0.15s;
+    }
+    .logout-btn:hover { color: white; }
+
+    /* ── MAIN AREA ────────────────────────────────────────── */
+    .main {
+      margin-left: 240px; flex: 1;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 28px; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 36px; z-index: 50;
+    }
+    .topbar-title {
+      font-family: var(--font-brand); font-weight: 700; font-size: 18px;
+    }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .topbar-btn {
+      font-size: 13px; font-weight: 600;
+      padding: 7px 14px; border-radius: var(--r-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      cursor: pointer; color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+    .topbar-btn:hover { border-color: var(--brand); color: var(--brand); }
+    .topbar-btn.primary {
+      background: var(--brand); color: white; border-color: var(--brand);
+    }
+    .topbar-btn.primary:hover { background: var(--brand-dark); }
+
+    .content { padding: 28px; flex: 1; }
+
+    /* Screens */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── SHARED COMPONENTS ────────────────────────────────── */
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-label {
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: var(--font-brand); font-weight: 800; font-size: 32px;
+      color: var(--text-primary); line-height: 1; margin-bottom: 4px;
+    }
+    .stat-value.brand { color: var(--brand); }
+    .stat-value.warn  { color: #D97706; }
+    .stat-value.alert { color: var(--v-false-text); }
+    .stat-sub { font-size: 12px; color: var(--text-muted); }
+    .stat-sub.bad { color: var(--alert-text); font-weight: 600; }
+
+    .alert-strip {
+      border-radius: var(--r); padding: 12px 16px; margin-bottom: 12px;
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; line-height: 1.5;
+    }
+    .alert-strip.warn { background: var(--alert-bg); border: 1px solid var(--alert-border); color: var(--alert-text); }
+    .alert-strip.info { background: var(--info-bg);  border: 1px solid var(--info-border);  color: var(--info-text);  }
+    .alert-strip a {
+      font-weight: 700; text-decoration: underline; cursor: pointer; color: inherit;
+    }
+    .alert-strip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); box-shadow: var(--shadow-sm);
+      overflow: hidden; margin-bottom: 20px;
+    }
+    .panel-head {
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title {
+      font-family: var(--font-brand); font-weight: 700; font-size: 15px;
+    }
+    .panel-action {
+      font-size: 12px; font-weight: 600; color: var(--brand); cursor: pointer;
+      text-decoration: none; background: none; border: none; padding: 0;
+    }
+    .panel-body { padding: 20px; }
+
+    /* ── SCREEN 1: OVERVIEW ───────────────────────────────── */
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--bg);
+      font-size: 13px;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 5px;
+    }
+    .dot-brand  { background: var(--brand); }
+    .dot-warn   { background: #D97706; }
+    .dot-muted  { background: var(--text-muted); }
+    .dot-alert  { background: var(--v-false-text); }
+    .dot-good   { background: var(--v-true-text); }
+    .activity-text { flex: 1; color: var(--text-secondary); line-height: 1.4; }
+    .activity-text strong { color: var(--text-primary); font-weight: 600; }
+    .activity-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+
+    /* Mini bar chart */
+    .chart-wrap { padding: 4px 0; }
+    .chart-bars {
+      display: flex; align-items: flex-end; gap: 8px; height: 80px;
+    }
+    .chart-bar-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .chart-bar {
+      width: 100%; background: var(--brand-light); border-radius: 3px 3px 0 0;
+      border: 1px solid var(--brand-mid); transition: background 0.15s;
+      cursor: pointer;
+    }
+    .chart-bar:hover { background: var(--brand-mid); }
+    .chart-bar.today { background: var(--brand); border-color: var(--brand-dark); }
+    .chart-label { font-size: 10px; color: var(--text-muted); }
+
+    /* ── SCREEN 2: DRAFT QUEUE ────────────────────────────── */
+    .queue-controls {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .queue-select {
+      font-family: var(--font-body); font-size: 13px;
+      padding: 7px 12px; border-radius: var(--r-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text-primary); cursor: pointer; outline: none;
+    }
+    .queue-count {
+      font-size: 13px; color: var(--text-muted); margin-left: auto;
+    }
+
+    .draft-item {
+      border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--surface); margin-bottom: 12px;
+      box-shadow: var(--shadow-sm); overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .draft-item:hover { border-color: var(--brand-mid); box-shadow: var(--shadow); }
+
+    .draft-head {
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .conf-ring {
+      width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; border: 3px solid;
+    }
+    .conf-high   { color: var(--v-false-text); border-color: var(--v-false-border); background: var(--v-false-bg); }
+    .conf-medium { color: #D97706; border-color: #FDE68A; background: #FFFBEB; }
+    .conf-low    { color: var(--text-muted); border-color: var(--border); background: var(--bg); }
+
+    .draft-info { flex: 1; min-width: 0; }
+    .draft-claim {
+      font-family: var(--font-brand); font-weight: 700; font-size: 15px;
+      color: var(--text-primary); margin-bottom: 6px; line-height: 1.35;
+    }
+    .draft-meta-row {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .draft-meta {
+      font-size: 12px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .draft-channels { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .channel-pill {
+      font-size: 11px; font-weight: 500;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 8px; color: var(--text-secondary);
+    }
+    .draft-actions {
+      display: flex; gap: 8px; align-items: center;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .btn {
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+      padding: 7px 16px; border-radius: var(--r-sm); cursor: pointer;
+      transition: all 0.15s; border: 1px solid;
+    }
+    .btn-review { color: var(--brand); border-color: var(--brand-mid); background: var(--brand-light); }
+    .btn-review:hover { background: #CCFBF1; }
+    .btn-reject { color: var(--v-false-text); border-color: var(--v-false-border); background: var(--v-false-bg); }
+    .btn-reject:hover { background: #FEE2E2; }
+    .btn-approve { color: var(--v-true-text); border-color: var(--v-true-border); background: var(--v-true-bg); }
+    .btn-approve:hover { background: #DCFCE7; }
+    .btn-publish { color: white; border-color: var(--brand); background: var(--brand); }
+    .btn-publish:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
+    .btn-skip { color: var(--text-muted); border-color: var(--border); background: var(--surface); }
+    .btn-skip:hover { color: var(--text-secondary); }
+    .btn-pin { color: var(--text-secondary); border-color: var(--border); background: var(--surface); font-size: 12px; }
+    .btn-pin:hover { color: var(--brand); border-color: var(--brand-mid); }
+    .draft-subs {
+      margin-left: auto; font-size: 12px; color: var(--text-muted);
+    }
+
+    /* ── SCREEN 3: DRAFT REVIEW ───────────────────────────── */
+    .review-layout {
+      display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start;
+    }
+    .field-group { margin-bottom: 18px; }
+    .field-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;
+      display: block;
+    }
+    .field-input {
+      width: 100%; font-family: var(--font-body); font-size: 14px;
+      color: var(--text-primary); padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      outline: none; resize: vertical; background: var(--surface);
+      transition: border-color 0.15s;
+    }
+    .field-input:focus { border-color: var(--brand); }
+    .field-select {
+      width: 100%; font-family: var(--font-body); font-size: 14px;
+      color: var(--text-primary); padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      outline: none; background: var(--surface); cursor: pointer;
+    }
+    .vbadge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 3px 9px; border-radius: 4px;
+    }
+    .vbadge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .vb-false      { color:var(--v-false-text); background:var(--v-false-bg); border:1px solid var(--v-false-border); }
+    .vb-misleading { color:var(--v-misld-text); background:var(--v-misld-bg); border:1px solid var(--v-misld-border); }
+    .vb-unverif    { color:var(--v-unvr-text);  background:var(--v-unvr-bg);  border:1px solid var(--v-unvr-border);  }
+
+    .evidence-editor-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px; border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: var(--bg); margin-bottom: 8px;
+    }
+    .ev-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--brand-light); color: var(--brand-dark);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .ev-text { flex: 1; font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+    .ev-remove {
+      background: none; border: none; cursor: pointer; color: var(--text-muted);
+      font-size: 16px; flex-shrink: 0; transition: color 0.15s; line-height: 1;
+    }
+    .ev-remove:hover { color: var(--v-false-text); }
+    .add-evidence-btn {
+      font-size: 13px; font-weight: 600; color: var(--brand);
+      background: var(--brand-light); border: 1.5px dashed var(--brand-mid);
+      border-radius: var(--r-sm); padding: 9px; width: 100%;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .add-evidence-btn:hover { background: #CCFBF1; }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500;
+      color: var(--brand-dark); background: var(--brand-light);
+      border: 1px solid var(--brand-mid); border-radius: 20px; padding: 3px 10px;
+    }
+    .tag-chip button {
+      background: none; border: none; cursor: pointer; color: var(--text-muted);
+      font-size: 14px; line-height: 1; transition: color 0.15s;
+    }
+    .tag-chip button:hover { color: var(--v-false-text); }
+    .add-tag {
+      font-size: 12px; font-weight: 600; color: var(--brand);
+      background: none; border: 1px dashed var(--brand-mid);
+      border-radius: 20px; padding: 3px 10px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .add-tag:hover { background: var(--brand-light); }
+
+    .ai-panel-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 14px; margin-bottom: 12px;
+    }
+    .ai-panel-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .conf-bar-wrap {
+      height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 4px;
+    }
+    .conf-bar { height: 100%; border-radius: 4px; background: var(--v-false-text); }
+    .ai-sources { display: flex; flex-direction: column; gap: 6px; }
+    .ai-source-row {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px;
+    }
+    .ai-source-name { color: var(--text-secondary); }
+    .ai-source-status { color: var(--v-true-text); font-weight: 600; font-size: 12px; }
+    .review-action-bar {
+      display: flex; gap: 10px; padding: 16px 20px;
+      border-top: 1px solid var(--border); background: var(--bg);
+    }
+
+    /* ── SCREEN 4: TRENDING QUEUE ─────────────────────────── */
+    .trending-section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .trending-section-label::after { content: ''; flex:1; height:1px; background: var(--border); }
+
+    .pinned-card {
+      border: 1px solid var(--brand-mid); border-radius: var(--r);
+      background: var(--brand-light); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 10px; box-shadow: var(--shadow-sm);
+    }
+    .pin-icon { font-size: 16px; flex-shrink: 0; }
+    .tc-info { flex: 1; min-width: 0; }
+    .tc-headline {
+      font-weight: 600; font-size: 14px; color: var(--text-primary);
+      margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tc-meta-row { display: flex; align-items: center; gap: 10px; }
+    .tc-source { font-size: 11px; font-weight: 600; color: var(--brand-dark); }
+    .tc-expiry { font-size: 11px; color: var(--text-muted); }
+    .tc-expiry.warn { color: #D97706; font-weight: 600; }
+
+    .queue-card {
+      border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--surface); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px; box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s;
+    }
+    .queue-card:hover { border-color: var(--brand-mid); }
+    .drag-handle {
+      font-size: 16px; color: var(--text-muted); cursor: grab; flex-shrink: 0;
+    }
+    .queue-pos {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--bg); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .candidate-card {
+      border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--surface); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px; box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s;
+    }
+    .candidate-card:hover { border-color: var(--brand-mid); }
+    .cand-subs {
+      flex-shrink: 0; text-align: center;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 6px 10px;
+    }
+    .cand-subs-num {
+      font-family: var(--font-brand); font-weight: 800; font-size: 18px;
+      color: var(--text-primary); line-height: 1;
+    }
+    .cand-subs-label { font-size: 10px; color: var(--text-muted); }
+
+    .nominate-btn {
+      width: 100%; font-size: 13px; font-weight: 600; color: var(--brand);
+      background: var(--surface); border: 1.5px dashed var(--brand-mid);
+      border-radius: var(--r); padding: 12px; cursor: pointer;
+      transition: background 0.15s; margin-top: 8px;
+    }
+    .nominate-btn:hover { background: var(--brand-light); }
+
+    /* Low queue warning badge */
+    .queue-health {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .qh-low  { color: var(--alert-text); background: var(--alert-bg); border: 1px solid var(--alert-border); }
+    .qh-good { color: var(--success-text); background: var(--success-bg); border: 1px solid var(--success-border); }
+
+    /* ── WF NAV BAR ─────────────────────────────── */
+    .wf-nav {
+      position: sticky; top: 0; z-index: 1000;
+      height: 36px; background: #0F172A;
+      display: flex; align-items: center;
+      padding: 0 12px; gap: 6px;
+      overflow-x: auto; white-space: nowrap;
+      scrollbar-width: none;
+    }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label {
+      font-size: 10px; font-weight: 700; color: #64748B;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-right: 4px; flex-shrink: 0;
+    }
+    .wf-nav a {
+      font-size: 11px; color: #94A3B8; text-decoration: none;
+      padding: 3px 8px; border-radius: 4px; flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: #0D9488; color: white; }
+    .wf-nav a.disabled { color: #334155; pointer-events: none; }
+    .wf-nav .wf-divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+  </style>
+</head>
+<body>
+
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html" class="active">Admin</a>
+  <div class="wf-divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html">📱 Article</a>
+  <a href="mobile-admin.html">📱 Admin</a>
+  <div class="wf-divider"></div>
+  <a href="architecture.html">Architecture</a>
+  <a href="design-system.html">Design System</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="data-model.html">Data Model</a>
+</nav>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">✓</div>
+    <div class="logo-text-wrap">
+      <div class="logo-name">f<span>check</span>.in</div>
+      <div class="logo-admin">Admin Panel</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item active" onclick="showScreen('overview',this)">
+      <span class="nav-icon">📊</span> Overview
+    </a>
+    <a class="nav-item" onclick="showScreen('drafts',this)">
+      <span class="nav-icon">📝</span> Draft Queue
+      <span class="nav-badge">7</span>
+    </a>
+    <a class="nav-item" onclick="showScreen('trending',this)">
+      <span class="nav-icon">🔥</span> Trending Queue
+      <span class="nav-badge warn">⚠ 4</span>
+    </a>
+
+    <div class="nav-section-label">Content</div>
+    <a class="nav-item" onclick="showScreen('overview',this)">
+      <span class="nav-icon">📰</span> Published Reports
+    </a>
+    <a class="nav-item" onclick="showScreen('overview',this)">
+      <span class="nav-icon">🗂</span> All Claims
+    </a>
+
+    <div class="nav-section-label">Settings</div>
+    <a class="nav-item" onclick="showScreen('overview',this)">
+      <span class="nav-icon">🔗</span> Fact-Checkers
+    </a>
+    <a class="nav-item" onclick="showScreen('overview',this)">
+      <span class="nav-icon">⚙️</span> Settings
+    </a>
+
+    <div style="margin-top:12px">
+      <a class="nav-item" href="homepage.html" target="_blank">
+        <span class="nav-icon">↗</span> View public site
+      </a>
+    </div>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">M</div>
+    <div class="user-info">
+      <div class="user-name">Mohammed</div>
+      <div class="user-role">Super Admin</div>
+    </div>
+    <button class="logout-btn" title="Sign out">⎋</button>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Overview</div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="showScreen('drafts', document.querySelector('.nav-item:nth-child(3)'))">📝 Review drafts (7)</button>
+      <button class="topbar-btn primary" onclick="showScreen('trending', document.querySelector('.nav-item:nth-child(4)'))">🔥 Trending queue ⚠</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ SCREEN 1: OVERVIEW ══════════════════════════════ -->
+    <div id="screen-overview" class="screen active">
+
+      <!-- Stat cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Drafts pending review</div>
+          <div class="stat-value alert">7</div>
+          <div class="stat-sub bad">3 high confidence</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Trending queue health</div>
+          <div class="stat-value warn">4</div>
+          <div class="stat-sub bad">⚠ Low — refresh needed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Claims today</div>
+          <div class="stat-value brand">23</div>
+          <div class="stat-sub">↑ 12% vs yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Published this week</div>
+          <div class="stat-value">12</div>
+          <div class="stat-sub">3 TYPE 1 · 9 TYPE 2</div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="alert-strip warn">
+        <span class="alert-strip-icon">⚠️</span>
+        <span>Trending queue is running low — only <strong>4 cards</strong> remaining. <a onclick="showScreen('trending',document.querySelector('.nav-item:nth-child(4)'))">Go to Trending Queue →</a></span>
+      </div>
+      <div class="alert-strip warn">
+        <span class="alert-strip-icon">⏱</span>
+        <span><strong>2 trending cards</strong> expire in less than 6 hours. <a onclick="showScreen('trending',document.querySelector('.nav-item:nth-child(4)'))">Review now →</a></span>
+      </div>
+      <div class="alert-strip info">
+        <span class="alert-strip-icon">🤖</span>
+        <span>Re-check job promoted <strong>2 claims from TYPE 4 → TYPE 3</strong> in the last 6 hours. Drafts added to queue.</span>
+      </div>
+
+      <div class="two-col" style="margin-top:20px">
+
+        <!-- Activity feed -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Recent Activity</span>
+            <button class="panel-action">View all</button>
+          </div>
+          <div class="panel-body" style="padding:8px 20px">
+            <div class="activity-item">
+              <div class="activity-dot dot-alert"></div>
+              <div class="activity-text"><strong>New draft</strong> — "Warm water cures viral infections" · 38 submissions · High confidence</div>
+              <div class="activity-time">12:04</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-warn"></div>
+              <div class="activity-text"><strong>Trending card expired</strong> — "Climate claim" removed from queue</div>
+              <div class="activity-time">11:47</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-good"></div>
+              <div class="activity-text"><strong>Report published</strong> — "5G headache claim debunked" → TYPE 1 · 12 subscribers notified</div>
+              <div class="activity-time">11:32</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-brand"></div>
+              <div class="activity-text"><strong>Promotion</strong> — Crawler found Reuters report, "Fluoride claim" TYPE 4 → TYPE 2 · 8 subscribers notified</div>
+              <div class="activity-time">10:58</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-alert"></div>
+              <div class="activity-text"><strong>New draft</strong> — "Petrol price claim" · 24 submissions · High confidence</div>
+              <div class="activity-time">10:21</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-brand"></div>
+              <div class="activity-text"><strong>Trending card pinned</strong> — "Vaccine claim" pinned by Mohammed</div>
+              <div class="activity-time">09:45</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-muted"></div>
+              <div class="activity-text"><strong>Draft rejected</strong> — "Local weather claim" · Reason: insufficient public interest</div>
+              <div class="activity-time">09:12</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div>
+          <!-- Claim volume chart -->
+          <div class="panel" style="margin-bottom:20px">
+            <div class="panel-head">
+              <span class="panel-title">Claim Volume — 7 days</span>
+            </div>
+            <div class="panel-body">
+              <div class="chart-wrap">
+                <div class="chart-bars">
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar" style="height:50%"></div>
+                    <span class="chart-label">Mo</span>
+                  </div>
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar" style="height:65%"></div>
+                    <span class="chart-label">Tu</span>
+                  </div>
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar" style="height:100%"></div>
+                    <span class="chart-label">We</span>
+                  </div>
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar" style="height:80%"></div>
+                    <span class="chart-label">Th</span>
+                  </div>
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar" style="height:60%"></div>
+                    <span class="chart-label">Fr</span>
+                  </div>
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar" style="height:40%"></div>
+                    <span class="chart-label">Sa</span>
+                  </div>
+                  <div class="chart-bar-wrap">
+                    <div class="chart-bar today" style="height:55%"></div>
+                    <span class="chart-label" style="color:var(--brand);font-weight:600">Su</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick stats -->
+          <div class="panel">
+            <div class="panel-head"><span class="panel-title">Pipeline health</span></div>
+            <div class="panel-body" style="padding:8px 20px">
+              <div class="activity-item">
+                <div class="activity-text">TYPE 4 claims awaiting re-check</div>
+                <div class="activity-time" style="font-weight:700;color:var(--text-primary)">14</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-text">TYPE 3 claims in preliminary state</div>
+                <div class="activity-time" style="font-weight:700;color:var(--text-primary)">6</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-text">Avg. draft review time</div>
+                <div class="activity-time" style="font-weight:700;color:var(--text-primary)">4.2h</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-text">Subscribers waiting for reports</div>
+                <div class="activity-time" style="font-weight:700;color:var(--text-primary)">89</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-text">Crawler last ran</div>
+                <div class="activity-time" style="font-weight:700;color:var(--text-primary)">18m ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /overview -->
+
+    <!-- ════ SCREEN 2: DRAFT QUEUE ═══════════════════════════ -->
+    <div id="screen-drafts" class="screen">
+
+      <div class="queue-controls">
+        <select class="queue-select">
+          <option>Sort by: Submissions ↓</option>
+          <option>Sort by: Confidence ↓</option>
+          <option>Sort by: Age ↓</option>
+        </select>
+        <select class="queue-select">
+          <option>All verdicts</option>
+          <option>False only</option>
+          <option>Misleading only</option>
+          <option>Unverifiable only</option>
+        </select>
+        <span class="queue-count">7 drafts pending review</span>
+      </div>
+
+      <!-- Draft 1 — high confidence -->
+      <div class="draft-item">
+        <div class="draft-head">
+          <div class="conf-ring conf-high">91%</div>
+          <div class="draft-info">
+            <div class="draft-claim">"Drinking warm water cures viral infections"</div>
+            <div class="draft-meta-row">
+              <span class="draft-meta">🤖 AI verdict: <strong style="color:var(--v-false-text)">FALSE</strong></span>
+              <span class="draft-meta">📥 38 submissions</span>
+              <span class="draft-meta">⏱ 2 hours ago</span>
+              <span class="draft-meta">📚 Sources: WHO · CDC · Lancet</span>
+            </div>
+            <div class="draft-channels">
+              <span class="channel-pill">📱 WhatsApp (31)</span>
+              <span class="channel-pill">🌐 Web (7)</span>
+            </div>
+          </div>
+        </div>
+        <div class="draft-actions">
+          <button class="btn btn-review" onclick="showScreen('review',document.querySelector('.nav-item:nth-child(3)'))">Review &amp; Edit →</button>
+          <button class="btn btn-reject">Reject</button>
+          <span class="draft-subs">12 subscribers waiting</span>
+        </div>
+      </div>
+
+      <!-- Draft 2 — high confidence -->
+      <div class="draft-item">
+        <div class="draft-head">
+          <div class="conf-ring conf-high">88%</div>
+          <div class="draft-info">
+            <div class="draft-claim">"Government adding fluoride to water for mind control"</div>
+            <div class="draft-meta-row">
+              <span class="draft-meta">🤖 AI verdict: <strong style="color:var(--v-false-text)">FALSE</strong></span>
+              <span class="draft-meta">📥 24 submissions</span>
+              <span class="draft-meta">⏱ 5 hours ago</span>
+              <span class="draft-meta">📚 Sources: WHO · NHS · CDC</span>
+            </div>
+            <div class="draft-channels">
+              <span class="channel-pill">📱 WhatsApp (19)</span>
+              <span class="channel-pill">✈️ Telegram (5)</span>
+            </div>
+          </div>
+        </div>
+        <div class="draft-actions">
+          <button class="btn btn-review" onclick="showScreen('review',document.querySelector('.nav-item:nth-child(3)'))">Review &amp; Edit →</button>
+          <button class="btn btn-reject">Reject</button>
+          <span class="draft-subs">8 subscribers waiting</span>
+        </div>
+      </div>
+
+      <!-- Draft 3 — medium confidence -->
+      <div class="draft-item">
+        <div class="draft-head">
+          <div class="conf-ring conf-medium">54%</div>
+          <div class="draft-info">
+            <div class="draft-claim">"New tax on WhatsApp messages confirmed by government"</div>
+            <div class="draft-meta-row">
+              <span class="draft-meta">🤖 AI verdict: <strong style="color:var(--v-unvr-text)">UNVERIFIABLE</strong></span>
+              <span class="draft-meta">📥 12 submissions</span>
+              <span class="draft-meta">⏱ 8 hours ago</span>
+              <span class="draft-meta">📚 Sources: 2 unverified regional sites</span>
+            </div>
+            <div class="draft-channels">
+              <span class="channel-pill">📱 WhatsApp (12)</span>
+            </div>
+          </div>
+        </div>
+        <div class="draft-actions">
+          <button class="btn btn-review" onclick="showScreen('review',document.querySelector('.nav-item:nth-child(3)'))">Review &amp; Edit →</button>
+          <button class="btn btn-reject">Reject</button>
+          <span class="draft-subs">3 subscribers waiting</span>
+        </div>
+      </div>
+
+      <!-- Draft 4 -->
+      <div class="draft-item">
+        <div class="draft-head">
+          <div class="conf-ring conf-high">82%</div>
+          <div class="draft-info">
+            <div class="draft-claim">"Petrol price hike of 40% announced for next month"</div>
+            <div class="draft-meta-row">
+              <span class="draft-meta">🤖 AI verdict: <strong style="color:var(--v-false-text)">FALSE</strong></span>
+              <span class="draft-meta">📥 21 submissions</span>
+              <span class="draft-meta">⏱ 10 hours ago</span>
+              <span class="draft-meta">📚 Sources: Ministry · Reuters</span>
+            </div>
+            <div class="draft-channels">
+              <span class="channel-pill">📱 WhatsApp (16)</span>
+              <span class="channel-pill">🌐 Web (5)</span>
+            </div>
+          </div>
+        </div>
+        <div class="draft-actions">
+          <button class="btn btn-review" onclick="showScreen('review',document.querySelector('.nav-item:nth-child(3)'))">Review &amp; Edit →</button>
+          <button class="btn btn-reject">Reject</button>
+          <span class="draft-subs">5 subscribers waiting</span>
+        </div>
+      </div>
+
+    </div><!-- /drafts -->
+
+    <!-- ════ SCREEN 3: DRAFT REVIEW ══════════════════════════ -->
+    <div id="screen-review" class="screen">
+      <div style="margin-bottom:16px">
+        <button class="btn btn-skip" onclick="showScreen('drafts', document.querySelector('.nav-item:nth-child(3)'))">← Back to queue</button>
+      </div>
+
+      <div class="review-layout">
+
+        <!-- Editable draft -->
+        <div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Edit Draft</span>
+              <span style="font-size:12px;color:var(--text-muted)">All fields editable before publishing</span>
+            </div>
+            <div class="panel-body">
+
+              <div class="field-group">
+                <label class="field-label">Verdict</label>
+                <select class="field-select">
+                  <option selected>● FALSE</option>
+                  <option>● MISLEADING</option>
+                  <option>● TRUE</option>
+                  <option>● UNVERIFIABLE</option>
+                  <option>● OUTDATED</option>
+                  <option>● SATIRE</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Headline</label>
+                <input class="field-input" type="text" value="Drinking warm water does not cure viral infections, doctors confirm">
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Verdict summary (shown on results page)</label>
+                <textarea class="field-input" rows="3">Warm water has no antiviral properties. While it can soothe a sore throat, it cannot kill viruses or cure any viral infection. Confirmed by WHO, CDC and multiple virologists.</textarea>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Full verdict body</label>
+                <textarea class="field-input" rows="5">Viruses replicate inside human cells. The temperature of liquids consumed has no effect on viral replication or immune response. The claim that warm water "washes" viruses into the stomach where acid kills them has also been reviewed and found to be unsupported...</textarea>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Evidence <button class="add-evidence-btn" style="width:auto;padding:4px 10px;font-size:12px;margin-left:8px">+ Add source</button></label>
+                <div class="evidence-editor-item">
+                  <div class="ev-num">1</div>
+                  <div class="ev-text">WHO Official Statement — "No evidence warm water prevents viral infections" — Feb 2026 · who.int</div>
+                  <button class="ev-remove">×</button>
+                </div>
+                <div class="evidence-editor-item">
+                  <div class="ev-num">2</div>
+                  <div class="ev-text">The Lancet — Review of 14 studies found no antiviral effect of liquid temperature — Jan 2026 · thelancet.com</div>
+                  <button class="ev-remove">×</button>
+                </div>
+                <div class="evidence-editor-item">
+                  <div class="ev-num">3</div>
+                  <div class="ev-text">CDC Guidance — No recommendation for warm water as treatment for any viral condition — Ongoing · cdc.gov</div>
+                  <button class="ev-remove">×</button>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Claim origin</label>
+                <textarea class="field-input" rows="3">Traces to a voice note recorded in Urdu, circulating on WhatsApp since Feb 2026. Speaker identifies as "Dr. Hamid" — unverified. Identical claim circulated in 2020 and was debunked at that time.</textarea>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Tags</label>
+                <div class="tag-row">
+                  <span class="tag-chip">Health <button>×</button></span>
+                  <span class="tag-chip">India <button>×</button></span>
+                  <span class="tag-chip">WhatsApp forwards <button>×</button></span>
+                  <button class="add-tag">+ Add tag</button>
+                </div>
+              </div>
+
+            </div>
+            <div class="review-action-bar">
+              <button class="btn btn-publish">✓ Publish report</button>
+              <button class="btn btn-reject">✗ Reject</button>
+              <span style="font-size:12px;color:var(--text-muted);margin-left:8px">Publishing notifies 12 subscribers immediately.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI analysis sidebar -->
+        <div>
+          <div class="panel" style="position:sticky;top:76px">
+            <div class="panel-head"><span class="panel-title">AI Analysis</span></div>
+            <div class="panel-body">
+
+              <div class="ai-panel-box">
+                <div class="ai-panel-label">Confidence score</div>
+                <div class="conf-bar-wrap"><div class="conf-bar" style="width:91%"></div></div>
+                <div style="font-size:13px;font-weight:700;color:var(--v-false-text);margin-top:4px">91% — Likely False</div>
+              </div>
+
+              <div class="ai-panel-box">
+                <div class="ai-panel-label">Sources found</div>
+                <div class="ai-sources">
+                  <div class="ai-source-row">
+                    <span class="ai-source-name">WHO</span>
+                    <span class="ai-source-status">✓ Verified</span>
+                  </div>
+                  <div class="ai-source-row">
+                    <span class="ai-source-name">CDC</span>
+                    <span class="ai-source-status">✓ Verified</span>
+                  </div>
+                  <div class="ai-source-row">
+                    <span class="ai-source-name">The Lancet</span>
+                    <span class="ai-source-status">✓ Verified</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ai-panel-box">
+                <div class="ai-panel-label">Submission details</div>
+                <div class="ai-sources">
+                  <div class="ai-source-row"><span class="ai-source-name">Total submissions</span><span style="font-weight:600">38</span></div>
+                  <div class="ai-source-row"><span class="ai-source-name">WhatsApp</span><span style="font-weight:600">31</span></div>
+                  <div class="ai-source-row"><span class="ai-source-name">Web</span><span style="font-weight:600">7</span></div>
+                  <div class="ai-source-row"><span class="ai-source-name">Subscribers waiting</span><span style="font-weight:600;color:var(--brand)">12</span></div>
+                  <div class="ai-source-row"><span class="ai-source-name">First seen</span><span style="font-weight:600">Feb 2026</span></div>
+                </div>
+              </div>
+
+              <div class="ai-panel-box">
+                <div class="ai-panel-label">Similar in database</div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">
+                  2 related articles found. Review before publishing to avoid duplication.
+                  <a href="#" style="color:var(--brand);font-weight:600;display:block;margin-top:6px">View similar →</a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /review -->
+
+    <!-- ════ SCREEN 4: TRENDING QUEUE ════════════════════════ -->
+    <div id="screen-trending" class="screen">
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <span class="queue-health qh-low">⚠ Queue low — 4 cards remaining</span>
+        <span style="font-size:13px;color:var(--text-muted)">Recommended minimum: 10 cards</span>
+      </div>
+
+      <!-- Pinned -->
+      <div class="trending-section-label">📌 Pinned — always live, no expiry</div>
+
+      <div class="pinned-card">
+        <span class="pin-icon">📌</span>
+        <div class="tc-info">
+          <div class="tc-headline">"Warm water does not cure viral infections" — Full report</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source">✓ fcheck.in</span>
+            <span class="tc-expiry">Pinned by Mohammed · No expiry</span>
+          </div>
+        </div>
+        <button class="btn btn-skip" style="font-size:12px">Unpin</button>
+      </div>
+
+      <div class="pinned-card">
+        <span class="pin-icon">📌</span>
+        <div class="tc-info">
+          <div class="tc-headline">"5G towers do not cause headaches" — Reuters Fact Check</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source" style="color:var(--text-secondary)">Reuters Fact Check</span>
+            <span class="tc-expiry">Pinned by Mohammed · No expiry</span>
+          </div>
+        </div>
+        <button class="btn btn-skip" style="font-size:12px">Unpin</button>
+      </div>
+
+      <!-- Approved queue -->
+      <div class="trending-section-label" style="margin-top:20px">
+        Approved queue
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">Drag to reorder · Cards pop from the top after 48h</span>
+      </div>
+
+      <div class="queue-card">
+        <span class="drag-handle">⠿</span>
+        <div class="queue-pos">1</div>
+        <div class="tc-info">
+          <div class="tc-headline">"Fluoride mind control claim" debunked</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source">✓ fcheck.in</span>
+            <span class="tc-expiry">Expires in 31h</span>
+          </div>
+        </div>
+        <button class="btn btn-pin">📌 Pin</button>
+        <button class="btn btn-reject" style="font-size:12px">×</button>
+      </div>
+
+      <div class="queue-card">
+        <span class="drag-handle">⠿</span>
+        <div class="queue-pos">2</div>
+        <div class="tc-info">
+          <div class="tc-headline">"Tax on WhatsApp messages" — claim reviewed</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source" style="color:var(--text-secondary)">AFP Fact Check</span>
+            <span class="tc-expiry warn">⚠ Expires in 5h</span>
+          </div>
+        </div>
+        <button class="btn btn-pin">📌 Pin</button>
+        <button class="btn btn-reject" style="font-size:12px">×</button>
+      </div>
+
+      <div class="queue-card">
+        <span class="drag-handle">⠿</span>
+        <div class="queue-pos">3</div>
+        <div class="tc-info">
+          <div class="tc-headline">"Election results manipulated" claim is misleading</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-misleading">Misleading</span>
+            <span class="tc-source">✓ fcheck.in</span>
+            <span class="tc-expiry warn">⚠ Expires in 3h</span>
+          </div>
+        </div>
+        <button class="btn btn-pin">📌 Pin</button>
+        <button class="btn btn-reject" style="font-size:12px">×</button>
+      </div>
+
+      <div class="queue-card">
+        <span class="drag-handle">⠿</span>
+        <div class="queue-pos">4</div>
+        <div class="tc-info">
+          <div class="tc-headline">"Health minister quote" was fabricated</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source" style="color:var(--text-secondary)">Boom Live</span>
+            <span class="tc-expiry">Expires in 44h</span>
+          </div>
+        </div>
+        <button class="btn btn-pin">📌 Pin</button>
+        <button class="btn btn-reject" style="font-size:12px">×</button>
+      </div>
+
+      <!-- Candidates -->
+      <div class="trending-section-label" style="margin-top:24px">
+        Candidates awaiting approval
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">Surfaced by submission volume, recency &amp; verdict weight</span>
+      </div>
+
+      <div class="candidate-card">
+        <div class="cand-subs">
+          <div class="cand-subs-num">67</div>
+          <div class="cand-subs-label">subs</div>
+        </div>
+        <div class="tc-info">
+          <div class="tc-headline">"Vaccine causes infertility" — comprehensive debunk</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source" style="color:var(--text-secondary)">Snopes</span>
+            <span class="tc-expiry">3 hours ago</span>
+          </div>
+        </div>
+        <button class="btn btn-approve">✓ Approve</button>
+        <button class="btn btn-skip">Skip 24h</button>
+      </div>
+
+      <div class="candidate-card">
+        <div class="cand-subs">
+          <div class="cand-subs-num">43</div>
+          <div class="cand-subs-label">subs</div>
+        </div>
+        <div class="tc-info">
+          <div class="tc-headline">"Petrol price hike of 40%" is false</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-false">False</span>
+            <span class="tc-source">✓ fcheck.in</span>
+            <span class="tc-expiry">6 hours ago</span>
+          </div>
+        </div>
+        <button class="btn btn-approve">✓ Approve</button>
+        <button class="btn btn-skip">Skip 24h</button>
+      </div>
+
+      <div class="candidate-card">
+        <div class="cand-subs">
+          <div class="cand-subs-num">28</div>
+          <div class="cand-subs-label">subs</div>
+        </div>
+        <div class="tc-info">
+          <div class="tc-headline">"Currency devaluation secretly approved" is misleading</div>
+          <div class="tc-meta-row">
+            <span class="vbadge vb-misleading">Misleading</span>
+            <span class="tc-source" style="color:var(--text-secondary)">Reuters</span>
+            <span class="tc-expiry">9 hours ago</span>
+          </div>
+        </div>
+        <button class="btn btn-approve">✓ Approve</button>
+        <button class="btn btn-skip">Skip 24h</button>
+      </div>
+
+      <button class="nominate-btn">+ Manually nominate a report for trending</button>
+
+    </div><!-- /trending -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  const screenTitles = {
+    overview: 'Overview',
+    drafts:   'Draft Queue',
+    review:   'Review Draft — "Warm water cures viral infections"',
+    trending: 'Trending Queue'
+  };
+
+  function showScreen(id, navItem) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    document.getElementById('topbar-title').textContent = screenTitles[id] || id;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (navItem) navItem.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

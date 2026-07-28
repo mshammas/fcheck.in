@@ -1,0 +1,414 @@
+---
+/**
+ * The hero search bar.
+ *
+ * One input accepting any combination of content at once — text, links, files.
+ * There is deliberately no type selector: the system detects what was pasted.
+ * Detected content is shown as chips so the user can confirm what was picked
+ * up before submitting.
+ *
+ * Detection logic (detectContent / guessUrlType / addChip / handleFiles /
+ * drag-drop) is carried over from wireframes/homepage.html.
+ */
+interface Props {
+  factCheckerCount: number;
+}
+
+const { factCheckerCount } = Astro.props;
+---
+
+<div class="search-wrap">
+  <form id="check-form" novalidate>
+    <div class="search-bar" id="search-bar-wrap">
+      <button type="button" class="attach-btn" id="attach-btn" title="Attach files" aria-label="Attach files">
+        📎
+      </button>
+      <input
+        class="search-input"
+        id="main-input"
+        name="text"
+        type="text"
+        autocomplete="off"
+        placeholder="Paste text, links, or any combination…"
+        aria-label="Paste a claim, link, or attach a file to fact-check"
+      />
+      <button type="submit" class="search-btn" id="submit-btn" title="Check" aria-label="Check this claim">
+        <span class="arrow" aria-hidden="true">→</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <input
+      type="file"
+      id="file-input"
+      multiple
+      accept="image/*,video/*,audio/*,.pdf"
+      hidden
+    />
+
+    <div class="detected-row" id="detected-row" aria-live="polite">
+      <span class="detected-hint">Accepts any combination — text, links, images, video</span>
+    </div>
+
+    <div class="attachments-row" id="attachments-row"></div>
+
+    <div class="filter-row">
+      <button type="button" class="fchip" id="country-chip">🌍 Country: All</button>
+      <button type="button" class="fchip" id="language-chip">🗣 Language: All</button>
+    </div>
+
+    <p class="status" id="check-status" role="status" hidden></p>
+  </form>
+
+  <p class="trust-note">
+    Checked by <strong>{factCheckerCount} trusted fact-checkers</strong> worldwide
+  </p>
+</div>
+
+<style>
+  .search-wrap { max-width: 700px; margin: 0 auto; }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    padding: 6px 6px 6px 18px;
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-bar:focus-within {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1), var(--shadow);
+  }
+
+  .search-bar.dragover { border-color: var(--brand); }
+
+  .attach-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .attach-btn:hover { color: var(--brand); }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--text-primary);
+    background: transparent;
+    padding: 10px 0;
+    min-width: 0;
+  }
+
+  .search-input::placeholder { color: var(--text-muted); }
+
+  .search-btn {
+    position: relative;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 13px;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .search-btn:hover { background: var(--brand-dark); }
+  .search-btn:active { transform: scale(0.95); }
+  .search-btn:disabled { background: var(--text-muted); cursor: wait; transform: none; }
+
+  .spinner { display: none; }
+
+  .search-btn.busy .arrow { display: none; }
+  .search-btn.busy .spinner {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .detected-row,
+  .attachments-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+
+  .detected-row { min-height: 28px; }
+  .attachments-row { gap: 8px; margin-top: 10px; }
+
+  .detected-chip,
+  .attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--r-pill);
+    padding: 4px 10px;
+  }
+
+  .detected-chip {
+    color: var(--brand-dark);
+    background: var(--brand-light);
+    border: 1px solid var(--brand-mid);
+  }
+
+  .attachment-chip {
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    gap: 6px;
+  }
+
+  .remove {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 0 0 0 2px;
+    transition: color 0.15s;
+  }
+
+  .remove:hover { color: var(--verdict-false-text); }
+
+  .detected-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .filter-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .fchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .fchip:hover { border-color: var(--brand); color: var(--brand); }
+
+  .status {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .status.error { color: var(--verdict-false-text); }
+
+  .trust-note {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .trust-note strong { color: var(--text-secondary); font-weight: 600; }
+
+  @media (max-width: 720px) {
+    .search-bar { padding: 5px 5px 5px 14px; border-radius: 16px; }
+    .search-input { font-size: 16px; } /* keep >=16px so iOS doesn't zoom */
+    .search-btn { width: 42px; height: 42px; border-radius: 11px; }
+    .filter-row { flex-wrap: wrap; }
+  }
+</style>
+
+<script>
+  const URL_RE = /(https?:\/\/[^\s]+)/g;
+
+  const form = document.getElementById('check-form') as HTMLFormElement | null;
+  const input = document.getElementById('main-input') as HTMLInputElement | null;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
+  const bar = document.getElementById('search-bar-wrap');
+  const detectedRow = document.getElementById('detected-row');
+  const attachRow = document.getElementById('attachments-row');
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('check-status');
+  const attachBtn = document.getElementById('attach-btn');
+
+  if (!form || !input || !fileInput || !bar || !detectedRow || !attachRow || !submitBtn || !statusEl) {
+    throw new Error('SearchBar: expected elements missing');
+  }
+
+  /** Files staged for this submission. Kept in JS so chips can be removed. */
+  const attached: File[] = [];
+
+  function guessUrlType(url: string): string {
+    if (/youtube|youtu\.be|tiktok|vimeo/i.test(url)) return '🎬 Video URL detected';
+    if (/twitter|x\.com|instagram|facebook|fb\.com/i.test(url)) return '🔗 Social post URL detected';
+    if (/\.(jpg|jpeg|png|gif|webp)/i.test(url)) return '🖼 Image URL detected';
+    return '🔗 URL detected';
+  }
+
+  function addChip(container: HTMLElement, label: string, onRemove?: () => void) {
+    const chip = document.createElement('span');
+    chip.className = container === attachRow ? 'attachment-chip' : 'detected-chip';
+    chip.append(label);
+    if (onRemove) {
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'remove';
+      x.textContent = '×';
+      x.setAttribute('aria-label', `Remove ${label}`);
+      x.addEventListener('click', onRemove);
+      chip.appendChild(x);
+    }
+    container.appendChild(chip);
+  }
+
+  /** Re-renders the detection chips from current input + attachments. */
+  function detectContent() {
+    const val = input!.value;
+    detectedRow!.replaceChildren();
+
+    const urls = val.match(URL_RE) ?? [];
+    const hasText = val.replace(URL_RE, '').trim().length > 0;
+
+    if (!hasText && urls.length === 0 && attached.length === 0) {
+      const hint = document.createElement('span');
+      hint.className = 'detected-hint';
+      hint.textContent = 'Accepts any combination — text, links, images, video';
+      detectedRow!.appendChild(hint);
+      return;
+    }
+
+    if (hasText) addChip(detectedRow!, '📝 Text detected');
+    urls.forEach((url) => addChip(detectedRow!, guessUrlType(url)));
+    if (attached.length) {
+      addChip(detectedRow!, `📎 ${attached.length} file${attached.length > 1 ? 's' : ''} attached`);
+    }
+  }
+
+  function renderAttachments() {
+    attachRow!.replaceChildren();
+    attached.forEach((file, i) => {
+      const icon = file.type.startsWith('video')
+        ? '🎬'
+        : file.type.startsWith('audio')
+          ? '🎵'
+          : file.type.startsWith('image')
+            ? '🖼'
+            : '📄';
+      addChip(attachRow!, `${icon} ${file.name}`, () => {
+        attached.splice(i, 1);
+        renderAttachments();
+        detectContent();
+      });
+    });
+  }
+
+  function handleFiles(files: FileList | null) {
+    if (!files) return;
+    attached.push(...Array.from(files));
+    renderAttachments();
+    detectContent();
+  }
+
+  function setStatus(message: string, isError = false) {
+    statusEl!.textContent = message;
+    statusEl!.hidden = !message;
+    statusEl!.classList.toggle('error', isError);
+  }
+
+  input.addEventListener('input', detectContent);
+  attachBtn?.addEventListener('click', () => fileInput!.click());
+  fileInput.addEventListener('change', () => {
+    handleFiles(fileInput!.files);
+    fileInput!.value = '';
+  });
+
+  bar.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    bar.classList.add('dragover');
+  });
+  bar.addEventListener('dragleave', () => bar.classList.remove('dragover'));
+  bar.addEventListener('drop', (e) => {
+    e.preventDefault();
+    bar.classList.remove('dragover');
+    handleFiles((e as DragEvent).dataTransfer?.files ?? null);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const text = input!.value.trim();
+    if (!text && attached.length === 0) {
+      setStatus('Paste a claim, a link, or attach a file to check.', true);
+      input!.focus();
+      return;
+    }
+
+    submitBtn!.disabled = true;
+    submitBtn!.classList.add('busy');
+    setStatus('Checking — searching fcheck.in, then the fact-checker network…');
+
+    try {
+      const res = await fetch('/api/v1/check', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          urls: text.match(URL_RE) ?? [],
+          files: attached.map((f) => ({ name: f.name, type: f.type, size: f.size })),
+          channel: 'web',
+        }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error || `Check failed (${res.status})`);
+      }
+
+      const data = (await res.json()) as { url: string };
+      window.location.assign(data.url);
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
+      submitBtn!.disabled = false;
+      submitBtn!.classList.remove('busy');
+    }
+  });
+</script>

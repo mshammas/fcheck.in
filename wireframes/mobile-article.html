@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Article (Mobile)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:       #0D9488;
+      --brand-dark:  #0F766E;
+      --brand-light: #F0FDFA;
+      --brand-mid:   #99F6E4;
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-muted:     #94A3B8;
+      --border:  #E2E8F0;
+      --surface: #FFFFFF;
+      --bg:      #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body:  'Inter', sans-serif;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow:    0 4px 12px rgba(0,0,0,0.08);
+
+      /* verdict colours */
+      --false:       #EF4444; --false-bg:       #FEF2F2; --false-border:       #FECACA;
+      --misleading:  #F97316; --misleading-bg:  #FFF7ED; --misleading-border:  #FED7AA;
+      --true:        #22C55E; --true-bg:        #F0FDF4; --true-border:        #BBF7D0;
+      --unverifiable:#8B5CF6; --unverifiable-bg:#F5F3FF; --unverifiable-border:#DDD6FE;
+      --outdated:    #EAB308; --outdated-bg:    #FEFCE8; --outdated-border:    #FEF08A;
+      --satire:      #EC4899; --satire-bg:      #FDF2F8; --satire-border:      #FBCFE8;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: #CBD5E1;
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── WF NAV BAR ─────────────────────────────── */
+    .wf-nav {
+      position: sticky; top: 0; z-index: 1000;
+      height: 36px;
+      background: #0F172A;
+      display: flex; align-items: center;
+      padding: 0 12px; gap: 6px;
+      overflow-x: auto; white-space: nowrap;
+      scrollbar-width: none;
+    }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label {
+      font-size: 10px; font-weight: 700; color: #64748B;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-right: 4px; flex-shrink: 0;
+    }
+    .wf-nav a {
+      font-size: 11px; color: #94A3B8; text-decoration: none;
+      padding: 3px 8px; border-radius: 4px; flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: var(--brand); color: white; }
+    .wf-nav a.disabled { color: #334155; pointer-events: none; }
+    .wf-nav .divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+
+    /* ── PHONE FRAME ─────────────────────────────── */
+    .phone-wrap {
+      max-width: 390px;
+      margin: 24px auto 48px;
+      background: var(--surface);
+      box-shadow: 0 0 0 1px #94A3B8, 0 20px 60px rgba(0,0,0,0.25);
+      border-radius: 24px;
+      overflow: clip;
+      position: relative;
+    }
+
+    /* ── STICKY PHONE HEADER ─────────────────────── */
+    .phone-header {
+      position: sticky; top: 36px; z-index: 200;
+      background: var(--text-primary);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 26px; height: 26px; background: var(--brand);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 13px; font-weight: 800;
+    }
+    .logo-name {
+      font-family: var(--font-brand); font-weight: 800; font-size: 17px; color: white;
+    }
+    .logo-name span { color: var(--brand); }
+    .hamburger {
+      width: 32px; height: 32px; background: #1E293B; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #94A3B8; font-size: 16px; border: none;
+    }
+
+    /* ── BACK BAR ────────────────────────────────── */
+    .back-bar {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--brand); font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── ARTICLE CONTENT ─────────────────────────── */
+    .article-body { padding-bottom: 0; }
+
+    /* hero */
+    .article-hero {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .article-meta {
+      font-size: 12px; color: var(--text-muted); margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .source-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--brand-light); color: var(--brand);
+      font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+      border: 1px solid var(--brand-mid);
+    }
+    .meta-dot { color: var(--border); }
+
+    .verdict-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 800; letter-spacing: 0.3px;
+      padding: 4px 12px 4px 8px; border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .verdict-badge::before { content: '●'; font-size: 9px; }
+    .verdict-false { color: var(--false); background: var(--false-bg); border: 1px solid var(--false-border); }
+    .verdict-misleading { color: var(--misleading); background: var(--misleading-bg); border: 1px solid var(--misleading-border); }
+    .verdict-true { color: var(--true); background: var(--true-bg); border: 1px solid var(--true-border); }
+
+    .article-headline {
+      font-family: var(--font-brand); font-size: 17px; font-weight: 700;
+      color: var(--text-primary); line-height: 1.4;
+    }
+
+    /* sections */
+    .section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+      font-family: var(--font-brand); font-size: 14px; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .section-verdict {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700;
+      color: var(--false); background: var(--false-bg);
+      padding: 2px 8px; border-radius: 10px;
+      border: 1px solid var(--false-border);
+    }
+    .section-verdict::before { content: '●'; font-size: 7px; }
+
+    .section-text {
+      font-size: 14px; color: var(--text-secondary); line-height: 1.65;
+    }
+    .claim-quote {
+      font-size: 14px; font-style: italic; color: var(--text-primary);
+      border-left: 3px solid var(--brand); padding-left: 12px;
+      margin-bottom: 10px; line-height: 1.6;
+    }
+    .claim-context {
+      font-size: 13px; color: var(--text-secondary);
+    }
+
+    /* evidence */
+    .evidence-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 12px;
+      margin-bottom: 8px;
+    }
+    .evidence-card:last-child { margin-bottom: 0; }
+    .evidence-num {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 4px;
+    }
+    .evidence-source {
+      font-size: 13px; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 2px; display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .evidence-date { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+    .evidence-snippet {
+      font-size: 12px; color: var(--text-secondary); line-height: 1.5;
+    }
+    .evidence-link {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 11px; font-weight: 600; color: var(--brand);
+      margin-top: 6px; text-decoration: none;
+    }
+
+    /* also reported by */
+    .also-list { display: flex; flex-direction: column; gap: 0; }
+    .also-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .also-item:last-child { border-bottom: none; }
+    .also-info { display: flex; flex-direction: column; gap: 2px; }
+    .also-org { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .also-meta { font-size: 11px; color: var(--text-muted); }
+    .also-verdict-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; color: var(--false);
+      background: var(--false-bg); padding: 1px 6px; border-radius: 8px;
+      border: 1px solid var(--false-border);
+    }
+    .also-verdict-chip::before { content: '●'; font-size: 7px; }
+    .also-view-btn {
+      font-size: 12px; font-weight: 600; color: var(--brand);
+      background: var(--brand-light); border: 1px solid var(--brand-mid);
+      border-radius: var(--r-sm); padding: 5px 10px; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* feedback */
+    .feedback-row {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+    }
+    .feedback-label {
+      font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;
+      text-align: center;
+    }
+    .feedback-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 20px; border-radius: var(--r-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .feedback-btn:hover { background: var(--bg); border-color: var(--brand-mid); }
+
+    /* related */
+    .related-card {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); text-decoration: none;
+      margin-bottom: 8px;
+    }
+    .related-thumb {
+      width: 52px; height: 40px; background: var(--border);
+      border-radius: 6px; flex-shrink: 0; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 18px; color: var(--text-muted);
+    }
+    .related-info { flex: 1; min-width: 0; }
+    .related-verdict {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px; margin-bottom: 4px;
+    }
+    .related-verdict.false { color: var(--false); background: var(--false-bg); border: 1px solid var(--false-border); }
+    .related-verdict.false::before { content: '●'; font-size: 7px; }
+    .related-verdict.misleading { color: var(--misleading); background: var(--misleading-bg); border: 1px solid var(--misleading-border); }
+    .related-verdict.misleading::before { content: '●'; font-size: 7px; }
+    .related-title {
+      font-size: 13px; font-weight: 600; color: var(--text-primary);
+      line-height: 1.4; margin-bottom: 3px;
+    }
+    .related-meta { font-size: 11px; color: var(--text-muted); }
+
+    /* ── STICKY BOTTOM AREA ─────────────────────── */
+    .bottom-area {
+      position: sticky; bottom: 0; z-index: 200;
+    }
+    .share-tldr-row {
+      background: var(--surface);
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .share-tldr-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px; border-radius: var(--r-sm);
+      background: var(--brand); color: white;
+      font-size: 14px; font-weight: 700; cursor: pointer; border: none;
+      transition: background 0.15s;
+    }
+    .share-tldr-btn:hover { background: var(--brand-dark); }
+
+    /* ── BOTTOM NAV ──────────────────────────────── */
+    .bottom-nav {
+      display: flex; align-items: stretch;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .nav-tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 2px; padding: 10px 4px 12px;
+      font-size: 10px; font-weight: 600; color: var(--text-muted);
+      cursor: pointer; border: none; background: none;
+      text-decoration: none; transition: color 0.15s;
+    }
+    .nav-tab.active { color: var(--brand); }
+    .nav-tab .tab-icon { font-size: 18px; line-height: 1; }
+
+    /* ── OVERLAY ─────────────────────────────────── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 500;
+    }
+    .overlay.open { display: block; }
+
+    /* ── BOTTOM SHEET ────────────────────────────── */
+    .bottom-sheet {
+      position: fixed; bottom: 0; left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      max-width: 390px; width: 100%;
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      z-index: 600;
+      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+      padding: 12px 20px 32px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .bottom-sheet.open { transform: translateX(-50%) translateY(0); }
+
+    .sheet-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 16px;
+    }
+    .sheet-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .sheet-title {
+      font-family: var(--font-brand); font-size: 16px; font-weight: 700;
+      color: var(--text-primary);
+    }
+    .sheet-done {
+      font-size: 13px; font-weight: 600; color: var(--brand);
+      cursor: pointer; border: none; background: none; padding: 4px 8px;
+    }
+
+    .share-preview {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 14px;
+      font-size: 13px; line-height: 1.6; color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .share-preview strong { color: var(--false); }
+    .regenerate-btn {
+      font-size: 12px; font-weight: 600; color: var(--brand);
+      background: none; border: none; cursor: pointer;
+      padding: 4px 0; display: flex; align-items: center; gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .share-channel {
+      width: 100%;
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-size: 14px; font-weight: 600;
+      color: var(--text-primary); cursor: pointer; margin-bottom: 8px;
+      transition: background 0.15s;
+    }
+    .share-channel:last-child { margin-bottom: 0; }
+    .share-channel:hover { background: var(--brand-light); border-color: var(--brand-mid); }
+    .share-channel .ch-icon { font-size: 20px; }
+  </style>
+</head>
+<body>
+
+<!-- WF NAV BAR -->
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html">Admin</a>
+  <div class="divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html" class="active">📱 Article</a>
+  <a href="mobile-admin.html">📱 Admin</a>
+  <div class="divider"></div>
+  <a href="architecture.html">Architecture</a>
+  <a href="design-system.html">Design System</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="data-model.html">Data Model</a>
+</nav>
+
+<!-- PHONE FRAME -->
+<div class="phone-wrap">
+
+  <!-- STICKY HEADER -->
+  <header class="phone-header">
+    <a class="logo" href="#">
+      <div class="logo-mark">✓</div>
+      <span class="logo-name">f<span>check</span>.in</span>
+    </a>
+    <button class="hamburger">≡</button>
+  </header>
+
+  <!-- BACK BAR -->
+  <div class="back-bar">
+    ← Back to results
+  </div>
+
+  <!-- ARTICLE BODY -->
+  <div class="article-body">
+
+    <!-- Hero -->
+    <div class="article-hero">
+      <div class="article-meta">
+        <span class="source-badge">✓ fcheck.in</span>
+        <span class="meta-dot">·</span>
+        <span>Mar 2026</span>
+        <span class="meta-dot">·</span>
+        <span>Health · India · English</span>
+      </div>
+      <div class="verdict-badge verdict-false">FALSE</div>
+      <div class="article-headline">"Drinking warm water does not cure viral infections"</div>
+    </div>
+
+    <!-- The Claim -->
+    <div class="section">
+      <div class="section-title">The Claim</div>
+      <div class="claim-quote">"Drinking warm water kills viruses and cures infections including COVID."</div>
+      <div class="claim-context">Circulating on WhatsApp via voice notes since Feb 2026 across South Asia.</div>
+    </div>
+
+    <!-- Our Verdict -->
+    <div class="section">
+      <div class="section-title">
+        Our Verdict
+        <span class="section-verdict">FALSE</span>
+      </div>
+      <div class="section-text">Warm water has no antiviral properties. While it may soothe a sore throat, it cannot kill viruses or cure infections. Confirmed by WHO, CDC and multiple virologists.</div>
+    </div>
+
+    <!-- Evidence -->
+    <div class="section">
+      <div class="section-title">Evidence</div>
+
+      <div class="evidence-card">
+        <div class="evidence-num">Source 1</div>
+        <div class="evidence-source">
+          WHO Statement
+          <span class="evidence-date">Feb 2026</span>
+        </div>
+        <div class="evidence-snippet">"No evidence warm water prevents any viral infection or reduces viral load in the body…"</div>
+        <a class="evidence-link" href="#">View source →</a>
+      </div>
+
+      <div class="evidence-card">
+        <div class="evidence-num">Source 2</div>
+        <div class="evidence-source">
+          The Lancet
+          <span class="evidence-date">Jan 2026</span>
+        </div>
+        <div class="evidence-snippet">Review of 14 studies found no antiviral effect from warm water consumption under controlled conditions…</div>
+        <a class="evidence-link" href="#">View source →</a>
+      </div>
+
+      <div class="evidence-card">
+        <div class="evidence-num">Source 3</div>
+        <div class="evidence-source">
+          CDC Guidance
+          <span class="evidence-date">Ongoing</span>
+        </div>
+        <div class="evidence-snippet">No recommendation for warm water as treatment for any viral infection. Standard hand hygiene and vaccination remain primary preventive measures…</div>
+        <a class="evidence-link" href="#">View source →</a>
+      </div>
+    </div>
+
+    <!-- Where did this come from? -->
+    <div class="section">
+      <div class="section-title">Where did this claim come from?</div>
+      <div class="section-text">Traced to a voice note on WhatsApp attributed to "a doctor." No such doctor has been identified. A similar claim circulated widely in 2020 during the early COVID-19 pandemic and was debunked then too.</div>
+    </div>
+
+    <!-- Also reported by -->
+    <div class="section">
+      <div class="section-title">Also reported by</div>
+      <div class="also-list">
+        <div class="also-item">
+          <div class="also-info">
+            <div class="also-org">Boom Live</div>
+            <div class="also-meta"><span class="also-verdict-chip">FALSE</span> · Mar 2026</div>
+          </div>
+          <button class="also-view-btn">View</button>
+        </div>
+        <div class="also-item">
+          <div class="also-info">
+            <div class="also-org">AFP Fact Check</div>
+            <div class="also-meta"><span class="also-verdict-chip">FALSE</span> · Feb 2026</div>
+          </div>
+          <button class="also-view-btn">View</button>
+        </div>
+        <div class="also-item">
+          <div class="also-info">
+            <div class="also-org">Full Fact</div>
+            <div class="also-meta"><span class="also-verdict-chip">FALSE</span> · Jan 2026</div>
+          </div>
+          <button class="also-view-btn">View</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Was this helpful? -->
+    <div class="section">
+      <div class="feedback-label">Was this helpful?</div>
+      <div class="feedback-row">
+        <button class="feedback-btn" onclick="this.style.background='#F0FDF4';this.style.borderColor='#BBF7D0';this.style.color='#15803D'">👍 Yes</button>
+        <button class="feedback-btn" onclick="this.style.background='#FEF2F2';this.style.borderColor='#FECACA';this.style.color='#B91C1C'">👎 No</button>
+      </div>
+    </div>
+
+    <!-- Related fact-checks -->
+    <div class="section" style="border-bottom: none;">
+      <div class="section-title">Related fact-checks</div>
+
+      <a class="related-card" href="#">
+        <div class="related-thumb">🖼</div>
+        <div class="related-info">
+          <div class="related-verdict false">FALSE</div>
+          <div class="related-title">Lemon water does not boost immunity or kill viruses</div>
+          <div class="related-meta">✓ fcheck.in · 1w ago</div>
+        </div>
+      </a>
+
+      <a class="related-card" href="#">
+        <div class="related-thumb">🖼</div>
+        <div class="related-info">
+          <div class="related-verdict misleading">MISLEADING</div>
+          <div class="related-title">Steam inhalation claim partially accurate but overstated</div>
+          <div class="related-meta">Snopes · 2w ago</div>
+        </div>
+      </a>
+    </div>
+
+  </div><!-- /article-body -->
+
+  <!-- STICKY BOTTOM AREA -->
+  <div class="bottom-area">
+    <div class="share-tldr-row">
+      <button class="share-tldr-btn" onclick="openSheet('shareSheet')">
+        📤 Share TL;DR
+      </button>
+    </div>
+    <nav class="bottom-nav">
+      <a class="nav-tab" href="mobile-homepage.html">
+        <span class="tab-icon">🔍</span>
+        Search
+      </a>
+      <a class="nav-tab" href="mobile-homepage.html#editorial">
+        <span class="tab-icon">📰</span>
+        Reports
+      </a>
+      <a class="nav-tab" href="#">
+        <span class="tab-icon">➕</span>
+        Submit
+      </a>
+    </nav>
+  </div>
+
+</div><!-- /phone-wrap -->
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- SHARE BOTTOM SHEET -->
+<div class="bottom-sheet" id="shareSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Share this report</div>
+    <button class="sheet-done" onclick="closeAll()">Done</button>
+  </div>
+
+  <div class="share-preview">
+    <strong>FALSE:</strong> Warm water has no antiviral properties. WHO confirms no viral infection can be cured by drinking warm water. This claim has been circulating since 2020 and was debunked then too.<br><br>Full report: fcheck.in/a/xyz123
+  </div>
+  <button class="regenerate-btn">↺ Regenerate</button>
+
+  <button class="share-channel"><span class="ch-icon">📱</span> WhatsApp</button>
+  <button class="share-channel"><span class="ch-icon">🐦</span> Twitter / X</button>
+  <button class="share-channel"><span class="ch-icon">📘</span> Facebook</button>
+  <button class="share-channel"><span class="ch-icon">📋</span> Copy text</button>
+  <button class="share-channel"><span class="ch-icon">📧</span> Email</button>
+</div>
+
+<script>
+  function openSheet(id) {
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById(id).classList.add('open');
+  }
+  function closeAll() {
+    document.getElementById('overlay').classList.remove('open');
+    document.querySelectorAll('.bottom-sheet').forEach(s => s.classList.remove('open'));
+  }
+</script>
+
+</body>
+</html>

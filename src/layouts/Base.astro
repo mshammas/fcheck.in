@@ -1,0 +1,275 @@
+---
+/**
+ * Shared page shell — header, footer, fonts, tokens.
+ * Markup and CSS follow wireframes/homepage.html; the wireframe-only nav strip
+ * at the top of those files is deliberately not carried over.
+ */
+import '../styles/tokens.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Hides the header's Search/Editorial toggle on pages where it has no meaning. */
+  showModeToggle?: boolean;
+}
+
+const {
+  title,
+  description = 'Fact-check anything, instantly. fcheck.in aggregates the world’s trusted fact-checkers and publishes reviewed original reports.',
+  showModeToggle = false,
+} = Astro.props;
+
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0D9488" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <a href="/" class="logo">
+          <span class="logo-mark" aria-hidden="true">✓</span>
+          <span class="logo-text">f<span class="logo-accent">check</span>.in</span>
+        </a>
+
+        <nav aria-label="Main">
+          <a href="/about">About</a>
+          <a href="/reports">Reports</a>
+          <a href="/" class="cta">Submit a Claim</a>
+        </nav>
+
+        {
+          showModeToggle && (
+            <div class="mode-toggle" role="tablist" aria-label="View mode">
+              <button type="button" class="active" data-mode="search" role="tab" aria-selected="true">
+                Search
+              </button>
+              <button type="button" data-mode="editorial" role="tab" aria-selected="false">
+                Editorial
+              </button>
+            </div>
+          )
+        }
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer>
+      <div class="footer-links">
+        <a href="/about">About fcheck.in</a>
+        <a href="/how-it-works">How it works</a>
+        <a href="/journalists">For Journalists</a>
+        <a href="/api">API</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/contact">Contact</a>
+      </div>
+      <p>© {year} fcheck.in — Making fact-checking accessible to everyone.</p>
+      <p class="stance">
+        fcheck.in is non-partisan. Sources and methodology are shown on every report.
+      </p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+  }
+
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .logo {
+    font-family: var(--font-brand);
+    font-weight: 800;
+    font-size: 19px;
+    color: var(--text-primary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+    background: var(--brand);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .logo-accent { color: var(--brand); }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  nav a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: var(--r-xs);
+    transition: color 0.15s, background 0.15s;
+  }
+
+  nav a:hover { color: var(--text-primary); background: var(--bg); }
+
+  nav a.cta {
+    color: var(--brand);
+    background: var(--brand-light);
+    border: 1px solid var(--brand-mid);
+    font-weight: 600;
+  }
+
+  nav a.cta:hover { background: #CCFBF1; }
+
+  .mode-toggle {
+    display: flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .mode-toggle button {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 18px;
+    border-radius: var(--r-sm);
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .mode-toggle button.active {
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 36px 32px 44px;
+    text-align: center;
+    margin-top: 64px;
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    margin-bottom: 16px;
+  }
+
+  .footer-links a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .footer-links a:hover { color: var(--brand); }
+
+  footer p {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .stance { margin-top: 6px; }
+
+  /* ── Mobile ─────────────────────────────────────────────
+     Mirrors wireframes/mobile-homepage.html: the nav links collapse and
+     the mode toggle takes the full row under the logo. */
+  @media (max-width: 720px) {
+    header { padding: 0 16px; }
+
+    .header-inner {
+      height: auto;
+      padding: 12px 0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    nav a:not(.cta) { display: none; }
+
+    .mode-toggle { width: 100%; }
+    .mode-toggle button { flex: 1; }
+
+    footer { padding: 28px 16px 36px; margin-top: 40px; }
+  }
+</style>
+
+<script>
+  // Search / Editorial toggle. Preference persists across visits — a returning
+  // reader who prefers Editorial should not have to switch every time.
+  const KEY = 'fcheck:mode';
+  const toggle = document.querySelector<HTMLElement>('.mode-toggle');
+
+  function apply(mode: string) {
+    document.querySelectorAll<HTMLElement>('[data-mode-panel]').forEach((panel) => {
+      panel.hidden = panel.dataset.modePanel !== mode;
+    });
+    toggle?.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+      const on = b.dataset.mode === mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-mode]');
+      if (!btn?.dataset.mode) return;
+      localStorage.setItem(KEY, btn.dataset.mode);
+      apply(btn.dataset.mode);
+    });
+
+    apply(localStorage.getItem(KEY) || 'search');
+  }
+</script>

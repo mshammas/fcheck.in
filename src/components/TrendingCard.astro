@@ -1,0 +1,130 @@
+---
+/**
+ * Trending queue card.
+ *
+ * fcheck.in originals get the brand treatment; external cards carry the source
+ * name. Attribution is always visible — that distinction is the point of the
+ * card, not decoration.
+ */
+import type { SourceType, Verdict } from '../lib/types';
+import VerdictBadge from './VerdictBadge.astro';
+import SourceBadge from './SourceBadge.astro';
+
+interface Props {
+  headline: string;
+  verdict: Verdict | null;
+  sourceType: SourceType;
+  url: string;
+  publishedAt: string | null;
+  attribution?: { name: string; tier: 1 | 2 | null; url: string | null } | null;
+}
+
+const { headline, verdict, sourceType, url, publishedAt, attribution = null } = Astro.props;
+const isOwn = sourceType === 'original';
+const date = publishedAt ? relativeDate(publishedAt) : null;
+
+function relativeDate(iso: string): string {
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return '';
+  const hours = Math.round((Date.now() - then) / 3_600_000);
+  if (hours < 1) return 'just now';
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(then).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+}
+---
+
+<a class:list={['card', isOwn ? 'own' : 'ext']} href={url}>
+  <div class="card-img" aria-hidden="true">
+    <span>{isOwn ? '✓' : '⬢'}</span>
+  </div>
+  <div class="card-body">
+    <VerdictBadge verdict={verdict} size="sm" />
+    <h3 class="card-hl">{headline}</h3>
+    <div class="card-foot">
+      <SourceBadge name={attribution?.name ?? null} tier={attribution?.tier ?? null} />
+      {date && <span class="card-date">{date}</span>}
+    </div>
+  </div>
+</a>
+
+<style>
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    flex-shrink: 0;
+    width: 224px;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-3px);
+  }
+
+  .card.own:hover { border-color: var(--brand-mid); }
+  .card.ext:hover { border-color: var(--type-2-bd); }
+
+  .card-img {
+    width: 100%;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+  }
+
+  .own .card-img {
+    background: linear-gradient(135deg, var(--brand-light) 0%, #CCFBF1 100%);
+    color: var(--brand);
+  }
+
+  .ext .card-img {
+    background: linear-gradient(135deg, var(--type-2-bg) 0%, var(--type-2-bd) 100%);
+    color: var(--type-2-text);
+  }
+
+  .card-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .card-hl {
+    font-family: var(--font-brand);
+    font-weight: 600;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .card-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .card { width: 200px; }
+  }
+</style>

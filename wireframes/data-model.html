@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Data Model</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #0D9488; --brand-dark: #0F766E; --brand-light: #F0FDFA; --brand-mid: #99F6E4;
+      --text-primary: #0F172A; --text-secondary: #475569; --text-muted: #94A3B8;
+      --border: #E2E8F0; --surface: #FFFFFF; --bg: #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .wf-nav { position: sticky; top: 0; z-index: 1000; height: 36px; background: #0F172A; display: flex; align-items: center; padding: 0 12px; gap: 6px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; flex-shrink: 0; }
+    .wf-nav a { font-size: 11px; color: #94A3B8; text-decoration: none; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: var(--brand); color: white; }
+    .wf-nav .wf-divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+
+    .page-header { background: var(--text-primary); padding: 40px 48px 36px; }
+    .page-header-inner { max-width: 1200px; margin: 0 auto; }
+    .breadcrumb { font-size: 12px; color: #64748B; margin-bottom: 12px; }
+    .breadcrumb a { color: var(--brand); text-decoration: none; }
+    .page-title { font-family: var(--font-brand); font-size: 28px; font-weight: 800; color: white; margin-bottom: 8px; }
+    .page-subtitle { font-size: 14px; color: #64748B; }
+    .content { max-width: 1200px; margin: 0 auto; padding: 40px 48px 80px; }
+    .section { margin-bottom: 56px; }
+    .section-title { font-family: var(--font-brand); font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; padding-bottom: 12px; border-bottom: 2px solid var(--brand); display: inline-block; }
+    .section-desc { font-size: 14px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 24px; }
+
+    code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text-primary); }
+    .info-box { background: var(--brand-light); border: 1px solid var(--brand-mid); border-radius: var(--r-sm); padding: 14px 16px; font-size: 13px; color: var(--brand-dark); line-height: 1.6; margin-bottom: 20px; }
+
+    /* ENTITY OVERVIEW */
+    .entity-map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .entity-chip {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--r-sm); padding: 14px;
+      text-align: center;
+      transition: border-color 0.15s;
+    }
+    .entity-chip.primary { border-color: var(--brand-mid); background: var(--brand-light); }
+    .entity-chip-icon { font-size: 20px; margin-bottom: 6px; }
+    .entity-chip-name { font-family: var(--font-brand); font-size: 13px; font-weight: 700; color: var(--text-primary); }
+    .entity-chip-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* SCHEMA CARDS */
+    .schema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .schema-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .schema-header {
+      background: var(--text-primary); padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .schema-table-name {
+      font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: white;
+    }
+    .schema-tag {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px;
+    }
+    .schema-tag-core { background: var(--brand); color: white; }
+    .schema-tag-ref  { background: #1E293B; color: #64748B; }
+
+    .schema-cols { padding: 0; }
+    .schema-col-row {
+      display: grid; grid-template-columns: 36px 1fr 90px 80px;
+      align-items: flex-start;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      gap: 8px;
+    }
+    .schema-col-row:last-child { border-bottom: none; }
+    .schema-col-row:hover { background: var(--bg); }
+    .col-pk {
+      font-size: 10px; font-weight: 700; color: var(--brand);
+      background: var(--brand-light); border: 1px solid var(--brand-mid);
+      padding: 1px 4px; border-radius: 3px; text-align: center;
+    }
+    .col-fk {
+      font-size: 10px; font-weight: 700; color: #6D28D9;
+      background: #F5F3FF; border: 1px solid #DDD6FE;
+      padding: 1px 4px; border-radius: 3px; text-align: center;
+    }
+    .col-idx {
+      font-size: 10px; font-weight: 700; color: #1D4ED8;
+      background: #EFF6FF; border: 1px solid #BFDBFE;
+      padding: 1px 4px; border-radius: 3px; text-align: center;
+    }
+    .col-empty { width: 36px; }
+    .col-name { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); font-weight: 500; }
+    .col-nullable { color: var(--text-muted); }
+    .col-type { font-family: var(--font-mono); font-size: 10px; color: #6D28D9; }
+    .col-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+    .schema-footer {
+      background: var(--bg); border-top: 1px solid var(--border);
+      padding: 8px 16px;
+      font-size: 10px; color: var(--text-muted); line-height: 1.8;
+      font-family: var(--font-mono);
+    }
+
+    /* ENUM TABLE */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--bg); }
+    .td-mono { font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); }
+
+    /* LEGEND */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; font-size: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html">Admin</a>
+  <div class="wf-divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html">📱 Article</a>
+  <a href="mobile-admin.html">📱 Admin</a>
+  <div class="wf-divider"></div>
+  <a href="architecture.html">Architecture</a>
+  <a href="design-system.html">Design System</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="data-model.html" class="active">Data Model</a>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">fcheck.in wireframes</a> / Design Docs</div>
+    <div class="page-title">🗄 Data Model</div>
+    <div class="page-subtitle">Cloudflare D1 (SQLite) schema · claims, reports, sources, subscribers, channels, audit log</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ENTITY OVERVIEW -->
+  <div class="section">
+    <div class="section-title">Entity Overview</div>
+    <div class="section-desc">8 core tables. Claims is the central entity — everything else references it.</div>
+
+    <div class="info-box">Database: <strong>Cloudflare D1</strong> (SQLite at the edge). All queries run in the same Worker process — no network round-trip to a database server. Free tier: 5 GB storage, 25 M row reads/day, 100 K row writes/day.</div>
+
+    <div class="entity-map">
+      <div class="entity-chip primary"><div class="entity-chip-icon">📋</div><div class="entity-chip-name">claims</div><div class="entity-chip-desc">Central entity</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">📰</div><div class="entity-chip-name">reports</div><div class="entity-chip-desc">Published articles</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">📨</div><div class="entity-chip-name">submissions</div><div class="entity-chip-desc">Per-user inputs</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">🔔</div><div class="entity-chip-name">subscribers</div><div class="entity-chip-desc">Notify on promotion</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">🌐</div><div class="entity-chip-name">fact_checkers</div><div class="entity-chip-desc">External sources</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">📌</div><div class="entity-chip-name">trending_cards</div><div class="entity-chip-desc">Homepage queue</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">📜</div><div class="entity-chip-name">audit_log</div><div class="entity-chip-desc">Admin actions</div></div>
+      <div class="entity-chip"><div class="entity-chip-icon">👤</div><div class="entity-chip-name">admin_users</div><div class="entity-chip-desc">Dashboard access</div></div>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="col-pk" style="display:inline-block">PK</span> Primary key</span>
+      <span class="legend-item"><span class="col-fk" style="display:inline-block">FK</span> Foreign key</span>
+      <span class="legend-item"><span class="col-idx" style="display:inline-block">IDX</span> Indexed column</span>
+    </div>
+  </div>
+
+  <!-- SCHEMA CARDS -->
+  <div class="section">
+    <div class="section-title">Table Schemas</div>
+    <div class="section-desc">Full column definitions for all 8 tables. Nullable columns shown with <span style="color:#94A3B8">?</span>.</div>
+
+    <div class="schema-grid">
+
+      <!-- CLAIMS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">claims</span>
+          <span class="schema-tag schema-tag-core">Core</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-idx">IDX</span><span class="col-name">fingerprint</span><span class="col-type">TEXT</span><span class="col-desc">Semantic embedding hash for similarity matching</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">canonical_text</span><span class="col-type">TEXT</span><span class="col-desc">Normalised claim text extracted by AI</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">source_type</span><span class="col-type">TEXT</span><span class="col-desc">original | external | preliminary | submitted</span></div>
+          <div class="schema-col-row"><span class="col-idx">IDX</span><span class="col-name">status</span><span class="col-type">TEXT</span><span class="col-desc">processing | draft | under_review | published | rejected</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">verdict</span><span class="col-type">TEXT?</span><span class="col-desc">TRUE | FALSE | MISLEADING | UNVERIFIABLE | OUTDATED | SATIRE | null</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">confidence</span><span class="col-type">INT?</span><span class="col-desc">0–100. null for TYPE 4.</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">submission_count</span><span class="col-type">INT</span><span class="col-desc">Total unique submissions for this claim</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">published_at</span><span class="col-type">TEXT?</span><span class="col-desc">ISO 8601. null until published.</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">promoted_from</span><span class="col-type">TEXT?</span><span class="col-desc">Previous source_type before last promotion</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">promoted_at</span><span class="col-type">TEXT?</span><span class="col-desc">Timestamp of last promotion</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">last_rechecked_at</span><span class="col-type">TEXT?</span><span class="col-desc">Last time background re-check ran</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601 creation timestamp</span></div>
+        </div>
+        <div class="schema-footer">IDX: fingerprint, status, published_at</div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">reports</span>
+          <span class="schema-tag schema-tag-core">Core</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">claim_id</span><span class="col-type">TEXT</span><span class="col-desc">→ claims.id</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">report_type</span><span class="col-type">TEXT</span><span class="col-desc">original (TYPE 1) | external (TYPE 2) | preliminary (TYPE 3)</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">headline</span><span class="col-type">TEXT</span><span class="col-desc">Article headline</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">summary</span><span class="col-type">TEXT</span><span class="col-desc">Short verdict summary</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">body</span><span class="col-type">TEXT</span><span class="col-desc">Full article body (Markdown)</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">evidence</span><span class="col-type">TEXT JSON</span><span class="col-desc">JSON array of {source, url, snippet, date}</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">tags</span><span class="col-type">TEXT JSON</span><span class="col-desc">JSON array of tag strings (categories)</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">country</span><span class="col-type">TEXT?</span><span class="col-desc">Primary country this report covers</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">language</span><span class="col-type">TEXT?</span><span class="col-desc">Language of the report</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">external_url</span><span class="col-type">TEXT?</span><span class="col-desc">Original URL for TYPE 2 external reports</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name col-nullable">fact_checker_id</span><span class="col-type">TEXT?</span><span class="col-desc">→ fact_checkers.id (TYPE 2 only)</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name col-nullable">published_by</span><span class="col-type">TEXT?</span><span class="col-desc">→ admin_users.id (TYPE 1 only)</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">published_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601</span></div>
+        </div>
+        <div class="schema-footer">IDX: claim_id, report_type, published_at, country, language</div>
+      </div>
+
+      <!-- SUBMISSIONS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">submissions</span>
+          <span class="schema-tag schema-tag-ref">Reference</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">claim_id</span><span class="col-type">TEXT</span><span class="col-desc">→ claims.id</span></div>
+          <div class="schema-col-row"><span class="col-idx">IDX</span><span class="col-name">channel</span><span class="col-type">TEXT</span><span class="col-desc">web | whatsapp | telegram | email | extension | api</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">raw_input</span><span class="col-type">TEXT JSON</span><span class="col-desc">Original submitted content (text, URLs, file refs)</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">user_identifier</span><span class="col-type">TEXT?</span><span class="col-desc">Anonymised phone / email hash. null for anonymous web.</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601</span></div>
+        </div>
+        <div class="schema-footer">IDX: claim_id, channel, created_at</div>
+      </div>
+
+      <!-- SUBSCRIBERS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">subscribers</span>
+          <span class="schema-tag schema-tag-ref">Reference</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">claim_id</span><span class="col-type">TEXT</span><span class="col-desc">→ claims.id</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">notify_via</span><span class="col-type">TEXT</span><span class="col-desc">email | whatsapp | telegram | web_push</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">contact</span><span class="col-type">TEXT</span><span class="col-desc">Email address, phone number, or push endpoint</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">notified_at</span><span class="col-type">TEXT?</span><span class="col-desc">Last notification sent timestamp</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601</span></div>
+        </div>
+        <div class="schema-footer">IDX: claim_id, notify_via</div>
+      </div>
+
+      <!-- FACT CHECKERS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">fact_checkers</span>
+          <span class="schema-tag schema-tag-ref">Reference</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">name</span><span class="col-type">TEXT</span><span class="col-desc">Display name (e.g. "Boom Live")</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">slug</span><span class="col-type">TEXT UNIQUE</span><span class="col-desc">URL-safe identifier</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">tier</span><span class="col-type">INT</span><span class="col-desc">1 (Global) or 2 (Regional)</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">countries</span><span class="col-type">TEXT JSON</span><span class="col-desc">JSON array of ISO 3166 country codes</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">languages</span><span class="col-type">TEXT JSON</span><span class="col-desc">JSON array of BCP 47 language tags</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">api_endpoint</span><span class="col-type">TEXT?</span><span class="col-desc">Direct API if available; null = crawled or via Google API</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">homepage_url</span><span class="col-type">TEXT</span><span class="col-desc">Source homepage for attribution</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">active</span><span class="col-type">INT</span><span class="col-desc">1 = active, 0 = disabled</span></div>
+        </div>
+        <div class="schema-footer">IDX: tier, active</div>
+      </div>
+
+      <!-- TRENDING CARDS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">trending_cards</span>
+          <span class="schema-tag schema-tag-ref">Reference</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">claim_id</span><span class="col-type">TEXT</span><span class="col-desc">→ claims.id</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">report_id</span><span class="col-type">TEXT</span><span class="col-desc">→ reports.id</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">pinned</span><span class="col-type">INT</span><span class="col-desc">1 = pinned indefinitely, 0 = time-limited</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">queue_position</span><span class="col-type">INT</span><span class="col-desc">Sort order within non-pinned queue</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">expires_at</span><span class="col-type">TEXT?</span><span class="col-desc">null for pinned. ISO 8601 for queue cards (48h from approval).</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">approved_by</span><span class="col-type">TEXT</span><span class="col-desc">→ admin_users.id</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">approved_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601</span></div>
+        </div>
+        <div class="schema-footer">IDX: pinned, expires_at, queue_position</div>
+      </div>
+
+      <!-- AUDIT LOG -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">audit_log</span>
+          <span class="schema-tag schema-tag-ref">Reference</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-fk">FK</span><span class="col-name">admin_user_id</span><span class="col-type">TEXT</span><span class="col-desc">→ admin_users.id</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">action</span><span class="col-type">TEXT</span><span class="col-desc">publish | reject | edit | pin | unpin | approve_trending | remove_trending</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">entity_type</span><span class="col-type">TEXT</span><span class="col-desc">claim | report | trending_card</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">entity_id</span><span class="col-type">TEXT</span><span class="col-desc">ID of the affected record</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name col-nullable">diff</span><span class="col-type">TEXT? JSON</span><span class="col-desc">Before/after snapshot for edit actions</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601</span></div>
+        </div>
+        <div class="schema-footer">IDX: admin_user_id, entity_type, created_at</div>
+      </div>
+
+      <!-- ADMIN USERS -->
+      <div class="schema-card">
+        <div class="schema-header">
+          <span class="schema-table-name">admin_users</span>
+          <span class="schema-tag schema-tag-ref">Reference</span>
+        </div>
+        <div class="schema-cols">
+          <div class="schema-col-row"><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">TEXT UUID</span><span class="col-desc">Primary identifier</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">name</span><span class="col-type">TEXT</span><span class="col-desc">Display name</span></div>
+          <div class="schema-col-row"><span class="col-idx">IDX</span><span class="col-name">email</span><span class="col-type">TEXT UNIQUE</span><span class="col-desc">Login email</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">role</span><span class="col-type">TEXT</span><span class="col-desc">super_admin | editor | reviewer</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">active</span><span class="col-type">INT</span><span class="col-desc">1 = active, 0 = revoked</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">last_login_at</span><span class="col-type">TEXT?</span><span class="col-desc">ISO 8601</span></div>
+          <div class="schema-col-row"><span class="col-empty"></span><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO 8601</span></div>
+        </div>
+        <div class="schema-footer">IDX: email, role, active</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ENUMS -->
+  <div class="section">
+    <div class="section-title">Enumerated Values</div>
+    <div class="section-desc">All constrained string columns and their allowed values.</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Table</th><th>Column</th><th>Allowed values</th></tr></thead>
+        <tbody>
+          <tr><td class="td-mono">claims</td><td class="td-mono">source_type</td><td><code>original</code> · <code>external</code> · <code>preliminary</code> · <code>submitted</code></td></tr>
+          <tr><td class="td-mono">claims</td><td class="td-mono">status</td><td><code>processing</code> · <code>draft</code> · <code>under_review</code> · <code>published</code> · <code>rejected</code></td></tr>
+          <tr><td class="td-mono">claims</td><td class="td-mono">verdict</td><td><code>TRUE</code> · <code>FALSE</code> · <code>MISLEADING</code> · <code>UNVERIFIABLE</code> · <code>OUTDATED</code> · <code>SATIRE</code> · <code>null</code></td></tr>
+          <tr><td class="td-mono">reports</td><td class="td-mono">report_type</td><td><code>original</code> · <code>external</code> · <code>preliminary</code></td></tr>
+          <tr><td class="td-mono">submissions</td><td class="td-mono">channel</td><td><code>web</code> · <code>whatsapp</code> · <code>telegram</code> · <code>email</code> · <code>extension</code> · <code>api</code></td></tr>
+          <tr><td class="td-mono">subscribers</td><td class="td-mono">notify_via</td><td><code>email</code> · <code>whatsapp</code> · <code>telegram</code> · <code>web_push</code></td></tr>
+          <tr><td class="td-mono">fact_checkers</td><td class="td-mono">tier</td><td><code>1</code> (Global) · <code>2</code> (Regional)</td></tr>
+          <tr><td class="td-mono">audit_log</td><td class="td-mono">action</td><td><code>publish</code> · <code>reject</code> · <code>edit</code> · <code>pin</code> · <code>unpin</code> · <code>approve_trending</code> · <code>remove_trending</code></td></tr>
+          <tr><td class="td-mono">audit_log</td><td class="td-mono">entity_type</td><td><code>claim</code> · <code>report</code> · <code>trending_card</code></td></tr>
+          <tr><td class="td-mono">admin_users</td><td class="td-mono">role</td><td><code>super_admin</code> · <code>editor</code> · <code>reviewer</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

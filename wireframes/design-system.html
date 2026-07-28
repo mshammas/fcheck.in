@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Design System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #0D9488; --brand-dark: #0F766E; --brand-light: #F0FDFA; --brand-mid: #99F6E4;
+      --text-primary: #0F172A; --text-secondary: #475569; --text-muted: #94A3B8;
+      --border: #E2E8F0; --surface: #FFFFFF; --bg: #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* WF NAV */
+    .wf-nav { position: sticky; top: 0; z-index: 1000; height: 36px; background: #0F172A; display: flex; align-items: center; padding: 0 12px; gap: 6px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; flex-shrink: 0; }
+    .wf-nav a { font-size: 11px; color: #94A3B8; text-decoration: none; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: #0D9488; color: white; }
+    .wf-nav .wf-divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+
+    /* PAGE */
+    .page-header { background: var(--text-primary); padding: 40px 48px 36px; }
+    .page-header-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-size: 12px; color: #64748B; margin-bottom: 12px; }
+    .breadcrumb a { color: var(--brand); text-decoration: none; }
+    .page-title { font-family: var(--font-brand); font-size: 28px; font-weight: 800; color: white; margin-bottom: 8px; }
+    .page-subtitle { font-size: 14px; color: #64748B; }
+    .content { max-width: 1100px; margin: 0 auto; padding: 40px 48px 80px; }
+    .section { margin-bottom: 56px; }
+    .section-title { font-family: var(--font-brand); font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; padding-bottom: 12px; border-bottom: 2px solid var(--brand); display: inline-block; }
+    .section-desc { font-size: 14px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 24px; }
+
+    /* COLOR PALETTE */
+    .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .color-swatch { border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--border); }
+    .swatch-block { height: 64px; }
+    .swatch-info { padding: 8px 10px; background: var(--surface); }
+    .swatch-name { font-size: 11px; font-weight: 700; color: var(--text-primary); }
+    .swatch-hex { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+    .swatch-role { font-size: 10px; color: var(--text-muted); }
+    .color-group-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; margin-top: 20px; }
+    .color-group-label:first-child { margin-top: 0; }
+
+    /* TYPOGRAPHY */
+    .type-specimen { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 24px; margin-bottom: 14px; }
+    .type-meta { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px; }
+    .type-scale-row { display: flex; align-items: baseline; gap: 20px; border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .type-scale-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .type-scale-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); min-width: 100px; flex-shrink: 0; }
+
+    /* VERDICT BADGES */
+    .badge-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .verdict-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.5px;
+      padding: 5px 12px 5px 10px; border-radius: 20px;
+    }
+    .verdict-badge::before { content: '●'; font-size: 8px; }
+    .vb-false      { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; }
+    .vb-misleading { color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; }
+    .vb-true       { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; }
+    .vb-unverify   { color: #475569; background: #F8FAFC; border: 1px solid #CBD5E1; }
+    .vb-outdated   { color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; }
+    .vb-satire     { color: #6D28D9; background: #F5F3FF; border: 1px solid #DDD6FE; }
+
+    .badge-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .badge-table th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .badge-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .badge-table tr:last-child td { border-bottom: none; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); }
+
+    /* TYPE INDICATORS */
+    .type-badges { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .type-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 700;
+    }
+    .type-1 { background: var(--brand-light); color: var(--brand-dark); border: 1px solid var(--brand-mid); }
+    .type-2 { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+    .type-3 { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+    .type-4 { background: #F8FAFC; color: #475569; border: 1px solid #CBD5E1; }
+
+    /* COMPONENT SAMPLES */
+    .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 24px; }
+    .comp-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 16px; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--brand); color: white; }
+    .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn-ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand-mid); }
+    .btn-danger { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn-lg { padding: 11px 22px; font-size: 15px; font-weight: 700; }
+    .input-demo { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font-body); font-size: 13px; color: var(--text-primary); background: var(--bg); margin-bottom: 10px; }
+    .input-demo:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
+
+    /* SPACING */
+    .spacing-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+    .spacing-block { background: var(--brand-light); border: 1px solid var(--brand-mid); flex-shrink: 0; }
+    .spacing-info { font-size: 12px; }
+    .spacing-token { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+    /* RADIUS */
+    .radius-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    .radius-demo { background: var(--brand-light); border: 1px solid var(--brand-mid); width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--brand-dark); font-weight: 600; }
+
+    /* SHADOW */
+    .shadow-row { display: flex; gap: 24px; flex-wrap: wrap; }
+    .shadow-demo { background: var(--surface); width: 100px; height: 70px; border-radius: var(--r); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); font-weight: 600; }
+
+    code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text-primary); }
+  </style>
+</head>
+<body>
+
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html">Admin</a>
+  <div class="wf-divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html">📱 Article</a>
+  <a href="mobile-admin.html">📱 Admin</a>
+  <div class="wf-divider"></div>
+  <a href="architecture.html">Architecture</a>
+  <a href="design-system.html" class="active">Design System</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="data-model.html">Data Model</a>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">fcheck.in wireframes</a> / Design Docs</div>
+    <div class="page-title">🎨 Design System</div>
+    <div class="page-subtitle">Colour palette · Typography · Verdict badges · Response types · Components · Spacing</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- COLOUR PALETTE -->
+  <div class="section">
+    <div class="section-title">Colour Palette</div>
+    <div class="section-desc">All colours are defined as CSS custom properties on <code>:root</code>. Always use tokens — never raw hex values in components.</div>
+
+    <div class="color-group-label">Brand</div>
+    <div class="color-grid">
+      <div class="color-swatch"><div class="swatch-block" style="background:#0D9488"></div><div class="swatch-info"><div class="swatch-name">--brand</div><div class="swatch-hex">#0D9488</div><div class="swatch-role">Primary CTA, links, active states</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#0F766E"></div><div class="swatch-info"><div class="swatch-name">--brand-dark</div><div class="swatch-hex">#0F766E</div><div class="swatch-role">Hover state on brand elements</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#F0FDFA;border-bottom:1px solid #E2E8F0"></div><div class="swatch-info"><div class="swatch-name">--brand-light</div><div class="swatch-hex">#F0FDFA</div><div class="swatch-role">Subtle brand fills, chip backgrounds</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#99F6E4"></div><div class="swatch-info"><div class="swatch-name">--brand-mid</div><div class="swatch-hex">#99F6E4</div><div class="swatch-role">Brand borders, dividers</div></div></div>
+    </div>
+
+    <div class="color-group-label">Text</div>
+    <div class="color-grid">
+      <div class="color-swatch"><div class="swatch-block" style="background:#0F172A"></div><div class="swatch-info"><div class="swatch-name">--text-primary</div><div class="swatch-hex">#0F172A</div><div class="swatch-role">Headlines, body copy, nav backgrounds</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#475569"></div><div class="swatch-info"><div class="swatch-name">--text-secondary</div><div class="swatch-hex">#475569</div><div class="swatch-role">Supporting body copy, descriptions</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#94A3B8"></div><div class="swatch-info"><div class="swatch-name">--text-muted</div><div class="swatch-hex">#94A3B8</div><div class="swatch-role">Timestamps, meta, disabled labels</div></div></div>
+    </div>
+
+    <div class="color-group-label">UI Surfaces</div>
+    <div class="color-grid">
+      <div class="color-swatch"><div class="swatch-block" style="background:#FFFFFF;border-bottom:1px solid #E2E8F0"></div><div class="swatch-info"><div class="swatch-name">--surface</div><div class="swatch-hex">#FFFFFF</div><div class="swatch-role">Cards, modals, sheets</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#F8FAFC;border-bottom:1px solid #E2E8F0"></div><div class="swatch-info"><div class="swatch-name">--bg</div><div class="swatch-hex">#F8FAFC</div><div class="swatch-role">Page background, secondary fills</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#E2E8F0"></div><div class="swatch-info"><div class="swatch-name">--border</div><div class="swatch-hex">#E2E8F0</div><div class="swatch-role">All borders, dividers</div></div></div>
+    </div>
+
+    <div class="color-group-label">Verdict Colours</div>
+    <div class="color-grid">
+      <div class="color-swatch"><div class="swatch-block" style="background:#EF4444"></div><div class="swatch-info"><div class="swatch-name">False</div><div class="swatch-hex">#EF4444 / #FEF2F2</div><div class="swatch-role">FALSE verdict badge &amp; fill</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#F97316"></div><div class="swatch-info"><div class="swatch-name">Misleading</div><div class="swatch-hex">#F97316 / #FFF7ED</div><div class="swatch-role">MISLEADING verdict badge &amp; fill</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#22C55E"></div><div class="swatch-info"><div class="swatch-name">True</div><div class="swatch-hex">#22C55E / #F0FDF4</div><div class="swatch-role">TRUE verdict badge &amp; fill</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#8B5CF6"></div><div class="swatch-info"><div class="swatch-name">Unverifiable</div><div class="swatch-hex">#8B5CF6 / #F5F3FF</div><div class="swatch-role">UNVERIFIABLE verdict</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#EAB308"></div><div class="swatch-info"><div class="swatch-name">Outdated</div><div class="swatch-hex">#EAB308 / #FEFCE8</div><div class="swatch-role">OUTDATED verdict</div></div></div>
+      <div class="color-swatch"><div class="swatch-block" style="background:#EC4899"></div><div class="swatch-info"><div class="swatch-name">Satire</div><div class="swatch-hex">#EC4899 / #FDF2F8</div><div class="swatch-role">SATIRE verdict</div></div></div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="section">
+    <div class="section-title">Typography</div>
+    <div class="section-desc">Two typefaces. <strong>Plus Jakarta Sans</strong> for all headings and brand moments. <strong>Inter</strong> for all body text, UI labels, and data.</div>
+
+    <div class="type-specimen">
+      <div class="type-meta">Plus Jakarta Sans — Headlines &amp; Brand</div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">32px / 800</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800;color:#0F172A;line-height:1.2">fcheck.in — Fact-check anything. Instantly.</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">24px / 800</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:#0F172A">"Warm water does not cure viral infections"</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">20px / 700</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:#0F172A">Section heading — Our Verdict</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">16px / 700</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:#0F172A">Card title — Related fact-checks</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">13px / 600</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:#0F172A">List item headline — Boom Live · FALSE · Mar 2026</div>
+      </div>
+    </div>
+
+    <div class="type-specimen">
+      <div class="type-meta">Inter — Body &amp; UI</div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">16px / 400</div>
+        <div style="font-family:'Inter',sans-serif;font-size:16px;font-weight:400;color:#475569;line-height:1.65">Body copy. Warm water has no antiviral properties. While it may soothe a sore throat, it cannot kill viruses or cure infections.</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">14px / 400</div>
+        <div style="font-family:'Inter',sans-serif;font-size:14px;font-weight:400;color:#475569">Secondary body. Used for supporting text, article summaries, and description fields.</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">13px / 500</div>
+        <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:#0F172A">UI label — medium weight. Used in buttons, chips, nav items.</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">12px / 400</div>
+        <div style="font-family:'Inter',sans-serif;font-size:12px;font-weight:400;color:#94A3B8">Meta text. ✓ fcheck.in · Mar 2026 · Health · India · English</div>
+      </div>
+      <div class="type-scale-row">
+        <div class="type-scale-label">10px / 700 UC</div>
+        <div style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8">SECTION LABEL — UPPERCASE TRACKING</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERDICT BADGES -->
+  <div class="section">
+    <div class="section-title">Verdict Badges</div>
+    <div class="section-desc">Six standardised verdicts. Each has a text colour, background fill, border colour, and dot indicator. Always shown with the ● dot prefix and ALL CAPS label.</div>
+
+    <div class="badge-row" style="margin-bottom:24px">
+      <span class="verdict-badge vb-false">FALSE</span>
+      <span class="verdict-badge vb-misleading">MISLEADING</span>
+      <span class="verdict-badge vb-true">TRUE</span>
+      <span class="verdict-badge vb-unverify">UNVERIFIABLE</span>
+      <span class="verdict-badge vb-outdated">OUTDATED</span>
+      <span class="verdict-badge vb-satire">SATIRE</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="badge-table">
+        <thead><tr><th>Verdict</th><th>Text</th><th>Background</th><th>Border</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td><span class="verdict-badge vb-false">FALSE</span></td><td style="font-family:monospace;font-size:11px">#B91C1C</td><td style="font-family:monospace;font-size:11px">#FEF2F2</td><td style="font-family:monospace;font-size:11px">#FECACA</td><td style="font-size:12px;color:#475569">Claim is factually incorrect</td></tr>
+          <tr><td><span class="verdict-badge vb-misleading">MISLEADING</span></td><td style="font-family:monospace;font-size:11px">#B45309</td><td style="font-family:monospace;font-size:11px">#FFFBEB</td><td style="font-family:monospace;font-size:11px">#FDE68A</td><td style="font-size:12px;color:#475569">Partial truth, presented deceptively</td></tr>
+          <tr><td><span class="verdict-badge vb-true">TRUE</span></td><td style="font-family:monospace;font-size:11px">#15803D</td><td style="font-family:monospace;font-size:11px">#F0FDF4</td><td style="font-family:monospace;font-size:11px">#BBF7D0</td><td style="font-size:12px;color:#475569">Accurate and sourced</td></tr>
+          <tr><td><span class="verdict-badge vb-unverify">UNVERIFIABLE</span></td><td style="font-family:monospace;font-size:11px">#475569</td><td style="font-family:monospace;font-size:11px">#F8FAFC</td><td style="font-family:monospace;font-size:11px">#CBD5E1</td><td style="font-size:12px;color:#475569">Insufficient evidence to confirm or deny</td></tr>
+          <tr><td><span class="verdict-badge vb-outdated">OUTDATED</span></td><td style="font-family:monospace;font-size:11px">#1D4ED8</td><td style="font-family:monospace;font-size:11px">#EFF6FF</td><td style="font-family:monospace;font-size:11px">#BFDBFE</td><td style="font-size:12px;color:#475569">Was true; no longer accurate</td></tr>
+          <tr><td><span class="verdict-badge vb-satire">SATIRE</span></td><td style="font-family:monospace;font-size:11px">#6D28D9</td><td style="font-family:monospace;font-size:11px">#F5F3FF</td><td style="font-family:monospace;font-size:11px">#DDD6FE</td><td style="font-size:12px;color:#475569">Originates from satirical source</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RESPONSE TYPE INDICATORS -->
+  <div class="section">
+    <div class="section-title">Response Type Indicators</div>
+    <div class="section-desc">Four response types, each with a distinct visual treatment to communicate the source and trust level at a glance.</div>
+
+    <div class="type-badges">
+      <div class="type-badge type-1">✓ TYPE 1 — fcheck.in Original</div>
+      <div class="type-badge type-2">⬢ TYPE 2 — External Authenticated</div>
+      <div class="type-badge type-3">◐ TYPE 3 — Preliminary (AI)</div>
+      <div class="type-badge type-4">○ TYPE 4 — Submitted for Review</div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="badge-table">
+        <thead><tr><th>Type</th><th>Label colour</th><th>Background accent</th><th>Trust indicator shown</th></tr></thead>
+        <tbody>
+          <tr><td class="type-badge type-1" style="padding:6px 10px;font-size:11px;display:inline-flex;margin:4px 0">TYPE 1</td><td>Brand teal</td><td>--brand-light strip on result card</td><td>✓ fcheck.in badge, date, authoring team</td></tr>
+          <tr><td class="type-badge type-2" style="padding:6px 10px;font-size:11px;display:inline-flex;margin:4px 0">TYPE 2</td><td>Blue</td><td>Blue-tinted top bar on result card</td><td>Source name, tier badge (Tier 1 / Tier 2), link to original</td></tr>
+          <tr><td class="type-badge type-3" style="padding:6px 10px;font-size:11px;display:inline-flex;margin:4px 0">TYPE 3</td><td>Amber</td><td>Amber top band with "Preliminary" label</td><td>Confidence bar (%), AI-generated label, "notify me" CTA</td></tr>
+          <tr><td class="type-badge type-4" style="padding:6px 10px;font-size:11px;display:inline-flex;margin:4px 0">TYPE 4</td><td>Slate</td><td>Muted slate band, no verdict shown</td><td>"Submitted to our team" message, "notify me" CTA, no confidence</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMPONENTS -->
+  <div class="section">
+    <div class="section-title">Components</div>
+    <div class="section-desc">Core interactive components used across all views.</div>
+
+    <div class="comp-grid">
+      <div class="comp-card">
+        <div class="comp-label">Buttons</div>
+        <div class="btn-row">
+          <button class="btn btn-primary">Primary</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-danger">Danger</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary">Default</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" style="width:100%">Full width</button>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-label">Inputs</div>
+        <input class="input-demo" placeholder="Search a claim, paste a link…">
+        <input class="input-demo" value="Does warm water cure viral infections?" style="border-color:#0D9488">
+        <div style="display:flex;gap:8px">
+          <input class="input-demo" placeholder="your@email.com" style="flex:1;margin-bottom:0">
+          <button class="btn btn-primary">Notify me</button>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-label">Chips &amp; Tags</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#F0FDFA;border:1px solid #99F6E4;color:#0F766E;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">📝 Text detected</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#F0FDFA;border:1px solid #99F6E4;color:#0F766E;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">🔗 URL detected</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#F0FDFA;border:1px solid #99F6E4;color:#0F766E;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">🎬 Video URL</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#F8FAFC;border:1px solid #E2E8F0;color:#475569;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">🌍 India ×</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#F8FAFC;border:1px solid #E2E8F0;color:#475569;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">🗣 English ×</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;background:#F0FDFA;border:1px solid #99F6E4;color:#0F766E;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">Health ×</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-label">Source Badges</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="display:inline-flex;align-items:center;gap:5px;background:#F0FDFA;border:1px solid #99F6E4;color:#0D9488;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px">✓ fcheck.in</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px">Reuters</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:#F8FAFC;border:1px solid #E2E8F0;color:#475569;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px">AFP Fact Check</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:#F5F3FF;border:1px solid #DDD6FE;color:#6D28D9;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px">⬢ Tier 1</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px">◐ Tier 2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPACING, RADIUS, SHADOWS -->
+  <div class="section">
+    <div class="section-title">Spacing, Radius &amp; Shadows</div>
+    <div class="section-desc">Fixed scale. Use these values only — no ad-hoc px values.</div>
+
+    <div class="comp-grid">
+      <div class="comp-card">
+        <div class="comp-label">Border Radius</div>
+        <div class="radius-row">
+          <div><div class="radius-demo" style="border-radius:4px">4px</div><div style="font-size:10px;color:#94A3B8;margin-top:4px;text-align:center">--r-xs</div></div>
+          <div><div class="radius-demo" style="border-radius:8px">8px</div><div style="font-size:10px;color:#94A3B8;margin-top:4px;text-align:center">--r-sm</div></div>
+          <div><div class="radius-demo" style="border-radius:12px">12px</div><div style="font-size:10px;color:#94A3B8;margin-top:4px;text-align:center">--r</div></div>
+          <div><div class="radius-demo" style="border-radius:20px;width:80px">20px</div><div style="font-size:10px;color:#94A3B8;margin-top:4px;text-align:center">pill</div></div>
+        </div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-label">Box Shadows</div>
+        <div class="shadow-row">
+          <div><div class="shadow-demo" style="box-shadow:0 1px 3px rgba(0,0,0,0.07)">sm</div><div style="font-size:10px;color:#94A3B8;margin-top:8px;text-align:center">--shadow-sm</div></div>
+          <div><div class="shadow-demo" style="box-shadow:0 4px 12px rgba(0,0,0,0.08)">md</div><div style="font-size:10px;color:#94A3B8;margin-top:8px;text-align:center">--shadow</div></div>
+          <div><div class="shadow-demo" style="box-shadow:0 8px 32px rgba(0,0,0,0.12)">lg</div><div style="font-size:10px;color:#94A3B8;margin-top:8px;text-align:center">--shadow-lg</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

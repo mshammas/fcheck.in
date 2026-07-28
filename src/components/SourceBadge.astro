@@ -1,0 +1,96 @@
+---
+/**
+ * Attribution badge.
+ *
+ * Editorial rule (CLAUDE.md, "Credit where it's due"): when a result comes from
+ * an external fact-checker, their name, tier and a link to the original are
+ * always visible. We never present their work as ours.
+ */
+import type { FactCheckerTier } from '../lib/types';
+
+interface Props {
+  /** null = fcheck.in's own work */
+  name?: string | null;
+  tier?: FactCheckerTier | null;
+  url?: string | null;
+}
+
+const { name = null, tier = null, url = null } = Astro.props;
+const isOwn = !name;
+const Tag = url && !isOwn ? 'a' : 'span';
+---
+
+<span class="wrap">
+  <Tag
+    class:list={['badge', isOwn ? 'own' : 'external']}
+    {...url && !isOwn ? { href: url, target: '_blank', rel: 'noopener noreferrer' } : {}}
+  >
+    {isOwn && <span aria-hidden="true">✓</span>}
+    {isOwn ? 'fcheck.in' : name}
+    {url && !isOwn && <span class="ext" aria-hidden="true">↗</span>}
+  </Tag>
+  {
+    tier && (
+      <span class:list={['tier', `tier-${tier}`]}>
+        <span aria-hidden="true">{tier === 1 ? '⬢' : '◐'}</span> Tier {tier}
+      </span>
+    )
+  }
+</span>
+
+<style>
+  .wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: var(--r-xs);
+    border: 1px solid;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* fcheck.in's own work gets the brand treatment — visually distinct from
+     external sources at a glance, per the trending card spec. */
+  .own {
+    color: var(--brand-dark);
+    background: var(--brand-light);
+    border-color: var(--brand-mid);
+  }
+
+  .external {
+    color: var(--text-secondary);
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  a.external:hover {
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+  }
+
+  .ext { font-size: 9px; opacity: 0.7; }
+
+  .tier {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 3px 7px;
+    border-radius: var(--r-xs);
+  }
+
+  .tier-1 { color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; }
+  .tier-2 { color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); }
+</style>

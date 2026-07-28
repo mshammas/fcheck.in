@@ -1,0 +1,64 @@
+---
+/**
+ * The six standardised verdicts. Always ALL CAPS with the ● dot prefix,
+ * per wireframes/design-system.html.
+ *
+ * TYPE 4 claims have no verdict — render nothing rather than a placeholder.
+ * Showing an empty or guessed verdict would break the "honest about
+ * uncertainty" principle.
+ */
+import type { Verdict } from '../lib/types';
+import { VERDICT_LABELS, VERDICT_MEANINGS } from '../lib/types';
+
+interface Props {
+  verdict: Verdict | null;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const { verdict, size = 'md' } = Astro.props;
+const key = verdict ? verdict.toLowerCase() : null;
+---
+
+{
+  verdict && key && (
+    <span class:list={['verdict', `v-${key}`, `s-${size}`]} title={VERDICT_MEANINGS[verdict]}>
+      <span class="dot" aria-hidden="true">●</span>
+      {VERDICT_LABELS[verdict].toUpperCase()}
+    </span>
+  )
+}
+
+<style>
+  .verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-radius: var(--r-xs);
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .s-sm { font-size: 10px; padding: 3px 8px; }
+  .s-md { font-size: 12px; padding: 5px 11px; }
+  .s-lg { font-size: 15px; padding: 9px 16px; border-radius: var(--r-sm); }
+
+  .dot { font-size: 0.85em; line-height: 1; }
+
+  .v-false       { color: var(--verdict-false-text);       background: var(--verdict-false-bg);       border-color: var(--verdict-false-bd); }
+  .v-misleading  { color: var(--verdict-misleading-text);  background: var(--verdict-misleading-bg);  border-color: var(--verdict-misleading-bd); }
+  .v-true        { color: var(--verdict-true-text);        background: var(--verdict-true-bg);        border-color: var(--verdict-true-bd); }
+  .v-unverifiable{ color: var(--verdict-unverifiable-text);background: var(--verdict-unverifiable-bg);border-color: var(--verdict-unverifiable-bd); }
+  .v-outdated    { color: var(--verdict-outdated-text);    background: var(--verdict-outdated-bg);    border-color: var(--verdict-outdated-bd); }
+  .v-satire      { color: var(--verdict-satire-text);      background: var(--verdict-satire-bg);      border-color: var(--verdict-satire-bd); }
+
+  .v-false       .dot { color: var(--verdict-false-dot); }
+  .v-misleading  .dot { color: var(--verdict-misleading-dot); }
+  .v-true        .dot { color: var(--verdict-true-dot); }
+  .v-unverifiable.dot,
+  .v-unverifiable .dot { color: var(--verdict-unverifiable-dot); }
+  .v-outdated    .dot { color: var(--verdict-outdated-dot); }
+  .v-satire      .dot { color: var(--verdict-satire-dot); }
+</style>

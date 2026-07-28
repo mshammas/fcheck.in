@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fcheck.in — Admin (Mobile)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:       #0D9488;
+      --brand-dark:  #0F766E;
+      --brand-light: #F0FDFA;
+      --brand-mid:   #99F6E4;
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-muted:     #94A3B8;
+      --border:  #E2E8F0;
+      --surface: #FFFFFF;
+      --bg:      #F8FAFC;
+      --font-brand: 'Plus Jakarta Sans', sans-serif;
+      --font-body:  'Inter', sans-serif;
+      --r: 12px; --r-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow:    0 4px 12px rgba(0,0,0,0.08);
+
+      --false:      #EF4444; --false-bg:      #FEF2F2; --false-border:      #FECACA;
+      --misleading: #F97316; --misleading-bg: #FFF7ED; --misleading-border: #FED7AA;
+      --true:       #22C55E; --true-bg:       #F0FDF4; --true-border:       #BBF7D0;
+      --warn:       #F59E0B; --warn-bg:       #FFFBEB; --warn-border:       #FDE68A;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: #CBD5E1;
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── WF NAV BAR ─────────────────────────────── */
+    .wf-nav {
+      position: sticky; top: 0; z-index: 1000;
+      height: 36px;
+      background: #0F172A;
+      display: flex; align-items: center;
+      padding: 0 12px; gap: 6px;
+      overflow-x: auto; white-space: nowrap;
+      scrollbar-width: none;
+    }
+    .wf-nav::-webkit-scrollbar { display: none; }
+    .wf-nav-label {
+      font-size: 10px; font-weight: 700; color: #64748B;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-right: 4px; flex-shrink: 0;
+    }
+    .wf-nav a {
+      font-size: 11px; color: #94A3B8; text-decoration: none;
+      padding: 3px 8px; border-radius: 4px; flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .wf-nav a:hover { background: #1E293B; color: #E2E8F0; }
+    .wf-nav a.active { background: var(--brand); color: white; }
+    .wf-nav a.disabled { color: #334155; pointer-events: none; }
+    .wf-nav .divider { width: 1px; height: 16px; background: #1E293B; flex-shrink: 0; margin: 0 2px; }
+
+    /* ── PHONE FRAME ─────────────────────────────── */
+    .phone-wrap {
+      max-width: 390px;
+      margin: 24px auto 48px;
+      background: var(--surface);
+      box-shadow: 0 0 0 1px #94A3B8, 0 20px 60px rgba(0,0,0,0.25);
+      border-radius: 24px;
+      overflow: clip;
+      position: relative;
+    }
+
+    /* ── ADMIN HEADER ────────────────────────────── */
+    .admin-header {
+      position: sticky; top: 36px; z-index: 300;
+      background: var(--text-primary);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 26px; height: 26px; background: var(--brand);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 13px; font-weight: 800;
+    }
+    .logo-name {
+      font-family: var(--font-brand); font-weight: 800; font-size: 16px; color: white;
+    }
+    .logo-name span { color: var(--brand); }
+    .admin-badge {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      color: var(--warn); letter-spacing: 0.5px; margin-left: 4px;
+    }
+    .admin-user {
+      font-size: 12px; font-weight: 600; color: #94A3B8;
+    }
+
+    /* ── TAB BAR ─────────────────────────────────── */
+    .tab-bar {
+      position: sticky; top: calc(36px + 50px); z-index: 200;
+      display: flex; align-items: stretch;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 10px 4px;
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      cursor: pointer; border: none; background: none;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .tab-item.active {
+      color: var(--brand); border-bottom-color: var(--brand);
+    }
+    .tab-label { white-space: nowrap; }
+    .tab-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 16px; height: 16px; padding: 0 4px;
+      background: var(--false); color: white;
+      font-size: 9px; font-weight: 700; border-radius: 8px;
+      margin-top: 2px;
+    }
+    .tab-badge.warn { background: var(--warn); }
+
+    /* ── TAB PANELS ──────────────────────────────── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── ALERT BANNER ────────────────────────────── */
+    .alert-banner {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 600;
+      background: var(--warn-bg); border-bottom: 1px solid var(--warn-border);
+      color: #92400E;
+    }
+
+    /* ── SECTION HEADING ─────────────────────────── */
+    .list-heading {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted);
+      padding: 14px 16px 6px;
+    }
+
+    /* ── DRAFT CARD ──────────────────────────────── */
+    .draft-card {
+      margin: 0 12px 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .draft-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .draft-confidence {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .conf-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .conf-dot.high { background: var(--brand); }
+    .conf-dot.mid  { background: var(--warn); }
+    .conf-dot.low  { background: var(--text-muted); }
+    .conf-pct {
+      font-size: 13px; font-weight: 700; color: var(--text-primary);
+    }
+    .conf-subs {
+      font-size: 11px; color: var(--text-muted);
+    }
+    .draft-headline {
+      font-size: 13px; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 4px; line-height: 1.4;
+    }
+    .draft-channels {
+      font-size: 11px; color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .draft-review-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px; border-radius: var(--r-sm);
+      background: var(--brand); color: white;
+      font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      transition: background 0.15s;
+    }
+    .draft-review-btn:hover { background: var(--brand-dark); }
+
+    .load-more-btn {
+      display: block; width: calc(100% - 24px);
+      margin: 4px 12px 16px;
+      padding: 10px; border-radius: var(--r-sm);
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; text-align: center;
+    }
+
+    /* ── TRENDING TAB ────────────────────────────── */
+    .trend-section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted);
+      padding: 14px 16px 6px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .trend-warn-chip {
+      font-size: 10px; font-weight: 700; color: #92400E;
+      background: var(--warn-bg); border: 1px solid var(--warn-border);
+      padding: 2px 6px; border-radius: 6px;
+    }
+
+    .pinned-card {
+      margin: 0 12px 8px;
+      padding: 12px 14px;
+      background: var(--brand-light); border: 1px solid var(--brand-mid);
+      border-radius: var(--r-sm);
+    }
+    .pinned-top {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+      font-size: 12px; font-weight: 700; color: var(--text-muted);
+    }
+    .pinned-headline {
+      font-size: 13px; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 4px; line-height: 1.4;
+    }
+    .pinned-row {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .verdict-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px;
+    }
+    .verdict-chip::before { content: '●'; font-size: 7px; }
+    .verdict-chip.false { color: var(--false); background: var(--false-bg); border: 1px solid var(--false-border); }
+    .verdict-chip.misleading { color: var(--misleading); background: var(--misleading-bg); border: 1px solid var(--misleading-border); }
+    .unpin-btn {
+      font-size: 11px; font-weight: 600; color: var(--text-secondary);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 8px; cursor: pointer;
+    }
+
+    .queue-card {
+      margin: 0 12px 8px;
+      padding: 12px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+    }
+    .queue-top {
+      display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;
+    }
+    .drag-handle {
+      font-size: 16px; color: var(--text-muted); flex-shrink: 0;
+      cursor: grab; line-height: 1.4; padding-top: 1px;
+    }
+    .queue-info { flex: 1; min-width: 0; }
+    .queue-rank {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 2px;
+    }
+    .queue-headline {
+      font-size: 13px; font-weight: 600; color: var(--text-primary);
+      line-height: 1.35;
+    }
+    .queue-warn { color: var(--warn); font-size: 12px; margin-left: 4px; }
+    .queue-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 6px;
+    }
+    .queue-expiry {
+      font-size: 11px; color: var(--text-muted);
+    }
+    .queue-expiry.critical { color: var(--false); font-weight: 600; }
+    .queue-actions { display: flex; gap: 6px; }
+    .q-btn {
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-secondary);
+    }
+    .q-btn.pin { color: var(--brand); border-color: var(--brand-mid); background: var(--brand-light); }
+    .q-btn.remove { color: var(--false); border-color: var(--false-border); background: var(--false-bg); }
+
+    .candidate-card {
+      margin: 0 12px 8px;
+      padding: 12px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+    }
+    .candidate-headline {
+      font-size: 13px; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 4px; line-height: 1.35;
+    }
+    .candidate-meta {
+      font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .candidate-actions { display: flex; gap: 8px; }
+    .approve-btn {
+      flex: 1; padding: 8px; border-radius: var(--r-sm);
+      background: var(--brand); color: white;
+      font-size: 12px; font-weight: 700; border: none; cursor: pointer;
+    }
+    .skip-btn {
+      flex: 1; padding: 8px; border-radius: var(--r-sm);
+      background: var(--surface); color: var(--text-secondary);
+      font-size: 12px; font-weight: 600; border: 1px solid var(--border); cursor: pointer;
+    }
+
+    .nominate-btn {
+      display: block; width: calc(100% - 24px);
+      margin: 4px 12px 16px;
+      padding: 10px; border-radius: var(--r-sm);
+      background: var(--surface); border: 1px solid var(--brand-mid);
+      font-size: 13px; font-weight: 600; color: var(--brand);
+      cursor: pointer; text-align: center;
+    }
+
+    /* ── CLAIMS & REPORTS PLACEHOLDER ───────────── */
+    .coming-soon {
+      padding: 40px 24px; text-align: center;
+      color: var(--text-muted);
+    }
+    .coming-soon .cs-icon { font-size: 32px; margin-bottom: 12px; }
+    .coming-soon .cs-text { font-size: 13px; line-height: 1.6; }
+
+    /* ── REVIEW SCREEN ───────────────────────────── */
+    .review-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      background: var(--surface);
+      z-index: 400;
+      overflow-y: auto;
+      flex-direction: column;
+    }
+    .review-overlay.open { display: flex; }
+
+    .review-header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .review-back {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: var(--brand);
+      cursor: pointer; border: none; background: none;
+    }
+    .review-actions { display: flex; gap: 8px; }
+    .reject-btn {
+      padding: 6px 12px; border-radius: var(--r-sm);
+      background: var(--false-bg); color: var(--false);
+      border: 1px solid var(--false-border);
+      font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .publish-btn {
+      padding: 6px 12px; border-radius: var(--r-sm);
+      background: var(--brand); color: white;
+      border: none;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+
+    .review-meta-bar {
+      padding: 14px 16px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    .review-meta-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .review-conf-label {
+      font-size: 12px; font-weight: 700; color: var(--text-secondary);
+    }
+    .review-conf-pct {
+      font-size: 13px; font-weight: 800; color: var(--brand);
+    }
+    .conf-bar {
+      height: 6px; background: var(--border); border-radius: 3px;
+      overflow: hidden; margin-bottom: 10px;
+    }
+    .conf-fill {
+      height: 100%; background: var(--brand); border-radius: 3px;
+    }
+    .review-stats {
+      display: flex; gap: 16px;
+    }
+    .review-stat {
+      font-size: 11px; color: var(--text-muted);
+    }
+    .review-stat strong { color: var(--text-primary); font-weight: 600; }
+
+    .review-form { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    .form-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .verdict-select {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--false);
+      cursor: pointer;
+    }
+    .form-textarea {
+      width: 100%; min-height: 72px; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-family: var(--font-body); font-size: 13px; color: var(--text-primary);
+      resize: vertical; background: var(--bg);
+      line-height: 1.6;
+    }
+    .form-textarea:focus { outline: none; border-color: var(--brand); }
+
+    .evidence-list { display: flex; flex-direction: column; gap: 6px; }
+    .evidence-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 13px; color: var(--text-primary);
+    }
+    .evidence-remove {
+      color: var(--text-muted); cursor: pointer; border: none;
+      background: none; font-size: 14px; padding: 0 4px;
+    }
+    .add-evidence-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: var(--brand);
+      background: none; border: 1px dashed var(--brand-mid);
+      border-radius: var(--r-sm); padding: 8px 12px; cursor: pointer;
+      margin-top: 2px; width: 100%; justify-content: center;
+    }
+
+    .tag-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .tag-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 8px 4px 10px; border-radius: 20px;
+      background: var(--brand-light); border: 1px solid var(--brand-mid);
+      font-size: 12px; font-weight: 600; color: var(--brand-dark);
+    }
+    .tag-remove { font-size: 13px; cursor: pointer; }
+    .tag-add {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px;
+      background: none; border: 1px dashed var(--border);
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
+    }
+
+    .review-footer {
+      display: flex; gap: 10px;
+      padding: 12px 16px;
+      background: var(--surface); border-top: 1px solid var(--border);
+      position: sticky; bottom: 0;
+    }
+    .review-footer .reject-btn { flex: 1; padding: 12px; font-size: 14px; }
+    .review-footer .publish-btn { flex: 2; padding: 12px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- WF NAV BAR -->
+<nav class="wf-nav">
+  <span class="wf-nav-label">WF</span>
+  <a href="homepage.html">Homepage</a>
+  <a href="results.html">Results</a>
+  <a href="article.html">Article</a>
+  <a href="admin.html">Admin</a>
+  <div class="divider"></div>
+  <a href="mobile-homepage.html">📱 Homepage</a>
+  <a href="mobile-results.html">📱 Results</a>
+  <a href="mobile-article.html">📱 Article</a>
+  <a href="mobile-admin.html" class="active">📱 Admin</a>
+  <div class="divider"></div>
+  <a href="architecture.html">Architecture</a>
+  <a href="design-system.html">Design System</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="data-model.html">Data Model</a>
+</nav>
+
+<!-- PHONE FRAME -->
+<div class="phone-wrap">
+
+  <!-- REVIEW SCREEN (absolute overlay, hidden by default) -->
+  <div class="review-overlay" id="reviewOverlay">
+    <div class="review-header">
+      <button class="review-back" onclick="closeReview()">← Drafts</button>
+      <div class="review-actions">
+        <button class="reject-btn">Reject</button>
+        <button class="publish-btn">✓ Publish</button>
+      </div>
+    </div>
+
+    <div class="review-meta-bar">
+      <div class="review-meta-row">
+        <span class="review-conf-label">AI Confidence</span>
+        <span class="review-conf-pct">91%</span>
+      </div>
+      <div class="conf-bar"><div class="conf-fill" style="width:91%"></div></div>
+      <div class="review-stats">
+        <div class="review-stat">Submissions: <strong>38</strong></div>
+        <div class="review-stat">Sources: <strong>WHO · CDC · Lancet</strong></div>
+      </div>
+    </div>
+
+    <div class="review-form">
+
+      <div>
+        <div class="form-label">Verdict</div>
+        <button class="verdict-select">● FALSE <span style="color:#94A3B8;font-weight:400">▾</span></button>
+      </div>
+
+      <div>
+        <div class="form-label">Headline</div>
+        <textarea class="form-textarea" rows="2">Warm water does not cure viral infections</textarea>
+      </div>
+
+      <div>
+        <div class="form-label">Summary</div>
+        <textarea class="form-textarea" rows="4">Warm water has no antiviral properties. WHO and CDC confirm there is no evidence warm water can kill viruses or cure any infection.</textarea>
+      </div>
+
+      <div>
+        <div class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+          Evidence
+          <button class="add-evidence-btn" style="width:auto;border:none;padding:0;margin:0;font-size:12px">+ Add</button>
+        </div>
+        <div class="evidence-list">
+          <div class="evidence-row">1. WHO statement — Feb 2026 <button class="evidence-remove">×</button></div>
+          <div class="evidence-row">2. The Lancet review — Jan 2026 <button class="evidence-remove">×</button></div>
+          <div class="evidence-row">3. CDC guidance — Ongoing <button class="evidence-remove">×</button></div>
+        </div>
+        <button class="add-evidence-btn">+ Add source</button>
+      </div>
+
+      <div>
+        <div class="form-label">Tags</div>
+        <div class="tag-row">
+          <span class="tag-chip">Health <span class="tag-remove">×</span></span>
+          <span class="tag-chip">India <span class="tag-remove">×</span></span>
+          <button class="tag-add">+ Add</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="review-footer">
+      <button class="reject-btn" onclick="closeReview()">Reject</button>
+      <button class="publish-btn">Publish →</button>
+    </div>
+  </div><!-- /review-overlay -->
+
+  <!-- ADMIN HEADER -->
+  <header class="admin-header">
+    <div class="logo">
+      <div class="logo-mark">✓</div>
+      <span class="logo-name">f<span>check</span>.in <span class="admin-badge">Admin</span></span>
+    </div>
+    <span class="admin-user">Mohammed</span>
+  </header>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-item active" onclick="switchTab('drafts', this)">
+      <span class="tab-label">Drafts</span>
+      <span class="tab-badge">7</span>
+    </button>
+    <button class="tab-item" onclick="switchTab('trending', this)">
+      <span class="tab-label">Trending</span>
+      <span class="tab-badge warn">⚠ 2</span>
+    </button>
+    <button class="tab-item" onclick="switchTab('claims', this)">
+      <span class="tab-label">Claims</span>
+    </button>
+    <button class="tab-item" onclick="switchTab('reports', this)">
+      <span class="tab-label">Reports</span>
+    </button>
+  </div>
+
+  <!-- DRAFTS TAB -->
+  <div class="tab-panel active" id="tab-drafts">
+
+    <div class="alert-banner">⚠ Trending queue low — only 4 cards remaining</div>
+    <div class="alert-banner">⚠ 2 trending cards expiring in less than 6 hours</div>
+
+    <div class="list-heading">Draft Queue (7)</div>
+
+    <div class="draft-card">
+      <div class="draft-top">
+        <div class="draft-confidence">
+          <div class="conf-dot high"></div>
+          <span class="conf-pct">91%</span>
+          <span class="conf-subs">· 38 submissions</span>
+        </div>
+      </div>
+      <div class="draft-headline">"Warm water cures viral infections"</div>
+      <div class="draft-channels">WhatsApp (31) · Web (7)</div>
+      <button class="draft-review-btn" onclick="openReview()">Review →</button>
+    </div>
+
+    <div class="draft-card">
+      <div class="draft-top">
+        <div class="draft-confidence">
+          <div class="conf-dot high"></div>
+          <span class="conf-pct">88%</span>
+          <span class="conf-subs">· 24 submissions</span>
+        </div>
+      </div>
+      <div class="draft-headline">"Fluoride added for mind control"</div>
+      <div class="draft-channels">WhatsApp (19) · Telegram (5)</div>
+      <button class="draft-review-btn" onclick="openReview()">Review →</button>
+    </div>
+
+    <div class="draft-card">
+      <div class="draft-top">
+        <div class="draft-confidence">
+          <div class="conf-dot mid"></div>
+          <span class="conf-pct">54%</span>
+          <span class="conf-subs">· 12 submissions</span>
+        </div>
+      </div>
+      <div class="draft-headline">"Government to tax WhatsApp messages"</div>
+      <div class="draft-channels">WhatsApp (12)</div>
+      <button class="draft-review-btn" onclick="openReview()">Review →</button>
+    </div>
+
+    <button class="load-more-btn">Load more drafts</button>
+
+  </div><!-- /tab-drafts -->
+
+  <!-- TRENDING TAB -->
+  <div class="tab-panel" id="tab-trending">
+
+    <div class="trend-section-label">Live now</div>
+
+    <div class="pinned-card">
+      <div class="pinned-top">📌 Pinned</div>
+      <div class="pinned-headline">"Warm water claim debunked"</div>
+      <div class="pinned-row">
+        <div>
+          <span class="verdict-chip false">FALSE</span>
+          <span style="font-size:11px;color:#94A3B8;margin-left:6px">✓ fcheck.in · No expiry</span>
+        </div>
+        <button class="unpin-btn">Unpin</button>
+      </div>
+    </div>
+
+    <div class="pinned-card">
+      <div class="pinned-top">📌 Pinned</div>
+      <div class="pinned-headline">"5G tower radiation claim debunked"</div>
+      <div class="pinned-row">
+        <div>
+          <span class="verdict-chip false">FALSE</span>
+          <span style="font-size:11px;color:#94A3B8;margin-left:6px">Reuters · No expiry</span>
+        </div>
+        <button class="unpin-btn">Unpin</button>
+      </div>
+    </div>
+
+    <div class="trend-section-label">
+      Queue (4 remaining)
+      <span class="trend-warn-chip">⚠ Low</span>
+    </div>
+
+    <div class="queue-card">
+      <div class="queue-top">
+        <div class="drag-handle">↕</div>
+        <div class="queue-info">
+          <div class="queue-rank">#1</div>
+          <div class="queue-headline">"Fluoride added to water for mind control"</div>
+        </div>
+      </div>
+      <div class="queue-meta">
+        <span class="queue-expiry">Expires in 31h</span>
+        <div class="queue-actions">
+          <button class="q-btn pin">Pin</button>
+          <button class="q-btn remove">× Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="queue-card">
+      <div class="queue-top">
+        <div class="drag-handle">↕</div>
+        <div class="queue-info">
+          <div class="queue-rank">#2</div>
+          <div class="queue-headline">"Government tax on WhatsApp messages" <span class="queue-warn">⚠</span></div>
+        </div>
+      </div>
+      <div class="queue-meta">
+        <span class="queue-expiry critical">Expires in 5h</span>
+        <div class="queue-actions">
+          <button class="q-btn pin">Pin</button>
+          <button class="q-btn remove">× Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="queue-card">
+      <div class="queue-top">
+        <div class="drag-handle">↕</div>
+        <div class="queue-info">
+          <div class="queue-rank">#3</div>
+          <div class="queue-headline">"Election results manipulated by EVM" <span class="queue-warn">⚠</span></div>
+        </div>
+      </div>
+      <div class="queue-meta">
+        <span class="queue-expiry critical">Expires in 3h</span>
+        <div class="queue-actions">
+          <button class="q-btn pin">Pin</button>
+          <button class="q-btn remove">× Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="queue-card">
+      <div class="queue-top">
+        <div class="drag-handle">↕</div>
+        <div class="queue-info">
+          <div class="queue-rank">#4</div>
+          <div class="queue-headline">"Health minister resignation claim"</div>
+        </div>
+      </div>
+      <div class="queue-meta">
+        <span class="queue-expiry">Expires in 44h</span>
+        <div class="queue-actions">
+          <button class="q-btn pin">Pin</button>
+          <button class="q-btn remove">× Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="trend-section-label">Candidates</div>
+
+    <div class="candidate-card">
+      <div class="candidate-headline">"Vaccine causes blindness in teens"</div>
+      <div class="candidate-meta"><span class="verdict-chip false" style="font-size:10px">FALSE</span> · Snopes · 67 submissions</div>
+      <div class="candidate-actions">
+        <button class="approve-btn">Approve</button>
+        <button class="skip-btn">Skip</button>
+      </div>
+    </div>
+
+    <div class="candidate-card">
+      <div class="candidate-headline">"Petrol price hike announced for July"</div>
+      <div class="candidate-meta"><span class="verdict-chip misleading" style="font-size:10px">MISLEADING</span> · ✓ fcheck.in · 43 submissions</div>
+      <div class="candidate-actions">
+        <button class="approve-btn">Approve</button>
+        <button class="skip-btn">Skip</button>
+      </div>
+    </div>
+
+    <button class="nominate-btn">+ Manually nominate a report</button>
+
+  </div><!-- /tab-trending -->
+
+  <!-- CLAIMS TAB -->
+  <div class="tab-panel" id="tab-claims">
+    <div class="coming-soon">
+      <div class="cs-icon">🗂</div>
+      <div class="cs-text">Claims management — search, filter and manage all submitted claims across all channels.</div>
+    </div>
+  </div>
+
+  <!-- REPORTS TAB -->
+  <div class="tab-panel" id="tab-reports">
+    <div class="coming-soon">
+      <div class="cs-icon">📊</div>
+      <div class="cs-text">Published reports — browse, edit, unpublish, and view engagement metrics for all fact-check reports.</div>
+    </div>
+  </div>
+
+</div><!-- /phone-wrap -->
+
+<script>
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function openReview() {
+    document.getElementById('reviewOverlay').classList.add('open');
+    document.getElementById('reviewOverlay').scrollTop = 0;
+  }
+  function closeReview() {
+    document.getElementById('reviewOverlay').classList.remove('open');
+  }
+</script>
+
+</body>
+</html>
