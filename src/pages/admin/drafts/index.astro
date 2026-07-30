@@ -1,0 +1,312 @@
+---
+/**
+ * Draft queue — TYPE 3 drafts awaiting review, sortable by submission count,
+ * confidence, or age. Ported from wireframes/admin.html.
+ */
+import AdminBase from '../../../layouts/AdminBase.astro';
+import VerdictBadge from '../../../components/VerdictBadge.astro';
+import { getDb } from '../../../lib/db/client';
+import { getDraftQueue, type DraftSort } from '../../../lib/db/admin';
+
+export const prerender = false;
+
+const sortParam = Astro.url.searchParams.get('sort');
+const sort: DraftSort = sortParam === 'confidence' || sortParam === 'age' ? sortParam : 'submissions';
+
+const drafts = await getDraftQueue(getDb(), sort);
+
+const CHANNEL_ICON: Record<string, string> = {
+  whatsapp: '📱',
+  telegram: '✈️',
+  web: '🌐',
+  email: '📧',
+  extension: '🧩',
+  api: '🔌',
+};
+
+const sorts: { key: DraftSort; label: string }[] = [
+  { key: 'submissions', label: 'Submissions' },
+  { key: 'confidence', label: 'Confidence' },
+  { key: 'age', label: 'Age' },
+];
+
+function timeAgo(iso: string): string {
+  const hrs = Math.round((Date.now() - Date.parse(iso)) / 3600000);
+  if (hrs < 1) return 'under an hour ago';
+  if (hrs < 24) return `${hrs} hour${hrs === 1 ? '' : 's'} ago`;
+  return `${Math.round(hrs / 24)} day${Math.round(hrs / 24) === 1 ? '' : 's'} ago`;
+}
+---
+
+<AdminBase title="Draft Queue" active="drafts">
+  <div class="head">
+    <p class="count">{drafts.length} draft{drafts.length === 1 ? '' : 's'} pending review</p>
+    <div class="sorts">
+      <span class="sorts-label">Sort by</span>
+      {
+        sorts.map((s) => (
+          <a class:list={['sort-btn', { active: sort === s.key }]} href={`/admin/drafts?sort=${s.key}`}>
+            {s.label}
+          </a>
+        ))
+      }
+    </div>
+  </div>
+
+  {
+    drafts.length === 0 ? (
+      <div class="empty">
+        <p class="empty-title">The queue is clear.</p>
+        <p>No TYPE 3 drafts are waiting. New drafts appear here when the AI deep-check finds enough evidence to form a provisional view.</p>
+      </div>
+    ) : (
+      <ul class="draft-list">
+        {drafts.map((d) => (
+          <li class="draft-card">
+            <div class="draft-main">
+              <div class="draft-top">
+                {d.confidence !== null && <span class="conf">{d.confidence}%</span>}
+                <VerdictBadge verdict={d.verdict} size="sm" />
+              </div>
+              <p class="claim">“{d.canonical_text}”</p>
+              <div class="meta">
+                <span>📥 {d.submission_count} submission{d.submission_count === 1 ? '' : 's'}</span>
+                <span>⏱ {timeAgo(d.created_at)}</span>
+                {d.subscriber_count > 0 && <span>🔔 {d.subscriber_count} waiting</span>}
+              </div>
+              <div class="channels">
+                {Object.entries(d.channels).map(([ch, n]) => (
+                  <span class="channel">{CHANNEL_ICON[ch] ?? '•'} {ch} ({n})</span>
+                ))}
+              </div>
+            </div>
+            <div class="draft-actions">
+              <a class="btn-primary" href={`/admin/drafts/${d.claim_id}`}>Review &amp; Edit →</a>
+              <button class="btn-danger" type="button" data-reject={d.claim_id}>Reject</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</AdminBase>
+
+<style>
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .sorts {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sorts-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-right: 2px;
+  }
+
+  .sort-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .sort-btn.active {
+    border-color: var(--brand);
+    color: var(--brand);
+    background: var(--brand-light);
+  }
+
+  .draft-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .draft-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+    display: flex;
+    gap: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .draft-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .draft-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .conf {
+    font-family: var(--font-brand);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .claim {
+    font-family: var(--font-brand);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .channels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .channel {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 2px 8px;
+  }
+
+  .draft-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    text-align: center;
+  }
+
+  .btn-primary:hover {
+    background: var(--brand-dark);
+  }
+
+  .btn-danger {
+    background: var(--surface);
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    cursor: pointer;
+  }
+
+  .btn-danger:hover {
+    background: #fef2f2;
+  }
+
+  .empty {
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--r);
+    padding: 40px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .empty-title {
+    font-family: var(--font-brand);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 860px) {
+    .draft-card {
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .draft-actions {
+      flex-direction: row;
+    }
+
+    .btn-primary,
+    .btn-danger {
+      flex: 1;
+    }
+  }
+</style>
+
+<script>
+  // Reject straight from the queue, with a reason prompt.
+  document.querySelectorAll<HTMLButtonElement>('[data-reject]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const claimId = btn.dataset.reject!;
+      const reason = prompt('Reason for rejecting this draft (e.g. duplicate, insufficient public interest):');
+      if (reason === null) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Rejecting…';
+      try {
+        const res = await fetch(`/api/admin/drafts/${claimId}/reject`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ reason }),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as { error?: string; url?: string } | null;
+          throw new Error(body?.error || `Failed (${res.status})`);
+        }
+        btn.closest('li')?.remove();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Reject failed.');
+        btn.disabled = false;
+        btn.textContent = 'Reject';
+      }
+    });
+  });
+</script>

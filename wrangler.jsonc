@@ -24,14 +24,25 @@
 
   // Secrets (ANTHROPIC_API_KEY, GOOGLE_FACT_CHECK_API_KEY) come from .dev.vars
   // locally and `wrangler secret put` in production. Never put them here.
+  //
+  // CF_ACCESS_* are not secrets — they identify the Access application, and
+  // admin auth fails closed without them. ADMIN_DEV_EMAIL is the local-only
+  // admin identity; src/lib/auth.ts ignores it unless ENVIRONMENT is exactly
+  // "development", so the staging and production blocks below can never use it.
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "development",
+    "ADMIN_DEV_EMAIL": "editorial@fcheck.in"
   },
 
   "env": {
     "staging": {
       "name": "fcheck-in-staging",
-      "vars": { "ENVIRONMENT": "staging" },
+      "vars": {
+        "ENVIRONMENT": "staging",
+        // From: Cloudflare dashboard → Zero Trust → Access → Applications
+        "CF_ACCESS_TEAM_DOMAIN": "PLACEHOLDER.cloudflareaccess.com",
+        "CF_ACCESS_AUD": "PLACEHOLDER_ACCESS_APPLICATION_AUD"
+      },
       "d1_databases": [
         {
           "binding": "DB",

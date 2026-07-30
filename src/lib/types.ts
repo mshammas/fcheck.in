@@ -22,6 +22,19 @@ export type NotifyVia = 'email' | 'whatsapp' | 'telegram' | 'web_push';
 
 export type FactCheckerTier = 1 | 2;
 
+export type AdminRole = 'super_admin' | 'editor' | 'reviewer';
+
+export type AuditAction =
+  | 'publish'
+  | 'reject'
+  | 'edit'
+  | 'pin'
+  | 'unpin'
+  | 'approve_trending'
+  | 'remove_trending';
+
+export type AuditEntityType = 'claim' | 'report' | 'trending_card';
+
 /** Maps a source_type to the TYPE number users and docs refer to. */
 export const TYPE_NUMBER: Record<SourceType, 1 | 2 | 3 | 4> = {
   original: 1,
@@ -83,6 +96,26 @@ export interface ReportRow {
   fact_checker_id: string | null;
   published_by: string | null;
   published_at: string;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  active: number;
+  last_login_at: string | null;
+  created_at: string;
+}
+
+export interface AuditLogRow {
+  id: string;
+  admin_user_id: string;
+  action: AuditAction;
+  entity_type: AuditEntityType;
+  entity_id: string;
+  diff: string | null;
+  created_at: string;
 }
 
 export interface FactCheckerRow {

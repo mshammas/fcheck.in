@@ -7,3 +7,8 @@ ANTHROPIC_API_KEY="sk-ant-..."
 # Google Fact Check Tools API — external fact-checker search (TYPE 2)
 # https://console.cloud.google.com → enable "Fact Check Tools API" → create API key
 GOOGLE_FACT_CHECK_API_KEY="AIza..."
+
+# Admin auth: nothing needed here for local dev. /admin uses the ADMIN_DEV_EMAIL
+# bypass from wrangler.jsonc (only active when ENVIRONMENT=development). In
+# staging/production, Cloudflare Access supplies the identity — set
+# CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD in the wrangler env block, not here.

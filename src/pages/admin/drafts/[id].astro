@@ -1,0 +1,640 @@
+---
+/**
+ * Draft review & edit — the human-in-the-loop screen.
+ *
+ * An admin can adjust the verdict, headline, summary, body, evidence, and tags,
+ * then publish (→ TYPE 1) or reject. Opening the draft marks it under_review.
+ * Ported from wireframes/admin.html.
+ */
+import AdminBase from '../../../layouts/AdminBase.astro';
+import { getDb } from '../../../lib/db/client';
+import { getDraftDetail, markUnderReview } from '../../../lib/db/admin';
+import { canPublish } from '../../../lib/auth';
+import { parseEvidence, parseTags, VERDICT_LABELS, type Verdict, type AdminUser } from '../../../lib/types';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const db = getDb();
+const detail = id ? await getDraftDetail(db, id) : null;
+
+if (!detail) {
+  return new Response('Draft not found', { status: 404 });
+}
+
+// Opening a draft is what moves it from draft → under_review.
+await markUnderReview(db, detail.claim.id);
+
+const admin = Astro.locals.admin as AdminUser;
+const mayPublish = canPublish(admin);
+
+const evidence = parseEvidence(detail.report.evidence);
+const tags = parseTags(detail.report.tags);
+const verdicts: Verdict[] = ['FALSE', 'MISLEADING', 'TRUE', 'UNVERIFIABLE', 'OUTDATED', 'SATIRE'];
+
+const totalSubs = Object.values(detail.channels).reduce((a, b) => a + b, 0);
+---
+
+<AdminBase title="Review Draft" active="drafts">
+  <a slot="actions" class="topbar-btn" href="/admin/drafts">← Back to queue</a>
+
+  <p class="claim-quote">“{detail.claim.canonical_text}”</p>
+
+  <form id="draft-form" data-claim-id={detail.claim.id}>
+    <div class="grid">
+      <div class="col-main">
+        <section class="edit-card">
+          <h2 class="card-title">Edit draft</h2>
+          <p class="card-hint">All fields are editable before publishing.</p>
+
+          <label class="field-label">Verdict</label>
+          <div class="verdict-picker" role="radiogroup" aria-label="Verdict">
+            {
+              verdicts.map((v) => (
+                <label class:list={['vopt', `v-${v.toLowerCase()}`, { selected: detail.claim.verdict === v }]}>
+                  <input type="radio" name="verdict" value={v} checked={detail.claim.verdict === v} />
+                  <span class="dot" aria-hidden="true">●</span>
+                  {VERDICT_LABELS[v]}
+                </label>
+              ))
+            }
+          </div>
+
+          <label class="field-label" for="f-headline">Headline</label>
+          <input class="input" id="f-headline" name="headline" type="text" value={detail.report.headline} />
+
+          <label class="field-label" for="f-summary">Verdict summary (shown on the results page)</label>
+          <textarea class="input" id="f-summary" name="summary" rows="3">{detail.report.summary}</textarea>
+
+          <label class="field-label" for="f-body">Full verdict body (Markdown)</label>
+          <textarea class="input mono" id="f-body" name="body" rows="10">{detail.report.body}</textarea>
+
+          <div class="ev-head">
+            <label class="field-label">Evidence</label>
+            <button type="button" class="add-btn" id="add-evidence">+ Add source</button>
+          </div>
+          <div id="evidence-list" class="evidence-list">
+            {
+              evidence.map((item) => (
+                <div class="ev-row">
+                  <input class="input ev-source" placeholder="Source name" value={item.source} />
+                  <input class="input ev-url" placeholder="https://…" value={item.url} />
+                  <input class="input ev-snippet" placeholder="Supporting passage" value={item.snippet} />
+                  <input class="input ev-date" placeholder="Date" value={item.date ?? ''} />
+                  <button type="button" class="ev-remove" aria-label="Remove source">×</button>
+                </div>
+              ))
+            }
+          </div>
+
+          <label class="field-label" for="f-tags">Tags (comma-separated)</label>
+          <input class="input" id="f-tags" name="tags" type="text" value={tags.join(', ')} />
+
+          <div class="save-row">
+            <button type="button" class="btn-secondary" id="save-draft">Save changes</button>
+            <span class="save-status" id="save-status" role="status"></span>
+          </div>
+        </section>
+
+        {
+          mayPublish ? (
+            <section class="publish-card">
+              <button type="button" class="btn-publish" id="publish-btn">✓ Publish report</button>
+              <button type="button" class="btn-reject" id="reject-btn">✗ Reject</button>
+              <p class="publish-note">
+                Publishing makes this a live TYPE 1 article
+                {detail.subscriber_count > 0 ? ` and notifies ${detail.subscriber_count} subscriber${detail.subscriber_count === 1 ? '' : 's'}` : ''}.
+                Save your edits first — publish uses the last saved version.
+              </p>
+              <p class="publish-status" id="publish-status" role="status"></p>
+            </section>
+          ) : (
+            <section class="publish-card">
+              <p class="publish-note">
+                Your role ({admin.role}) can review and edit drafts, but publishing and rejecting are
+                restricted to editors. Save your changes for an editor to publish.
+              </p>
+            </section>
+          )
+        }
+      </div>
+
+      <aside class="col-side">
+        <section class="side-card">
+          <h3 class="side-title">AI analysis</h3>
+          <div class="conf-block">
+            <span class="conf-num">{detail.claim.confidence ?? '—'}{detail.claim.confidence !== null ? '%' : ''}</span>
+            <span class="conf-cap">AI confidence at draft time</span>
+          </div>
+          <p class="side-note">
+            This score reflects the source quality and quantity the AI found. Your published verdict
+            replaces it — the confidence bar is not shown on TYPE 1 articles.
+          </p>
+        </section>
+
+        <section class="side-card">
+          <h3 class="side-title">Submissions</h3>
+          <dl class="subs">
+            <div><dt>Total</dt><dd>{totalSubs}</dd></div>
+            {Object.entries(detail.channels).map(([ch, n]) => (
+              <div><dt>{ch}</dt><dd>{n}</dd></div>
+            ))}
+            <div><dt>Subscribers waiting</dt><dd>{detail.subscriber_count}</dd></div>
+            <div><dt>First seen</dt><dd>{new Date(detail.claim.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</dd></div>
+          </dl>
+        </section>
+
+        {
+          detail.similar.length > 0 && (
+            <section class="side-card warn">
+              <h3 class="side-title">Similar in database</h3>
+              <p class="side-note">
+                {detail.similar.length} related published report{detail.similar.length === 1 ? '' : 's'}.
+                Review before publishing to avoid duplication.
+              </p>
+              <ul class="similar">
+                {detail.similar.map((s) => (
+                  <li>
+                    <a href={s.slug ? `/article/${s.slug}` : `/check/${s.claim_id}`} target="_blank" rel="noopener">
+                      {s.headline} ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+      </aside>
+    </div>
+  </form>
+</AdminBase>
+
+<style>
+  .claim-quote {
+    font-family: var(--font-brand);
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.5;
+    border-left: 3px solid var(--brand);
+    padding-left: 16px;
+    margin-bottom: 22px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .col-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .edit-card,
+  .publish-card,
+  .side-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-title {
+    font-family: var(--font-brand);
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .card-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin: 16px 0 6px;
+  }
+
+  .verdict-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .vopt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--text-secondary);
+    background: var(--surface);
+  }
+
+  .vopt input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .vopt .dot {
+    font-size: 9px;
+  }
+
+  .vopt.selected.v-false { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+  .vopt.selected.v-misleading { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+  .vopt.selected.v-true { color: #15803d; background: #f0fdf4; border-color: #bbf7d0; }
+  .vopt.selected.v-unverifiable { color: #475569; background: #f8fafc; border-color: #cbd5e1; }
+  .vopt.selected.v-outdated { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+  .vopt.selected.v-satire { color: #6d28d9; background: #f5f3ff; border-color: #ddd6fe; }
+
+  .v-false .dot { color: #ef4444; }
+  .v-misleading .dot { color: #f97316; }
+  .v-true .dot { color: #22c55e; }
+  .v-unverifiable .dot { color: #8b5cf6; }
+  .v-outdated .dot { color: #eab308; }
+  .v-satire .dot { color: #ec4899; }
+
+  .input {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    resize: vertical;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+  }
+
+  .mono {
+    font-family: ui-monospace, 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .ev-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .add-btn {
+    background: none;
+    border: none;
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .evidence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ev-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 2fr 0.8fr auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .ev-remove {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    color: #b91c1c;
+    cursor: pointer;
+    font-size: 16px;
+    width: 32px;
+    height: 34px;
+  }
+
+  .save-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+
+  .save-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .publish-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-publish {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 13px;
+    cursor: pointer;
+  }
+
+  .btn-publish:hover {
+    background: var(--brand-dark);
+  }
+
+  .btn-publish:disabled {
+    background: var(--text-muted);
+    cursor: wait;
+  }
+
+  .btn-reject {
+    background: var(--surface);
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px;
+    cursor: pointer;
+  }
+
+  .btn-reject:hover {
+    background: #fef2f2;
+  }
+
+  .publish-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .publish-status {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .publish-status.ok {
+    color: var(--success-text);
+  }
+
+  .publish-status.err {
+    color: #b91c1c;
+  }
+
+  .col-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .side-title {
+    font-family: var(--font-brand);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .side-card.warn {
+    border-color: var(--alert-border);
+    background: var(--alert-bg);
+  }
+
+  .conf-block {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+
+  .conf-num {
+    font-family: var(--font-brand);
+    font-size: 28px;
+    font-weight: 800;
+  }
+
+  .conf-cap {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .side-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .subs {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .subs div {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .subs div:last-child {
+    border-bottom: none;
+  }
+
+  .subs dt {
+    color: var(--text-secondary);
+    text-transform: capitalize;
+  }
+
+  .subs dd {
+    font-weight: 700;
+  }
+
+  .similar {
+    list-style: none;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .similar a {
+    font-size: 12px;
+    color: var(--brand-dark);
+    text-decoration: none;
+  }
+
+  @media (max-width: 860px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ev-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const form = document.getElementById('draft-form') as HTMLFormElement;
+  const claimId = form.dataset.claimId!;
+
+  // Keep the selected verdict's swatch highlighted.
+  form.querySelectorAll<HTMLInputElement>('input[name="verdict"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      form.querySelectorAll('.vopt').forEach((o) => o.classList.remove('selected'));
+      if (radio.checked) radio.closest('.vopt')?.classList.add('selected');
+    });
+  });
+
+  // Evidence rows: add / remove.
+  const evList = document.getElementById('evidence-list')!;
+  document.getElementById('add-evidence')?.addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'ev-row';
+    row.innerHTML =
+      '<input class="input ev-source" placeholder="Source name">' +
+      '<input class="input ev-url" placeholder="https://…">' +
+      '<input class="input ev-snippet" placeholder="Supporting passage">' +
+      '<input class="input ev-date" placeholder="Date">' +
+      '<button type="button" class="ev-remove" aria-label="Remove source">×</button>';
+    evList.appendChild(row);
+  });
+  evList.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.ev-remove');
+    if (btn) btn.closest('.ev-row')?.remove();
+  });
+
+  function collectEdits() {
+    const verdict = (form.querySelector<HTMLInputElement>('input[name="verdict"]:checked'))?.value;
+    const evidence = [...evList.querySelectorAll('.ev-row')]
+      .map((row) => ({
+        source: (row.querySelector<HTMLInputElement>('.ev-source')?.value ?? '').trim(),
+        url: (row.querySelector<HTMLInputElement>('.ev-url')?.value ?? '').trim(),
+        snippet: (row.querySelector<HTMLInputElement>('.ev-snippet')?.value ?? '').trim(),
+        date: (row.querySelector<HTMLInputElement>('.ev-date')?.value ?? '').trim() || undefined,
+      }))
+      .filter((e) => e.source || e.url || e.snippet);
+
+    return {
+      verdict,
+      headline: (document.getElementById('f-headline') as HTMLInputElement).value.trim(),
+      summary: (document.getElementById('f-summary') as HTMLTextAreaElement).value.trim(),
+      body: (document.getElementById('f-body') as HTMLTextAreaElement).value,
+      tags: (document.getElementById('f-tags') as HTMLInputElement).value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      evidence,
+    };
+  }
+
+  async function save(): Promise<boolean> {
+    const status = document.getElementById('save-status')!;
+    status.textContent = 'Saving…';
+    const res = await fetch(`/api/admin/drafts/${claimId}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(collectEdits()),
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string; url?: string } | null;
+      status.textContent = body?.error || `Save failed (${res.status})`;
+      return false;
+    }
+    status.textContent = 'Saved.';
+    return true;
+  }
+
+  document.getElementById('save-draft')?.addEventListener('click', save);
+
+  document.getElementById('publish-btn')?.addEventListener('click', async () => {
+    const status = document.getElementById('publish-status')!;
+    const btn = document.getElementById('publish-btn') as HTMLButtonElement;
+    status.className = 'publish-status';
+
+    if (!(await save())) {
+      status.className = 'publish-status err';
+      status.textContent = 'Fix the errors above before publishing.';
+      return;
+    }
+
+    btn.disabled = true;
+    status.textContent = 'Publishing…';
+    try {
+      const res = await fetch(`/api/admin/drafts/${claimId}/publish`, { method: 'POST' });
+      const body = (await res.json().catch(() => null)) as { error?: string; url?: string } | null;
+      if (!res.ok || !body?.url) throw new Error(body?.error || `Publish failed (${res.status})`);
+      const url = body.url;
+      status.className = 'publish-status ok';
+      status.textContent = 'Published. Redirecting to the live article…';
+      setTimeout(() => (window.location.href = url), 900);
+    } catch (err) {
+      status.className = 'publish-status err';
+      status.textContent = err instanceof Error ? err.message : 'Publish failed.';
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('reject-btn')?.addEventListener('click', async () => {
+    const reason = prompt('Reason for rejecting this draft:');
+    if (reason === null) return;
+    const status = document.getElementById('publish-status')!;
+    status.className = 'publish-status';
+    status.textContent = 'Rejecting…';
+    try {
+      const res = await fetch(`/api/admin/drafts/${claimId}/reject`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+      const body = (await res.json().catch(() => null)) as { error?: string; url?: string } | null;
+      if (!res.ok) throw new Error(body?.error || `Reject failed (${res.status})`);
+      status.className = 'publish-status ok';
+      status.textContent = 'Rejected. Returning to the queue…';
+      setTimeout(() => (window.location.href = '/admin/drafts'), 800);
+    } catch (err) {
+      status.className = 'publish-status err';
+      status.textContent = err instanceof Error ? err.message : 'Reject failed.';
+    }
+  });
+</script>

@@ -12,7 +12,20 @@ declare namespace Cloudflare {
     ANTHROPIC_API_KEY?: string;
     /** External fact-checker search (TYPE 2). */
     GOOGLE_FACT_CHECK_API_KEY?: string;
+    /** Cloudflare Access team domain, e.g. "acme.cloudflareaccess.com". */
+    CF_ACCESS_TEAM_DOMAIN?: string;
+    /** Access application audience tag — binds tokens to this app. */
+    CF_ACCESS_AUD?: string;
+    /** Local-only admin identity. Ignored unless ENVIRONMENT is 'development'. */
+    ADMIN_DEV_EMAIL?: string;
   }
 }
 
 interface Env extends Cloudflare.Env {}
+
+declare namespace App {
+  interface Locals {
+    /** Set by middleware on admin routes; absent everywhere else. */
+    admin?: import('./lib/types').AdminUser;
+  }
+}

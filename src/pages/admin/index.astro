@@ -1,0 +1,262 @@
+---
+/**
+ * Admin overview — the counters and recent activity from wireframes/admin.html.
+ */
+import AdminBase from '../../layouts/AdminBase.astro';
+import { getDb } from '../../lib/db/client';
+import { getOverview, getRecentActivity } from '../../lib/db/admin';
+
+export const prerender = false;
+
+const db = getDb();
+const [stats, activity] = await Promise.all([getOverview(db), getRecentActivity(db, 12)]);
+
+const cards = [
+  { label: 'Drafts pending review', value: stats.drafts_pending, sub: `${stats.high_confidence_drafts} high confidence`, href: '/admin/drafts' },
+  { label: 'Trending queue health', value: stats.trending_active, sub: stats.trending_active < 5 ? '⚠ Low — refresh needed' : 'Healthy', warn: stats.trending_active < 5, href: '/admin/trending' },
+  { label: 'Claims today', value: stats.claims_today, sub: 'in the last 24 hours' },
+  { label: 'Published this week', value: stats.published_this_week, sub: 'reviewed and live' },
+];
+
+function describe(row: Record<string, any>): { label: string; detail: string } {
+  const diff = row.diff ? JSON.parse(row.diff) : {};
+  const who = row.admin_name ?? 'An admin';
+  switch (row.action) {
+    case 'publish':
+      return { label: 'Report published', detail: `${who} published a report → TYPE 1${diff.slug ? ` · /article/${diff.slug}` : ''}` };
+    case 'reject':
+      return { label: 'Draft rejected', detail: `${who} rejected a draft${diff.reason ? ` · ${diff.reason}` : ''}` };
+    case 'edit':
+      return { label: 'Draft edited', detail: `${who} edited a draft before publishing` };
+    case 'approve_trending':
+      return { label: 'Trending approved', detail: `${who} added a card to the trending queue` };
+    case 'remove_trending':
+      return { label: 'Trending removed', detail: `${who} removed a card from the queue` };
+    case 'pin':
+      return { label: 'Card pinned', detail: `${who} pinned a trending card` };
+    case 'unpin':
+      return { label: 'Card unpinned', detail: `${who} unpinned a trending card` };
+    default:
+      return { label: row.action, detail: who };
+  }
+}
+
+function timeAgo(iso: string): string {
+  const mins = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
+// Precomputed here rather than in the template — a generic cast like
+// `row as Record<string, any>` inside JSX is parsed as an opening tag.
+const activityItems = activity.map((row) => {
+  const r = row as Record<string, any>;
+  return { ...describe(r), time: timeAgo(r.created_at) };
+});
+---
+
+<AdminBase title="Overview" active="overview">
+  <a slot="actions" class="topbar-btn primary" href="/admin/drafts">📝 Review drafts ({stats.drafts_pending})</a>
+
+  <div class="stat-grid">
+    {
+      cards.map((card) => (
+        <a class:list={['stat-card', { link: !!card.href, warn: card.warn }]} href={card.href ?? undefined}>
+          <span class="stat-label">{card.label}</span>
+          <span class="stat-value">{card.value}</span>
+          <span class="stat-sub">{card.sub}</span>
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="panels">
+    <section class="panel">
+      <h2 class="panel-title">Recent activity</h2>
+      {
+        activity.length === 0 ? (
+          <p class="empty">No admin activity yet. Published reports, rejections, and trending changes appear here.</p>
+        ) : (
+          <ul class="activity">
+            {activityItems.map((d) => (
+              <li>
+                <div>
+                  <span class="act-label">{d.label}</span>
+                  <span class="act-detail">{d.detail}</span>
+                </div>
+                <span class="act-time">{d.time}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Pipeline health</h2>
+      <dl class="health">
+        <div><dt>TYPE 4 awaiting re-check</dt><dd>{stats.type4_awaiting_recheck}</dd></div>
+        <div><dt>TYPE 3 in preliminary state</dt><dd>{stats.type3_preliminary}</dd></div>
+        <div><dt>Subscribers waiting for reports</dt><dd>{stats.subscribers_waiting}</dd></div>
+      </dl>
+      <p class="note">
+        Background re-check, crawler, and trending-expiry jobs are not built yet, so these counts
+        only move when a claim is submitted or an admin acts.
+      </p>
+    </section>
+  </div>
+</AdminBase>
+
+<style>
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat-card.link:hover {
+    border-color: var(--brand-mid);
+  }
+
+  .stat-card.warn {
+    border-color: var(--alert-border);
+    background: var(--alert-bg);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-brand);
+    font-size: 30px;
+    font-weight: 800;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .warn .stat-sub {
+    color: var(--alert-text);
+  }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 20px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel-title {
+    font-family: var(--font-brand);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  .activity {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .activity li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity li:last-child {
+    border-bottom: none;
+  }
+
+  .act-label {
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+  }
+
+  .act-detail {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .act-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .health {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .health div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .health dt {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .health dd {
+    font-family: var(--font-brand);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .note {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-top: 14px;
+  }
+
+  .empty {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 860px) {
+    .panels {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
