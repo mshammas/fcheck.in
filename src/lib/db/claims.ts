@@ -193,6 +193,71 @@ export async function insertReport(db: D1Database, report: NewReport): Promise<s
   return id;
 }
 
+export interface PublishedReportRow {
+  claim_id: string;
+  headline: string;
+  summary: string;
+  slug: string | null;
+  verdict: Verdict | null;
+  source_type: SourceType;
+  published_at: string | null;
+  country: string | null;
+  tags: string;
+  fact_checker_name: string | null;
+  fact_checker_tier: 1 | 2 | null;
+  external_url: string | null;
+}
+
+/**
+ * Published reports for the editorial homepage — live TYPE 1 and TYPE 2, newest
+ * first. Exactly one report per claim: when a claim has both an original and an
+ * external report (the TYPE 3 → 2 → 1 path), the fcheck.in original wins, so the
+ * grid never shows the same claim twice.
+ */
+export async function getPublishedReports(db: D1Database, limit = 13): Promise<PublishedReportRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT c.id AS claim_id, r.headline, r.summary, r.slug, c.verdict, c.source_type,
+              r.published_at, r.country, r.tags,
+              f.name AS fact_checker_name, f.tier AS fact_checker_tier, r.external_url
+       FROM claims c
+       JOIN reports r ON r.id = (
+         SELECT rp.id FROM reports rp
+         WHERE rp.claim_id = c.id AND rp.report_type IN ('original', 'external')
+         ORDER BY CASE rp.report_type WHEN 'original' THEN 0 ELSE 1 END
+         LIMIT 1
+       )
+       LEFT JOIN fact_checkers f ON f.id = r.fact_checker_id
+       WHERE c.status = 'published' AND c.source_type IN ('original', 'external')
+       ORDER BY r.published_at DESC
+       LIMIT ?`
+    )
+    .bind(limit)
+    .all<PublishedReportRow>();
+  return results ?? [];
+}
+
+export interface EditorialStats {
+  claims_this_week: number;
+  reports_this_week: number;
+  fact_checkers: number;
+}
+
+/** The sidebar "This Week" counters — public, so no admin coupling. */
+export async function getEditorialStats(db: D1Database): Promise<EditorialStats> {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const row = await db
+    .prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM claims WHERE created_at >= ?) AS claims_this_week,
+         (SELECT COUNT(*) FROM claims WHERE status = 'published' AND published_at >= ?) AS reports_this_week,
+         (SELECT COUNT(*) FROM fact_checkers WHERE active = 1) AS fact_checkers`
+    )
+    .bind(weekAgo, weekAgo)
+    .first<EditorialStats>();
+  return row ?? { claims_this_week: 0, reports_this_week: 0, fact_checkers: 0 };
+}
+
 /** Trending queue: pinned cards first, then unexpired queue cards in order. */
 export async function getTrending(db: D1Database, limit = 12) {
   const { results } = await db

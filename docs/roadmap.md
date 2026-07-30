@@ -4,19 +4,19 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — Editorial-mode homepage.** When resuming ("continue with next
-> step"), work the item marked **▶ Next** in the M3 list below (*Editorial-mode
-> homepage*). It is the next item with no external blocker — the remaining M2
-> items all wait on provisioning or credentials. (Absent an explicit ▶ marker,
-> the default is the first item not `[x]`.)
+> **▶ Next step — TL;DR share flow.** When resuming ("continue with next step"),
+> work the item marked **▶ Next** in the M3 list below (*TL;DR share flow*). It
+> has no external blocker — a share control on report pages plus a small,
+> report-scoped Claude call for the per-platform TL;DR. (Absent an explicit ▶
+> marker, the default is the first item not `[x]`.)
 >
-> Built so far in M2: *Subscriber notifications* (email), *Media analysis*
+> Built so far in M2/M3: *Subscriber notifications* (email), *Media analysis*
 > (images + PDFs), *Embedding fingerprinting* (falls back to hash + FTS until a
-> Vectorize index is provisioned), and the **WhatsApp** bot channel (inbound
-> webhook → pipeline → reply, inert until Meta credentials are set). Still
-> waiting on provisioning/credentials: audio/video media, the Vectorize index,
-> non-email notification delivery, and the other bot channels (Telegram/email/
-> extension) — flagged on their items.
+> Vectorize index is provisioned), the **WhatsApp** bot channel (inert until Meta
+> credentials are set), and the **Editorial-mode homepage**. Still waiting on
+> provisioning/credentials: audio/video media, the Vectorize index, non-email
+> notification delivery, and the other bot channels (Telegram/email/extension) —
+> flagged on their items.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -125,13 +125,16 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 
 ## M3 — surface & polish
 
-### ▶ Next: Editorial-mode homepage
-- **Where:** `src/pages/index.astro` renders a placeholder for the `editorial`
-  panel today.
-- **Next action:** build featured report, latest-reports grid, and the sticky
-  sidebar filters (Region / Category / Country / Language). See [homepage.md](homepage.md).
+### [x] Editorial-mode homepage
+- **Built:** `src/pages/index.astro` editorial panel — featured report, 3-column
+  "Latest Reports" grid (`ReportCard.astro`), category pills + a Region sidebar
+  that filter the grid client-side, and a live "This Week" stats block. Data:
+  `getPublishedReports` / `getEditorialStats` (`src/lib/db/claims.ts`); pure
+  category/region mapping in `src/lib/editorial.ts`. Tests:
+  `test/editorial.test.ts`. Country/Language *dropdowns* (shared with Search)
+  remain their own item below.
 
-### [ ] TL;DR share flow
+### ▶ Next: TL;DR share flow
 - **Where:** report pages (`src/pages/article/[slug].astro`,
   `src/pages/check/[id].astro`) + a small Claude call scoped strictly to the
   report content.

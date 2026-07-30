@@ -11,17 +11,24 @@
 import Base from '../layouts/Base.astro';
 import SearchBar from '../components/SearchBar.astro';
 import TrendingCard from '../components/TrendingCard.astro';
+import ReportCard from '../components/ReportCard.astro';
+import VerdictBadge from '../components/VerdictBadge.astro';
+import SourceBadge from '../components/SourceBadge.astro';
 import { getDb } from '../lib/db/client';
 import { countActiveFactCheckers } from '../lib/db/factCheckers';
-import { getTrending } from '../lib/db/claims';
+import { getTrending, getPublishedReports, getEditorialStats, type PublishedReportRow } from '../lib/db/claims';
+import { parseTags } from '../lib/types';
+import { REGIONS, CATEGORY_LABELS, regionForCountry, categoriesForTags } from '../lib/editorial';
 import type { SourceType, Verdict } from '../lib/types';
 
 export const prerender = false;
 
 const db = getDb();
-const [factCheckerCount, trendingRows] = await Promise.all([
+const [factCheckerCount, trendingRows, publishedReports, stats] = await Promise.all([
   countActiveFactCheckers(db),
   getTrending(db, 12),
+  getPublishedReports(db, 13),
+  getEditorialStats(db),
 ]);
 
 const trending = trendingRows.map((row) => {
@@ -40,6 +47,27 @@ const trending = trendingRows.map((row) => {
       : null,
   };
 });
+
+// ── Editorial mode: featured report + latest grid ──────────────
+function toReport(r: PublishedReportRow) {
+  const categories = categoriesForTags(parseTags(r.tags));
+  return {
+    claimId: r.claim_id,
+    headline: r.headline,
+    summary: r.summary,
+    verdict: r.verdict,
+    sourceType: r.source_type,
+    url: r.source_type === 'original' && r.slug ? `/article/${r.slug}` : `/check/${r.claim_id}`,
+    publishedAt: r.published_at,
+    attribution: r.fact_checker_name ? { name: r.fact_checker_name, tier: r.fact_checker_tier } : null,
+    categories,
+    region: regionForCountry(r.country),
+  };
+}
+
+const reports = publishedReports.map(toReport);
+const featured = reports[0] ?? null;
+const latest = reports.slice(1);
 ---
 
 <Base title="fcheck.in — Fact-check anything. Instantly." showModeToggle={true}>
@@ -73,13 +101,87 @@ const trending = trendingRows.map((row) => {
   </div>
 
   <div data-mode-panel="editorial" hidden>
-    <section class="editorial-placeholder">
-      <h2>Editorial mode</h2>
-      <p>
-        The editorial view — featured report, latest reports grid, and region, category, country and
-        language filters — is not built yet. Switch back to Search to check a claim.
-      </p>
-    </section>
+    {
+      featured === null ? (
+        <section class="editorial-empty">
+          <h2>No published reports yet</h2>
+          <p>Once our team publishes reviewed reports, they will appear here. Switch to Search to check a claim.</p>
+        </section>
+      ) : (
+        <section class="editorial">
+          <div class="cat-pills" role="tablist" aria-label="Filter by category">
+            <button type="button" class="cpill active" data-category="all">All</button>
+            {CATEGORY_LABELS.map((label) => (
+              <button type="button" class="cpill" data-category={label}>{label}</button>
+            ))}
+          </div>
+
+          <div class="ed-layout">
+            <div class="ed-main">
+              <a class="featured" href={featured.url}>
+                <div class:list={['featured-img', featured.sourceType === 'original' ? 'own' : 'ext']} aria-hidden="true">
+                  <span>{featured.sourceType === 'original' ? '✓' : '⬢'}</span>
+                </div>
+                <div class="featured-body">
+                  <div class="featured-top">
+                    <VerdictBadge verdict={featured.verdict} size="sm" />
+                    <SourceBadge name={featured.attribution?.name ?? null} tier={featured.attribution?.tier ?? null} />
+                  </div>
+                  <h2 class="featured-hl">{featured.headline}</h2>
+                  <p class="featured-excerpt">{featured.summary}</p>
+                  <span class="read-btn">Read full report →</span>
+                </div>
+              </a>
+
+              <h2 class="latest-title">Latest Reports</h2>
+              {latest.length > 0 ? (
+                <div class="latest-grid" id="latest-grid">
+                  {latest.map((r) => (
+                    <ReportCard
+                      headline={r.headline}
+                      verdict={r.verdict}
+                      sourceType={r.sourceType}
+                      url={r.url}
+                      publishedAt={r.publishedAt}
+                      attribution={r.attribution}
+                      categories={r.categories}
+                      region={r.region}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p class="empty">This is the only published report so far — more are on the way.</p>
+              )}
+              <p class="no-match" id="ed-no-match" hidden>No reports match these filters yet.</p>
+            </div>
+
+            <aside class="ed-sidebar">
+              <div class="sidebar-box">
+                <h3>Filter by Region</h3>
+                <ul class="region-list" role="tablist" aria-label="Filter by region">
+                  {REGIONS.map((region, i) => (
+                    <li>
+                      <button type="button" class:list={['region-btn', i === 0 && 'active']} data-region={region}>
+                        {region}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div class="sidebar-box">
+                <h3>This Week</h3>
+                <div class="stat-box">
+                  <div class="stat-item"><span class="stat-label">Claims checked</span><span class="stat-value">{stats.claims_this_week.toLocaleString()}</span></div>
+                  <div class="stat-item"><span class="stat-label">Reports published</span><span class="stat-value">{stats.reports_this_week.toLocaleString()}</span></div>
+                  <div class="stat-item"><span class="stat-label">Fact-checkers</span><span class="stat-value">{stats.fact_checkers.toLocaleString()}</span></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      )
+    }
   </div>
 </Base>
 
@@ -154,21 +256,125 @@ const trending = trendingRows.map((row) => {
     text-align: center;
   }
 
-  .editorial-placeholder {
+  .editorial-empty {
     max-width: 640px;
     margin: 72px auto;
     padding: 0 32px;
     text-align: center;
   }
 
-  .editorial-placeholder h2 {
-    font-size: 22px;
+  .editorial-empty h2 { font-size: 22px; margin-bottom: 10px; }
+  .editorial-empty p { font-size: 14px; color: var(--text-secondary); }
+
+  /* ── Editorial mode ── */
+  .editorial { max-width: 1280px; margin: 0 auto; padding: 36px 32px 56px; }
+
+  .cat-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+
+  .cpill {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .cpill:hover { border-color: var(--brand-mid); color: var(--brand-dark); }
+  .cpill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .ed-layout { display: grid; grid-template-columns: 1fr 280px; gap: 32px; align-items: start; }
+
+  .featured {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.18s, transform 0.18s;
+  }
+
+  .featured:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+
+  .featured-img { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 44px; }
+  .featured-img.own { background: linear-gradient(135deg, var(--brand-light) 0%, #CCFBF1 100%); color: var(--brand); }
+  .featured-img.ext { background: linear-gradient(135deg, var(--type-2-bg) 0%, var(--type-2-bd) 100%); color: var(--type-2-text); }
+
+  .featured-body { padding: 24px; }
+  .featured-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+
+  .featured-hl {
+    font-family: var(--font-brand);
+    font-weight: 800;
+    font-size: 23px;
+    line-height: 1.32;
     margin-bottom: 10px;
   }
 
-  .editorial-placeholder p {
+  .featured-excerpt { font-size: 15px; line-height: 1.65; color: var(--text-secondary); margin-bottom: 16px; }
+
+  .read-btn { font-size: 14px; font-weight: 600; color: var(--brand-dark); }
+
+  .latest-title { font-family: var(--font-brand); font-weight: 700; font-size: 18px; margin: 36px 0 18px; }
+
+  .latest-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  .no-match { font-size: 14px; color: var(--text-secondary); padding: 24px 0; }
+
+  .sidebar-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    position: sticky;
+    top: 88px;
+  }
+
+  .sidebar-box h3 {
+    font-family: var(--font-brand);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .region-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+
+  .region-btn {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
     font-size: 14px;
     color: var(--text-secondary);
+    padding: 7px 10px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .region-btn:hover { background: var(--bg); color: var(--text-primary); }
+  .region-btn.active { background: var(--brand-light); color: var(--brand-dark); font-weight: 600; }
+
+  .stat-box { display: flex; flex-direction: column; gap: 12px; }
+  .stat-item { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .stat-label { font-size: 13px; color: var(--text-secondary); }
+  .stat-value { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 900px) {
+    .ed-layout { grid-template-columns: 1fr; }
+    .ed-sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .sidebar-box { position: static; margin-bottom: 0; }
+    .latest-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media (max-width: 720px) {
@@ -182,5 +388,58 @@ const trending = trendingRows.map((row) => {
       margin: 0 -16px;
       padding: 0 16px 4px;
     }
+    .editorial { padding: 24px 16px 40px; }
+    .featured-hl { font-size: 20px; }
+    .latest-grid { grid-template-columns: 1fr; }
+    .ed-sidebar { grid-template-columns: 1fr; }
   }
 </style>
+
+<script>
+  // Editorial filters: category pills + region list narrow the Latest Reports
+  // grid on the client — no round-trip, the data is already on the page. Both
+  // filters combine (AND); "All" / "Global" clear their axis.
+  const grid = document.getElementById('latest-grid');
+
+  if (grid) {
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>('[data-report-card]'));
+    const noMatch = document.getElementById('ed-no-match');
+    let category = 'all';
+    let region = 'Global';
+
+    function apply() {
+      let shown = 0;
+      for (const card of cards) {
+        const cats = (card.dataset.categories || '').split('|').filter(Boolean);
+        const catOk = category === 'all' || cats.includes(category);
+        const regionOk = region === 'Global' || card.dataset.region === region;
+        const visible = catOk && regionOk;
+        card.hidden = !visible;
+        if (visible) shown++;
+      }
+      if (noMatch) noMatch.hidden = shown > 0;
+    }
+
+    function activate(buttons: NodeListOf<HTMLElement>, chosen: HTMLElement) {
+      buttons.forEach((b) => b.classList.toggle('active', b === chosen));
+    }
+
+    const pills = document.querySelectorAll<HTMLElement>('.cpill');
+    pills.forEach((pill) =>
+      pill.addEventListener('click', () => {
+        category = pill.dataset.category || 'all';
+        activate(pills, pill);
+        apply();
+      })
+    );
+
+    const regionBtns = document.querySelectorAll<HTMLElement>('.region-btn');
+    regionBtns.forEach((btn) =>
+      btn.addEventListener('click', () => {
+        region = btn.dataset.region || 'Global';
+        activate(regionBtns, btn);
+        apply();
+      })
+    );
+  }
+</script>

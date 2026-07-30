@@ -3,8 +3,8 @@
 The public front door. Design ported from `wireframes/homepage.html` (+ the
 mobile variants) into `src/pages/index.astro`.
 
-**Status:** Search mode is built. Editorial mode currently renders a placeholder.
-The Country/Language filter UI and the TL;DR share flow are on the
+**Status:** Search mode and Editorial mode are both built. The Country/Language
+filter UI (for Search → `runPipeline`) and the TL;DR share flow are on the
 [roadmap](roadmap.md); the filter backend already works
 ([data-model.md](data-model.md)).
 
@@ -43,12 +43,21 @@ The Country/Language filter UI and the TL;DR share flow are on the
 - Trending section below (see below)
 - Toggle in top-right header: [Search] [Editorial] — active mode underlined
 
-### Editorial mode — placeholder
+### Editorial mode — built
 
-Intended: featured article (large card with image) at top; right sidebar (sticky)
-with Region / Category / Country / Language filters and a stats block; latest
-reports grid (3 columns desktop), narrowed by the same filters. Currently a
-placeholder panel in `index.astro`.
+A featured report (the newest published TYPE 1/2) at the top; a 3-column
+"Latest Reports" grid below; a sticky right sidebar with a Region filter and a
+"This Week" stats block (claims checked, reports published, active
+fact-checkers). Category pills across the top and the Region list filter the
+grid **client-side** — the data is already on the page, so filtering is instant
+and needs no round-trip. Category/region mapping is pure and shared
+(`src/lib/editorial.ts`); the data comes from `getPublishedReports` /
+`getEditorialStats` (`src/lib/db/claims.ts`). Cards reuse `ReportCard.astro`.
+
+The mode toggle itself is in `Base.astro` (shows/hides `[data-mode-panel]`),
+with the preference saved to localStorage. Country/Language *dropdowns* (shared
+with Search) remain on the roadmap; Region + Category cover editorial filtering
+today.
 
 ---
 
