@@ -22,6 +22,16 @@
     }
   ],
 
+  // Semantic claim matching (docs/setup.md). Left commented until the Vectorize
+  // index is provisioned — the code falls back to hash + FTS when these bindings
+  // are absent, and an unbound Vectorize index would otherwise break `wrangler
+  // dev`. To enable: run `wrangler vectorize create fcheck-claims
+  // --dimensions=768 --metric=cosine`, then uncomment both bindings.
+  // "ai": { "binding": "AI" },
+  // "vectorize": [
+  //   { "binding": "CLAIM_VECTORS", "index_name": "fcheck-claims" }
+  // ],
+
   // Secrets (ANTHROPIC_API_KEY, GOOGLE_FACT_CHECK_API_KEY) come from .dev.vars
   // locally and `wrangler secret put` in production. Never put them here.
   //

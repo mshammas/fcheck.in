@@ -45,15 +45,17 @@ background jobs (re-check, crawler, trending-expiry) driving the automatic
 promotions (TYPE 4→3, 4→2, 3→2), scheduled by a dedicated cron worker;
 subscriber notifications over email (subscribe endpoint + send path, wired into
 publish and the promotions); image + PDF analysis (read inline by Claude and
-folded into the claim package); an offline test suite. Web + API are the only
-live input channels.
+folded into the claim package); embedding-based semantic claim matching behind
+the `ClaimMatcher` interface (falls back to hash + FTS until a Vectorize index
+is provisioned); an offline test suite. Web + API are the only live input
+channels.
 
 **Not built yet (see [docs/roadmap.md](docs/roadmap.md)):** bot channels
 (WhatsApp/Telegram/email/extension), subscriber notification delivery on the
 non-email channels (WhatsApp/Telegram/web-push subscribers are recorded but not
-sent — rides on bot channels), embedding-based claim fingerprinting
-(currently hash + FTS), audio/video media analysis (images + PDFs are analysed;
-audio/video are accepted and flagged, pending transcription), editorial-mode
+sent — rides on bot channels), audio/video media analysis (images + PDFs are
+analysed; audio/video are accepted and flagged, pending transcription),
+editorial-mode
 homepage, and the TL;DR share flow.
 
 Two things only a human with credentials can do (both in [docs/setup.md](docs/setup.md)):
@@ -90,7 +92,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 
 | Path | What lives here |
 | --- | --- |
-| `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `media` (image/PDF analysis), `matcher`, `searchInternal`, `searchExternal`, `index`) |
+| `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `media` (image/PDF analysis), `matcher` + `embeddings` (semantic matching), `searchInternal`, `searchExternal`, `index`) |
 | `src/lib/jobs/` | Background jobs: `recheck`, `crawler`, `trending`, `promote` (automatic promotions), `index` (dispatch) |
 | `src/lib/providers/` | External APIs: `anthropic.ts` (Claude), `googleFactCheck.ts` |
 | `src/lib/notify/` | Subscriber notifications: `index` (service, called on publish/promotion), `email` (provider-agnostic HTTP send path) |
@@ -100,7 +102,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
 | `migrations/` | D1 schema + seeds (`0001`–`0004`) |
-| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, media analysis (real-SQL via `d1.ts`) |
+| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, media analysis, semantic matching (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
 
@@ -127,5 +129,7 @@ thing, pick one owner and cross-link from the other.
 ## Tech stack
 
 Cloudflare Workers (with static assets) + D1 (SQLite at edge) · Astro · Claude
-API (Haiku 4.5 extract, Sonnet 5 deep-check with web search) · Google Fact Check
-Tools API · WhatsApp/Telegram bots (planned). Domain `fcheck.in` on Cloudflare DNS.
+API (Haiku 4.5 extract + image/PDF read, Sonnet 5 deep-check with web search) ·
+Google Fact Check Tools API · Workers AI + Vectorize for semantic matching
+(optional; falls back to hash + FTS) · WhatsApp/Telegram bots (planned). Domain
+`fcheck.in` on Cloudflare DNS.

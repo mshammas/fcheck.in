@@ -44,6 +44,8 @@ export const POST: APIRoute = async (context) => {
         db: getDb(),
         anthropicApiKey: env.ANTHROPIC_API_KEY,
         googleFactCheckApiKey: env.GOOGLE_FACT_CHECK_API_KEY,
+        ai: env.AI,
+        vectorize: env.CLAIM_VECTORS,
         origin: new URL(context.request.url).origin,
       },
       request

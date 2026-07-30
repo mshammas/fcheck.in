@@ -4,18 +4,18 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — Embedding-based claim fingerprinting.** When resuming
-> ("continue with next step"), work the item marked **▶ Next** in the M2 list
-> below (*Embedding fingerprinting*). Note its **blocker**: a Vectorize index
-> must be provisioned (a human-only step) before the query path can run — do the
-> code behind the existing `ClaimMatcher` interface and flag the provisioning.
+> **▶ Next step — Bot channels (start with WhatsApp).** When resuming ("continue
+> with next step"), work the item marked **▶ Next** in the M2 list below (*Bot
+> channels*). Note its **blocker**: Meta/Telegram credentials and a verified
+> number are needed to run it live — build the inbound webhook + channel
+> formatter against the existing `runPipeline`, and flag the credential step.
 > (Absent an explicit ▶ marker, the default is the first item not `[x]`.)
 >
-> *Subscriber notifications* is built for **email**; *Media analysis* now reads
-> **images and PDFs** inline (Claude vision + document input) and folds them into
-> the claim package. Audio/video are still recorded and flagged — they need
-> transcription (a Workers AI / external-API blocker). WhatsApp/Telegram/web-push
-> subscribers are recorded but not yet delivered — both ride on later items.
+> *Subscriber notifications* is built for **email**; *Media analysis* reads
+> **images and PDFs** inline; *Embedding fingerprinting* is built and falls back
+> to hash + FTS until a Vectorize index is provisioned. Audio/video media,
+> non-email notification delivery, and the Vectorize index all wait on
+> provisioning/credentials — flagged on their items below.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -37,16 +37,21 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 
 ## M2 — core intelligence & reach
 
-### ▶ Next: Embedding-based claim fingerprinting
-- **Why:** the Bible specifies semantic matching so "warm water cures covid" and
-  "hot water kills the virus" resolve to one record. Today it's SHA-256 of
-  normalised text + an FTS5 second pass (≥ 0.75 token overlap).
-- **Where:** `src/lib/pipeline/matcher.ts` — add a second `ClaimMatcher` behind
-  the existing interface; swap `hashMatcher` in `src/lib/pipeline/index.ts`.
-- **Next action:** add a Workers AI embeddings call + a Vectorize binding in
-  `wrangler.jsonc`; store the vector on claim insert; query by cosine similarity
-  in `findMatch`, keeping the FTS pass as fallback.
-- **Blocker:** a Vectorize index must be provisioned.
+### [~] Embedding-based claim fingerprinting — built, needs a Vectorize index
+- **Built:** `createSemanticMatcher` (`src/lib/pipeline/matcher.ts`) layers
+  embedding similarity between the exact-hash and FTS passes;
+  `src/lib/pipeline/embeddings.ts` embeds via Workers AI
+  (`@cf/baai/bge-base-en-v1.5`, 768-dim), upserts each new claim's vector to a
+  Vectorize index on insert, and queries the nearest claim above a cosine
+  threshold (`SIMILARITY_THRESHOLD = 0.88`). Wired through `pipeline/index.ts`
+  (deps from `env.AI` / `env.CLAIM_VECTORS`). Tests: `test/embeddings.test.ts`.
+- **Fallback:** with the bindings absent — the default — every embedding op is a
+  no-op and matching is exactly today's hash + FTS. Nothing breaks pre-provision.
+- **Blocker (human-only, [setup.md](setup.md)):** `wrangler vectorize create
+  fcheck-claims --dimensions=768 --metric=cosine`, then uncomment the `ai` /
+  `vectorize` bindings in `wrangler.jsonc`. No backfill — claims created before
+  the index existed stay hash/FTS-matchable only. Tuning `SIMILARITY_THRESHOLD`
+  against real traffic is the follow-up once it's live.
 
 ### [~] Media analysis — images + PDFs built, audio/video pending
 - **Built:** images and PDFs are read inline by Claude (vision + document input)
@@ -63,7 +68,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   binding or an external transcription API (neither provisioned). Wire it as a
   new branch in `partitionMedia`/`analyzeMedia` once available.
 
-### [ ] Bot channels — WhatsApp, Telegram, email, browser extension
+### ▶ Next: Bot channels — WhatsApp, Telegram, email, browser extension
 - **Why:** highest-priority reach per the Bible; only `web` and `api` are wired.
   The `submissions.channel` enum already allows the others.
 - **Where:** new webhook routes under `src/pages/api/`; each normalises its

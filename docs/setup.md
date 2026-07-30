@@ -50,11 +50,12 @@ covers the two things that otherwise need live credentials to exercise:
 
 ---
 
-## The two things only you can do
+## Things only you can do
 
-Everything else in the app is built and verified. These two need
-credentials or a Cloudflare-dashboard action, so they can't be done from
-the codebase.
+Everything else in the app is built and verified. These need credentials or a
+Cloudflare-dashboard/CLI action, so they can't be done from the codebase. The
+first two are required for the live pipeline; the third is optional and the app
+runs without it.
 
 ### 1. API keys — makes the live check pipeline run
 
@@ -135,6 +136,26 @@ tested; this is the dashboard wiring it needs.
 The middleware fails closed: if these are unset in a non-development
 environment, every `/admin` request is denied rather than allowed. So a
 half-configured deployment locks admins out — it never exposes the panel.
+
+### 3. Semantic claim matching — optional (Workers AI + Vectorize)
+
+By default, repeat claims are matched by normalised hash + FTS5 keyword search.
+Provisioning a Vectorize index turns on embedding-based matching so paraphrases
+("warm water cures covid" / "hot water kills the virus") fold into one record.
+The code degrades to hash + FTS when this is absent, so it is safe to skip.
+
+To enable:
+
+```bash
+wrangler vectorize create fcheck-claims --dimensions=768 --metric=cosine
+```
+
+Then uncomment the `ai` and `vectorize` bindings in `wrangler.jsonc` (they are
+left commented because an unbound Vectorize index breaks `wrangler dev`). The
+768 dimensions and cosine metric must match the embedding model
+(`@cf/baai/bge-base-en-v1.5`, set in `src/lib/pipeline/embeddings.ts`). New
+claims are indexed automatically on submission; there is no backfill for claims
+created before the index existed — they remain matchable by hash + FTS.
 
 ---
 

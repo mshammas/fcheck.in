@@ -112,14 +112,15 @@ User submits claim
       No match → run full pipeline → store → serve
 ```
 
-**Intended:** the fingerprint uses embedding-based similarity search (not exact
-string match) so semantically identical claims with different wording resolve to
-the same record.
-
-**Current:** `matcher.ts` uses a SHA-256 hash of normalised text plus an FTS5
-keyword second pass (≥ 0.75 token overlap required to fold two claims together).
-Embedding + Vectorize will land behind the same `ClaimMatcher` interface — see
-[roadmap.md](roadmap.md).
+**Matching** runs three passes behind the `ClaimMatcher` interface
+(`matcher.ts`): exact SHA-256 hash of normalised text → embedding similarity →
+FTS5 keyword second pass (≥ 0.75 token overlap required to fold two claims
+together). The embedding pass (`embeddings.ts`, Workers AI + Vectorize) resolves
+paraphrases — "warm water cures covid" and "hot water kills the virus" — to one
+record. It is **inactive until a Vectorize index is provisioned**
+([setup.md](setup.md)); until then `createSemanticMatcher` degrades to exactly
+the hash + FTS behaviour, so semantically identical claims with different wording
+produce separate records.
 
 The claim record and DB schema are documented in [data-model.md](data-model.md).
 

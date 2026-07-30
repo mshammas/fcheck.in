@@ -26,6 +26,10 @@ declare namespace Cloudflare {
     EMAIL_API_TOKEN?: string;
     /** From address for notification emails, e.g. "fcheck.in <noreply@fcheck.in>". */
     EMAIL_FROM?: string;
+    /** Workers AI — claim embeddings for semantic matching. Absent → hash + FTS. */
+    AI?: Ai;
+    /** Vectorize index of claim embeddings. Must be provisioned; see docs/setup.md. */
+    CLAIM_VECTORS?: VectorizeIndex;
   }
 }
 

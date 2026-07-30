@@ -29,7 +29,8 @@ import {
   recordSubmission,
 } from '../db/claims';
 import { normalize } from './normalize';
-import { hashMatcher } from './matcher';
+import { createSemanticMatcher } from './matcher';
+import { indexClaimVector, type EmbeddingDeps } from './embeddings';
 import { searchInternal } from './searchInternal';
 import { searchExternal, externalHitToReport } from './searchExternal';
 
@@ -37,6 +38,9 @@ export interface PipelineEnv {
   db: D1Database;
   anthropicApiKey?: string;
   googleFactCheckApiKey?: string;
+  /** Workers AI + Vectorize for semantic matching; absent → hash + FTS only. */
+  ai?: Ai;
+  vectorize?: VectorizeIndex | Vectorize;
   /** Absolute origin, for building the returned result URL. */
   origin: string;
 }
@@ -71,8 +75,10 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   };
 
   // ── Stage 3 — fingerprint and cache check ──────────────────
-  const fingerprint = await hashMatcher.fingerprint(canonicalText);
-  const cached = await hashMatcher.findMatch(env.db, canonicalText, fingerprint);
+  const embedDeps: EmbeddingDeps = { ai: env.ai, vectorize: env.vectorize };
+  const matcher = createSemanticMatcher(embedDeps);
+  const fingerprint = await matcher.fingerprint(canonicalText);
+  const cached = await matcher.findMatch(env.db, canonicalText, fingerprint);
 
   if (cached) {
     // Record the new submission against the existing claim and serve what we
@@ -142,6 +148,7 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
       urls: input.urls,
       files: fileMetadata(request.files),
     });
+    await indexClaimVector(embedDeps, claim.id, canonicalText);
     return buildResponse(env, claim.id, { cached: false, notes });
   }
 
@@ -191,6 +198,7 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
     urls: input.urls,
     files: fileMetadata(request.files),
   });
+  await indexClaimVector(embedDeps, claim.id, canonicalText);
 
   return buildResponse(env, claim.id, { cached: false, notes });
 }
@@ -229,6 +237,7 @@ async function storeSubmitted(
     urls: args.input.urls,
     files: fileMetadata(args.request.files),
   });
+  await indexClaimVector({ ai: env.ai, vectorize: env.vectorize }, claim.id, args.canonicalText);
 
   return buildResponse(env, claim.id, { cached: false, notes: args.notes });
 }
