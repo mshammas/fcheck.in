@@ -2,11 +2,18 @@
 
 Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
-the code lives or would live. **When resuming, start at the first item not `[x]`.**
+the code lives or would live.
 
-Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = next.**
+> **▶ Next step — Subscriber notification delivery.** When resuming ("continue
+> with next step"), work the item marked **▶ Next** in the M2 list below
+> (*Subscriber notifications*). The background jobs and `publishDraft` already
+> compute *who* to notify on every promotion; the missing piece is the subscribe
+> endpoint and a send path. (Absent an explicit ▶ marker, the default is the
+> first item not `[x]`.)
 
-Legend: `[ ]` not started · `[~]` in progress · `[x]` done
+Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
+
+Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 
 ---
 
@@ -72,7 +79,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 - **Still open:** subscriber *delivery* (next item) — the jobs count subscribers
   to notify but nothing sends yet.
 
-### [ ] Subscriber notifications
+### ▶ Next: Subscriber notifications
 - **Why:** every promotion is supposed to notify subscribers. The `subscribers`
   table and counts exist, and the jobs + `publishDraft` already compute who to
   notify — nothing sends. See the `TODO(M2+)` in `publishDraft()` and the

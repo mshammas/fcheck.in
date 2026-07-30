@@ -24,9 +24,12 @@ demand is the whole point of the structure.
 
 ## The hard rules (never break these)
 
-- **AI never publishes a verdict autonomously.** TYPE 1 (original) requires admin
-  approval. The only code path to `published`/`original` is `publishDraft()` in
-  `src/lib/db/admin.ts`.
+- **AI never publishes a verdict autonomously.** `publishDraft()` in
+  `src/lib/db/admin.ts` is the **only** code path to `original` (TYPE 1), and it
+  requires admin approval. `published` is *also* reachable for `external` claims
+  (TYPE 2) — but that is an attributed human fact-checker's verdict, never an AI
+  one; the carve-out is enforced in `insertClaim` (`external` is the only
+  non-admin `source_type` allowed to be `published`).
 - **Every AI-generated claim cites a source.** Evidence without a working URL is
   dropped before it reaches a user — enforced in `src/lib/providers/anthropic.ts`
   and again in the admin edit path, not just in the prompt.
