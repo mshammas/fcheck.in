@@ -12,6 +12,7 @@
 import type { ClaimRow } from '../types';
 import { searchExternal, externalHitToReport } from '../pipeline/searchExternal';
 import { promoteToExternal, type PromotionResult } from './promote';
+import { notifyClaimSubscribers, type NotifyResult } from '../notify';
 import { nowIso } from '../db/util';
 import type { JobDeps } from './recheck';
 
@@ -19,6 +20,7 @@ export interface CrawlerResult {
   crawled: number;
   promoted: number;
   promotions: PromotionResult[];
+  notifications: NotifyResult[];
 }
 
 export async function crawlForExternal(
@@ -43,6 +45,7 @@ export async function crawlForExternal(
 
   const claims = results ?? [];
   const promotions: PromotionResult[] = [];
+  const notifications: NotifyResult[] = [];
 
   for (const claim of claims) {
     let hit: Awaited<ReturnType<typeof searchExternal>> = null;
@@ -56,10 +59,12 @@ export async function crawlForExternal(
     if (hit) {
       const report = externalHitToReport(hit.best, hit.others);
       promotions.push(await promoteToExternal(db, claim, report));
+      // Now live as an attributed TYPE 2 — notify subscribers.
+      notifications.push(await notifyClaimSubscribers(db, { email: deps.email }, claim.id));
     } else {
       await db.prepare('UPDATE claims SET last_rechecked_at = ? WHERE id = ?').bind(nowIso(), claim.id).run();
     }
   }
 
-  return { crawled: claims.length, promoted: promotions.length, promotions };
+  return { crawled: claims.length, promoted: promotions.length, promotions, notifications };
 }

@@ -577,7 +577,10 @@ const title = report?.headline ?? claim.canonical_text;
   const form = document.querySelector<HTMLFormElement>('.notify-row');
   const status = document.querySelector<HTMLElement>('.notify-status');
 
-  form?.addEventListener('submit', (e) => {
+  const button = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+  const claimId = form?.dataset.claimId;
+
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = form.querySelector<HTMLInputElement>('.notify-input');
     const contact = input?.value.trim();
@@ -590,8 +593,27 @@ const title = report?.headline ?? claim.canonical_text;
       return;
     }
 
-    // The subscribe endpoint is not built yet — say so rather than pretending
-    // the address was stored.
-    status.textContent = 'Notifications are not switched on yet — this claim is queued for review.';
+    if (button) button.disabled = true;
+    status.textContent = 'Saving…';
+
+    try {
+      const res = await fetch('/api/v1/subscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ claim_id: claimId, contact }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+
+      if (res.ok) {
+        status.textContent = data.message ?? "You're on the list.";
+        form.reset();
+      } else {
+        status.textContent = data.error ?? 'Could not save your subscription. Please try again.';
+      }
+    } catch {
+      status.textContent = 'Could not reach the server. Please try again.';
+    } finally {
+      if (button) button.disabled = false;
+    }
   });
 </script>

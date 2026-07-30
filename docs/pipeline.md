@@ -134,9 +134,13 @@ to notify all subscribed users.
 | TYPE 2 → TYPE 1 | fcheck.in team publishes original report | Yes | "fcheck.in full report now available" | **built** |
 
 The transitions are implemented (`publishDraft` for the admin path;
-`src/lib/jobs/promote.ts` for the automatic ones). What is **not** built is the
-*notification delivery* — the promotions compute who to notify but nothing
-sends yet. See [roadmap.md](roadmap.md).
+`src/lib/jobs/promote.ts` for the automatic ones), and each now fires subscriber
+notifications on commit via `notifyClaimSubscribers` (`src/lib/notify/`). Email
+is delivered when `EMAIL_*` is configured (inert otherwise, backlog preserved);
+WhatsApp/Telegram/web-push subscribers are recorded but skipped until the bot
+channels ship. Delivery is best-effort and never rolls back a promotion. Each
+subscriber is notified once, at the first promotion that gives the claim a
+visible verdict. See [roadmap.md](roadmap.md).
 
 Editorial invariant preserved throughout: the automatic promotions never set
 `original` and never put an AI verdict live. TYPE → 3 only ever writes a `draft`

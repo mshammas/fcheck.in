@@ -42,12 +42,15 @@ demand is the whole point of the structure.
 all four response TYPEs; the admin dashboard (draft review → publish/reject,
 trending queue); Cloudflare Access admin auth; the web channel; the JSON API;
 background jobs (re-check, crawler, trending-expiry) driving the automatic
-promotions (TYPE 4→3, 4→2, 3→2), scheduled by a dedicated cron worker; an offline
-test suite. Web + API are the only live input channels.
+promotions (TYPE 4→3, 4→2, 3→2), scheduled by a dedicated cron worker;
+subscriber notifications over email (subscribe endpoint + send path, wired into
+publish and the promotions); an offline test suite. Web + API are the only live
+input channels.
 
 **Not built yet (see [docs/roadmap.md](docs/roadmap.md)):** bot channels
-(WhatsApp/Telegram/email/extension), subscriber notification *delivery* (the jobs
-compute who to notify but nothing sends), embedding-based claim fingerprinting
+(WhatsApp/Telegram/email/extension), subscriber notification delivery on the
+non-email channels (WhatsApp/Telegram/web-push subscribers are recorded but not
+sent — rides on bot channels), embedding-based claim fingerprinting
 (currently hash + FTS), media analysis (OCR / transcription / frames — media is
 accepted and flagged only), editorial-mode homepage, and the TL;DR share flow.
 
@@ -72,9 +75,9 @@ submitted → processing → draft → under_review → published
                                              └→ rejected
 ```
 
-Promotions notify subscribers. Only the **TYPE 3 → 1** transition (admin publish)
-is built today; the crawler/re-check-driven promotions are on the roadmap.
-Details: [docs/pipeline.md](docs/pipeline.md).
+Promotions notify subscribers — the admin publish (TYPE 3 → 1) and the automatic
+crawler/re-check promotions all send on commit (email today; other channels
+recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 
 ## Verdict labels
 
@@ -88,13 +91,14 @@ Details: [docs/pipeline.md](docs/pipeline.md).
 | `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `matcher`, `searchInternal`, `searchExternal`, `index`) |
 | `src/lib/jobs/` | Background jobs: `recheck`, `crawler`, `trending`, `promote` (automatic promotions), `index` (dispatch) |
 | `src/lib/providers/` | External APIs: `anthropic.ts` (Claude), `googleFactCheck.ts` |
-| `src/lib/db/` | D1 data access: `claims`, `admin`, `factCheckers`, `client` (bindings), `util` (pure helpers — no runtime coupling) |
+| `src/lib/notify/` | Subscriber notifications: `index` (service, called on publish/promotion), `email` (provider-agnostic HTTP send path) |
+| `src/lib/db/` | D1 data access: `claims`, `admin`, `subscribers`, `factCheckers`, `client` (bindings), `util` (pure helpers — no runtime coupling) |
 | `src/lib/auth.ts`, `src/middleware.ts` | Admin identity + `/admin` gating |
 | `src/pages/` | Web pages (`index`, `check/[id]`, `article/[slug]`, `admin/*`) and API (`api/v1/*`, `api/admin/*`, `api/jobs/[job]`) |
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
 | `migrations/` | D1 schema + seeds (`0001`–`0004`) |
-| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions (real-SQL via `d1.ts`) |
+| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
 

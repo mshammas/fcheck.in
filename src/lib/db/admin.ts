@@ -313,9 +313,9 @@ export async function publishDraft(db: D1Database, admin: AdminUser, claimId: st
     }),
   ]);
 
-  // TODO(M2+): notify detail.subscriber_count subscribers. The notification
-  // service does not exist yet; the audit row records that publication happened
-  // so no subscriber is silently dropped when it is built.
+  // Subscriber notification is a separate, best-effort concern handled by the
+  // caller (the publish route calls notifyClaimSubscribers after this commits),
+  // kept out of this batch so a delivery failure can't roll back the publish.
   return { slug, subscriber_count: detail.subscriber_count };
 }
 

@@ -12,17 +12,22 @@
 import type { ClaimRow, Verdict } from '../types';
 import { getClient, deepCheck } from '../providers/anthropic';
 import { promoteToPreliminary, type PromotionResult } from './promote';
+import { notifyClaimSubscribers, type NotifyResult } from '../notify';
+import type { EmailConfig } from '../notify/email';
 import { nowIso } from '../db/util';
 
 export interface JobDeps {
   anthropicApiKey?: string;
   googleFactCheckApiKey?: string;
+  /** Email transport for subscriber notifications; delivery is inert if unset. */
+  email?: EmailConfig;
 }
 
 export interface RecheckResult {
   checked: number;
   promoted: number;
   promotions: PromotionResult[];
+  notifications: NotifyResult[];
 }
 
 export async function recheckSubmitted(
@@ -46,6 +51,7 @@ export async function recheckSubmitted(
 
   const claims = results ?? [];
   const promotions: PromotionResult[] = [];
+  const notifications: NotifyResult[] = [];
 
   for (const claim of claims) {
     let analysis: Awaited<ReturnType<typeof deepCheck>> | null = null;
@@ -69,11 +75,13 @@ export async function recheckSubmitted(
           tags: analysis.tags ?? [],
         })
       );
+      // Promotion committed — notify subscribers about the new provisional result.
+      notifications.push(await notifyClaimSubscribers(db, { email: deps.email }, claim.id));
     } else {
       // Still insufficient — record the attempt so it moves to the back of the queue.
       await db.prepare('UPDATE claims SET last_rechecked_at = ? WHERE id = ?').bind(nowIso(), claim.id).run();
     }
   }
 
-  return { checked: claims.length, promoted: promotions.length, promotions };
+  return { checked: claims.length, promoted: promotions.length, promotions, notifications };
 }

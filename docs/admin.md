@@ -33,7 +33,8 @@ The one gap is the new-draft alert system (notifications), on the
 - Opening a draft marks it `under_review` (`markUnderReview`)
 - Mobile-friendly — admins must be able to clear the queue from a phone
 - Deduplication: if multiple users submit the same claim while in draft, one
-  draft is created; all submitters are subscribed for notification on publish
+  draft is created; users who opt in via the results-page "notify me" form
+  (`POST /api/v1/subscribe`) are notified when it publishes
 - **Alert system** (push/email when new drafts arrive) — *planned*
 
 ---

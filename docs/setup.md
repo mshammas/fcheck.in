@@ -72,6 +72,16 @@ Then edit `.dev.vars` and fill in:
 - `GOOGLE_FACT_CHECK_API_KEY` — <https://console.cloud.google.com> → enable
   **Fact Check Tools API** → create an API key
 
+Optional — subscriber email notifications. Without all three set, the send path
+is inert: subscriptions are still recorded and no one is marked notified, so the
+backlog delivers once the keys are added. The payload matches Resend and similar
+(`POST` of `{from,to,subject,text,html}` with a bearer token); point the URL at
+whatever transactional-email service you use.
+
+- `EMAIL_API_URL` — the provider's send endpoint (e.g. `https://api.resend.com/emails`)
+- `EMAIL_API_TOKEN` — the provider API key (bearer)
+- `EMAIL_FROM` — the From address, e.g. `fcheck.in <noreply@fcheck.in>`
+
 Restart `npm run dev`, then verify end to end:
 
 ```bash
@@ -95,7 +105,11 @@ For production, set them as secrets instead of vars:
 ```bash
 wrangler secret put ANTHROPIC_API_KEY
 wrangler secret put GOOGLE_FACT_CHECK_API_KEY
+wrangler secret put EMAIL_API_TOKEN     # optional — subscriber email delivery
 ```
+
+`EMAIL_API_URL` and `EMAIL_FROM` are not secrets; set them under `vars` in
+`wrangler.jsonc` (only `EMAIL_API_TOKEN` needs `wrangler secret put`).
 
 ### 2. Cloudflare Access — protects /admin in production
 

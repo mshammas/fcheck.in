@@ -12,6 +12,7 @@
 import type { APIRoute } from 'astro';
 import { getDb, getEnv } from '../../../lib/db/client';
 import { runJob, isJobName } from '../../../lib/jobs';
+import { emailConfigFromEnv } from '../../../lib/notify/email';
 
 export const prerender = false;
 
@@ -37,6 +38,7 @@ export const POST: APIRoute = async (context) => {
     const summary = await runJob(name, getDb(), {
       anthropicApiKey: env.ANTHROPIC_API_KEY,
       googleFactCheckApiKey: env.GOOGLE_FACT_CHECK_API_KEY,
+      email: emailConfigFromEnv(env),
     });
     return json({ job: name, ran_at: new Date().toISOString(), summary }, 200);
   } catch (err) {

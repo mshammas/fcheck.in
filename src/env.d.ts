@@ -20,6 +20,12 @@ declare namespace Cloudflare {
     ADMIN_DEV_EMAIL?: string;
     /** Shared bearer secret for POST /api/jobs/:job. Jobs are inert if unset. */
     CRON_SECRET?: string;
+    /** Transactional-email HTTP API endpoint for subscriber notifications. */
+    EMAIL_API_URL?: string;
+    /** Bearer token for EMAIL_API_URL. Email is inert if unset. */
+    EMAIL_API_TOKEN?: string;
+    /** From address for notification emails, e.g. "fcheck.in <noreply@fcheck.in>". */
+    EMAIL_FROM?: string;
   }
 }
 

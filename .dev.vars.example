@@ -16,3 +16,10 @@ GOOGLE_FACT_CHECK_API_KEY="AIza..."
 # Background jobs: shared bearer secret for POST /api/jobs/:job. The cron worker
 # sends it; without it the job endpoints are inert (503). Any long random string.
 CRON_SECRET="dev-cron-secret-change-me"
+
+# Subscriber email notifications (optional). Without all three, the send path is
+# inert — subscriptions are recorded but nothing is marked notified, so the
+# backlog delivers once these are set. Shape matches Resend and similar.
+# EMAIL_API_URL="https://api.resend.com/emails"
+# EMAIL_API_TOKEN="re_..."
+# EMAIL_FROM="fcheck.in <noreply@fcheck.in>"
