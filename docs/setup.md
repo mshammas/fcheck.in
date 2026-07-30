@@ -1,7 +1,8 @@
 # fcheck.in — setup & operations
 
 Everything needed to run, verify, and deploy. For product/editorial rules see
-[CLAUDE.md](CLAUDE.md); for architecture see the design docs in `wireframes/`.
+[CLAUDE.md](../CLAUDE.md); for architecture see the design docs in
+[`../wireframes/`](../wireframes/) and the [docs index](../CLAUDE.md#docs-index).
 
 ---
 
@@ -110,7 +111,7 @@ tested; this is the dashboard wiring it needs.
 3. Add a policy: **Allow**, matching the editorial team's emails (the same
    addresses that exist in the `admin_users` table).
 4. After creating it, copy two values into the matching env block in
-   [`wrangler.jsonc`](wrangler.jsonc) (replacing the `PLACEHOLDER` values):
+   [`../wrangler.jsonc`](../wrangler.jsonc) (replacing the `PLACEHOLDER` values):
    - **Team domain** → `CF_ACCESS_TEAM_DOMAIN`
      (e.g. `your-team.cloudflareaccess.com`; Zero Trust → Settings → Custom
      Pages shows it, as does any Access URL)
@@ -145,7 +146,7 @@ can open and edit drafts but not ship them.
 ## Deployment
 
 Deploys as a **Cloudflare Worker with static assets** (not Pages), so the
-background cron jobs from `wireframes/pipeline.html` can later live in the
+background cron jobs from `../wireframes/pipeline.html` can later live in the
 same deployment.
 
 ```bash
