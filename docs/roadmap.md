@@ -4,19 +4,20 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — TL;DR share flow.** When resuming ("continue with next step"),
-> work the item marked **▶ Next** in the M3 list below (*TL;DR share flow*). It
-> has no external blocker — a share control on report pages plus a small,
-> report-scoped Claude call for the per-platform TL;DR. (Absent an explicit ▶
+> **▶ Next step — Country / Language filter UI.** When resuming ("continue with
+> next step"), work the item marked **▶ Next** in the M3 list below (*Country /
+> Language filter UI*). No external blocker — the filter backend already works
+> (`searchInternal`/`searchExternal`); the task is the Search-mode input controls
+> and passing the selections through to `runPipeline`. (Absent an explicit ▶
 > marker, the default is the first item not `[x]`.)
 >
 > Built so far in M2/M3: *Subscriber notifications* (email), *Media analysis*
 > (images + PDFs), *Embedding fingerprinting* (falls back to hash + FTS until a
 > Vectorize index is provisioned), the **WhatsApp** bot channel (inert until Meta
-> credentials are set), and the **Editorial-mode homepage**. Still waiting on
-> provisioning/credentials: audio/video media, the Vectorize index, non-email
-> notification delivery, and the other bot channels (Telegram/email/extension) —
-> flagged on their items.
+> credentials are set), the **Editorial-mode homepage**, and the **TL;DR share
+> flow**. Still waiting on provisioning/credentials: audio/video media, the
+> Vectorize index, non-email notification delivery, and the other bot channels
+> (Telegram/email/extension) — flagged on their items.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -134,13 +135,17 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   `test/editorial.test.ts`. Country/Language *dropdowns* (shared with Search)
   remain their own item below.
 
-### ▶ Next: TL;DR share flow
-- **Where:** report pages (`src/pages/article/[slug].astro`,
-  `src/pages/check/[id].astro`) + a small Claude call scoped strictly to the
-  report content.
-- **Next action:** add a share control + per-platform TL;DR generation.
+### [x] TL;DR share flow
+- **Built:** a share control on published report pages (`ShareBar.astro`, on
+  `article/[slug].astro` and the published-verdict `check/[id].astro`) with
+  WhatsApp / X / Copy actions. Per-platform TL;DRs come from `POST /api/v1/tldr`
+  → `generateTldr` (Claude Haiku, `src/lib/providers/anthropic.ts`), scoped
+  strictly to the report and clamped to char budgets; `fallbackTldr`
+  (`src/lib/share.ts`) is the deterministic no-key/failure path. The share link
+  is appended client-side, never by the model. Only TYPE 1/2 are shareable (409
+  otherwise). Tests: `test/share.test.ts`.
 
-### [ ] Country / Language filter UI
+### ▶ Next: Country / Language filter UI
 - **Note:** the backend already honours these filters (`searchInternal.ts`,
   `searchExternal.ts`). The remaining work is the homepage input controls and
   passing the selections through to `runPipeline`.

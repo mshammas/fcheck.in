@@ -12,6 +12,7 @@ import Base from '../../layouts/Base.astro';
 import TypeBand from '../../components/TypeBand.astro';
 import VerdictBadge from '../../components/VerdictBadge.astro';
 import SourceBadge from '../../components/SourceBadge.astro';
+import ShareBar from '../../components/ShareBar.astro';
 import { getDb } from '../../lib/db/client';
 import { getClaimById, getPrimaryReport, getReportsForClaim } from '../../lib/db/claims';
 import { parseEvidence, parseTags, VERDICT_MEANINGS } from '../../lib/types';
@@ -57,6 +58,11 @@ const bandDetail =
         : null;
 
 const title = report?.headline ?? claim.canonical_text;
+
+// A settled, published verdict (TYPE 1/2) is shareable; provisional and
+// submitted claims have nothing final to share.
+const shareable = claim.status === 'published' && (type === 'original' || type === 'external');
+const shareUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <Base title={`${title} — fcheck.in`} description={report?.summary ?? claim.canonical_text}>
@@ -148,6 +154,12 @@ const title = report?.headline ?? claim.canonical_text;
             </div>
           )
         }
+
+        {shareable && (
+          <div class="share-row">
+            <ShareBar claimId={claim.id} url={shareUrl} title={title} />
+          </div>
+        )}
 
         {
           evidence.length > 0 && (
@@ -404,6 +416,8 @@ const title = report?.headline ?? claim.canonical_text;
   }
 
   .attr-date { font-size: 12px; color: var(--text-muted); }
+
+  .share-row { display: flex; }
 
   .section-heading {
     font-family: var(--font-brand);

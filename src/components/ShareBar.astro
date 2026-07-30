@@ -1,0 +1,173 @@
+---
+/**
+ * Share control for a published report (TYPE 1/2).
+ *
+ * A "Share" button opens a small panel with WhatsApp, X, and Copy actions. The
+ * per-platform TL;DR text is fetched once from /api/v1/tldr on first open (so a
+ * page that is never shared costs no Claude call), then each action opens the
+ * platform's share intent with the TL;DR plus this page's link. On phones, the
+ * native share sheet is used when available.
+ */
+interface Props {
+  claimId: string;
+  /** Absolute URL of this report, used as the share link. */
+  url: string;
+  /** Fallback text shown instantly, before the TL;DR is fetched. */
+  title: string;
+}
+
+const { claimId, url, title } = Astro.props;
+---
+
+<div class="share" data-share data-claim-id={claimId} data-url={url} data-title={title}>
+  <button type="button" class="share-btn" data-share-toggle aria-expanded="false">
+    <span aria-hidden="true">↗</span> Share
+  </button>
+
+  <div class="share-panel" data-share-panel hidden>
+    <p class="share-status" data-share-status>Preparing a shareable summary…</p>
+    <div class="share-actions" data-share-actions hidden>
+      <a class="share-action wa" data-share-whatsapp target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      <a class="share-action x" data-share-twitter target="_blank" rel="noopener noreferrer">X</a>
+      <button type="button" class="share-action copy" data-share-copy>Copy</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .share { position: relative; display: inline-block; }
+
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand-dark);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .share-btn:hover { border-color: var(--brand-mid); background: var(--brand-light); }
+
+  .share-panel {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 240px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow);
+    padding: 14px;
+  }
+
+  .share-status { font-size: 12px; color: var(--text-muted); }
+
+  .share-actions { display: flex; gap: 8px; }
+
+  .share-action {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .share-action:hover { border-color: var(--brand-mid); color: var(--brand-dark); }
+  .share-action.copy.copied { background: var(--brand-light); border-color: var(--brand-mid); color: var(--brand-dark); }
+
+  @media (max-width: 720px) {
+    .share-panel { left: auto; right: 0; }
+  }
+</style>
+
+<script>
+  type Tldr = { whatsapp: string; twitter: string; generic: string };
+
+  document.querySelectorAll<HTMLElement>('[data-share]').forEach((root) => {
+    const toggle = root.querySelector<HTMLButtonElement>('[data-share-toggle]');
+    const panel = root.querySelector<HTMLElement>('[data-share-panel]');
+    const status = root.querySelector<HTMLElement>('[data-share-status]');
+    const actions = root.querySelector<HTMLElement>('[data-share-actions]');
+    const waLink = root.querySelector<HTMLAnchorElement>('[data-share-whatsapp]');
+    const xLink = root.querySelector<HTMLAnchorElement>('[data-share-twitter]');
+    const copyBtn = root.querySelector<HTMLButtonElement>('[data-share-copy]');
+    if (!toggle || !panel || !status || !actions) return;
+
+    const claimId = root.dataset.claimId!;
+    const url = root.dataset.url!;
+    const title = root.dataset.title ?? '';
+    let tldr: Tldr | null = null;
+    let loading = false;
+
+    function wire(t: Tldr) {
+      if (waLink) waLink.href = `https://wa.me/?text=${encodeURIComponent(`${t.whatsapp}\n\n${url}`)}`;
+      if (xLink) xLink.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(t.twitter)}&url=${encodeURIComponent(url)}`;
+      status!.hidden = true;
+      actions!.hidden = false;
+    }
+
+    async function load() {
+      if (tldr || loading) return;
+      loading = true;
+      try {
+        const res = await fetch('/api/v1/tldr', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ claim_id: claimId }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { tldr?: Tldr; error?: string };
+        tldr = data.tldr ?? { whatsapp: title, twitter: title, generic: title };
+      } catch {
+        // Network failure — still let the user share the plain headline + link.
+        tldr = { whatsapp: title, twitter: title, generic: title };
+      } finally {
+        loading = false;
+        wire(tldr!);
+      }
+    }
+
+    toggle.addEventListener('click', async () => {
+      const open = panel.hidden;
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) await load();
+    });
+
+    copyBtn?.addEventListener('click', async () => {
+      const text = `${tldr?.generic ?? title}\n${url}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = 'Copied';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.textContent = 'Copy';
+        }, 1600);
+      } catch {
+        copyBtn.textContent = 'Press ⌘/Ctrl+C';
+      }
+    });
+
+    // Close when clicking away.
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target as Node)) {
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+</script>

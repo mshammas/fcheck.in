@@ -3,8 +3,8 @@
 The public front door. Design ported from `wireframes/homepage.html` (+ the
 mobile variants) into `src/pages/index.astro`.
 
-**Status:** Search mode and Editorial mode are both built. The Country/Language
-filter UI (for Search → `runPipeline`) and the TL;DR share flow are on the
+**Status:** Search mode, Editorial mode, and the TL;DR share flow are all built.
+The Country/Language filter UI (for Search → `runPipeline`) is on the
 [roadmap](roadmap.md); the filter backend already works
 ([data-model.md](data-model.md)).
 
@@ -76,11 +76,21 @@ Cards are pulled from the admin-managed queue described in [admin.md](admin.md).
 
 ---
 
-## TL;DR Share Feature *(planned — see [roadmap.md](roadmap.md))*
+## TL;DR Share Feature *(built)*
 
-Every published report (TYPE 1 or TYPE 2) is to include a one-tap share flow:
+Every published report (TYPE 1 or TYPE 2) carries a one-tap share control
+(`src/components/ShareBar.astro`, on both `article/[slug].astro` and the
+published-verdict `check/[id].astro`):
 
-- User selects target platform (WhatsApp, Twitter/X, Facebook, SMS, copy link)
-- fcheck.in generates a platform-appropriate TL;DR — short enough for a reply,
-  with a link to the full report
-- The TL;DR is AI-generated but scoped strictly to the report content — no extrapolation
+- A "Share" button opens a panel with WhatsApp, X, and Copy actions.
+- The per-platform TL;DR is fetched once from `POST /api/v1/tldr` when the panel
+  first opens — so a report that is never shared costs no Claude call — then each
+  action opens that platform's share intent with the TL;DR plus the report link.
+- The TL;DR is AI-generated (`generateTldr`, Claude Haiku) but scoped strictly to
+  the report's verdict/headline/summary — no extrapolation, enforced by the
+  prompt and by clamping to per-platform char budgets. The **link is appended by
+  the client**, never the model, so a hallucinated URL can't leak into a share.
+- Without an API key (or on any failure) a deterministic `fallbackTldr`
+  (`src/lib/share.ts`) produces the same shape, so the control always works.
+- Only published TYPE 1/2 claims are shareable; the endpoint returns 409 for
+  anything provisional or submitted, and the control isn't rendered for them.

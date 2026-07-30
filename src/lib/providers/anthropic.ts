@@ -12,6 +12,8 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { EvidenceItem, Verdict } from '../types';
+import type { TldrInput, TldrVariants } from '../share';
+import { clampVariants, fallbackTldr } from '../share';
 
 const EXTRACT_MODEL = 'claude-haiku-4-5';
 const DEEP_CHECK_MODEL = 'claude-sonnet-5';
@@ -171,6 +173,65 @@ export async function extractFromMedia(
   }
 
   return out;
+}
+
+// ── Share: per-platform TL;DR ─────────────────────────────────
+
+const TLDR_SCHEMA = {
+  type: 'object',
+  properties: {
+    generic: { type: 'string', description: 'One neutral sentence, under 200 chars, for copy/share.' },
+    twitter: { type: 'string', description: 'Under 230 chars, fits a tweet beside a link. Lead with the verdict.' },
+    whatsapp: { type: 'string', description: 'A short forward, under 600 chars. May use *bold*. Lead with the verdict.' },
+  },
+  required: ['generic', 'twitter', 'whatsapp'],
+  additionalProperties: false,
+} as const;
+
+const TLDR_SYSTEM = `You write short, shareable summaries of a fact-check that has ALREADY been researched, reviewed, and published.
+
+Absolute rules:
+1. Use ONLY the verdict, headline, and summary you are given. Never introduce a
+   fact, number, source, or claim that is not in them. No extrapolation.
+2. Lead with the verdict so a reader sees the conclusion first.
+3. Plain language, non-partisan, no hashtags, no emoji spam (at most one leading
+   emoji), and never a URL — the link is added separately.
+4. Respect the length hint for each platform.
+
+You are compressing an existing verdict for sharing, not writing a new one.`;
+
+/**
+ * Produces the platform TL;DRs for a published report. Scoped strictly to the
+ * report's own fields; the output is clamped to the same char budgets as the
+ * deterministic fallback, and any failure (or a missing key upstream) falls back
+ * to `fallbackTldr` so the share control always has text.
+ */
+export async function generateTldr(client: Anthropic, input: TldrInput): Promise<TldrVariants> {
+  try {
+    const response = await client.messages.create({
+      model: EXTRACT_MODEL,
+      max_tokens: 1000,
+      system: TLDR_SYSTEM,
+      output_config: { format: { type: 'json_schema', schema: TLDR_SCHEMA } },
+      messages: [
+        {
+          role: 'user',
+          content:
+            `Verdict: ${input.verdict ?? 'Checked'}\n` +
+            (input.attributedTo ? `Attributed to: ${input.attributedTo}\n` : '') +
+            `Headline: ${input.headline}\n` +
+            `Summary: ${input.summary}`,
+        },
+      ],
+    } as Anthropic.MessageCreateParamsNonStreaming);
+
+    const parsed = parseStructured<TldrVariants>(response.content);
+    // Enforce the budgets regardless of what the model returned.
+    return clampVariants(parsed);
+  } catch (err) {
+    console.error('TL;DR generation failed — using deterministic fallback', err);
+    return fallbackTldr(input);
+  }
 }
 
 // ── Stage 6: AI deep-check ────────────────────────────────────

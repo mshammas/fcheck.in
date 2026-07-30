@@ -49,16 +49,17 @@ folded into the claim package); embedding-based semantic claim matching behind
 the `ClaimMatcher` interface (falls back to hash + FTS until a Vectorize index
 is provisioned); the WhatsApp bot channel (inbound webhook → pipeline → reply,
 inert until Meta credentials are set); the editorial-mode homepage (featured
-report, latest-reports grid, category/region filters, weekly stats); an offline
-test suite. Web + API are the live input channels; WhatsApp is built and waits
-on credentials.
+report, latest-reports grid, category/region filters, weekly stats); the TL;DR
+share flow on published reports (WhatsApp/X/copy, report-scoped Claude TL;DR with
+a deterministic fallback); an offline test suite. Web + API are the live input
+channels; WhatsApp is built and waits on credentials.
 
 **Not built yet (see [docs/roadmap.md](docs/roadmap.md)):** the other bot channels
 (Telegram/email/extension), subscriber notification delivery on the non-email
 channels (WhatsApp/Telegram/web-push subscribers are recorded but not sent),
 audio/video media analysis (images + PDFs are analysed; audio/video are accepted
-and flagged, pending transcription), the TL;DR share flow, and the shared
-Country/Language filter dropdowns.
+and flagged, pending transcription), and the shared Country/Language filter
+dropdowns.
 
 Two things only a human with credentials can do (both in [docs/setup.md](docs/setup.md)):
 set the API keys, and wire Cloudflare Access for `/admin` in production.
@@ -105,7 +106,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
 | `migrations/` | D1 schema + seeds (`0001`–`0004`) |
-| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, media analysis, semantic matching, WhatsApp channel, editorial homepage (real-SQL via `d1.ts`) |
+| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, media analysis, semantic matching, WhatsApp channel, editorial homepage, share TL;DR (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
 
