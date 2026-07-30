@@ -4,23 +4,24 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — no coded items remain in M3.** Every M2/M3 feature that can be
-> built without external credentials is now `[x]`. What's left is all
-> provisioning/credentials (see *Human-only setup* and *Blockers* below): the
-> Vectorize index, audio/video transcription, the other bot channels
-> (Telegram/email/extension), and non-email notification/alert delivery. Absent
-> an explicit ▶ marker, the default is the first item not `[x]` — but those are
-> blocked on humans, not code. Setting the `EMAIL_*` keys lights up both
-> subscriber notifications and the new admin alerts at once.
+> **▶ Next step — email inbound / browser-extension channels.** When resuming
+> ("continue with next step"), the next codeable item is another bot channel:
+> **email inbound** or the **browser extension**, each mirroring the
+> WhatsApp/Telegram structure (a `src/lib/channels/<name>.ts` + a webhook/route
+> that normalises to a `CheckRequest`, calls `runPipeline`, and formats a reply).
+> Everything else left is provisioning/credentials (see *Human-only setup* and
+> *Blockers* below): the Vectorize index, audio/video transcription, and
+> non-email notification/alert delivery. Setting the `EMAIL_*` keys lights up
+> subscriber notifications and admin alerts at once.
 >
 > Built so far in M2/M3: *Subscriber notifications* (email), *Admin alerts*
 > (new-draft & low-trending, email), *Media analysis*
 > (images + PDFs), *Embedding fingerprinting* (falls back to hash + FTS until a
-> Vectorize index is provisioned), the **WhatsApp** bot channel (inert until Meta
-> credentials are set), the **Editorial-mode homepage**, the **TL;DR share
-> flow**, and the **Country/Language filter UI**. Still waiting on
+> Vectorize index is provisioned), the **WhatsApp** and **Telegram** bot channels
+> (inert until their credentials are set), the **Editorial-mode homepage**, the
+> **TL;DR share flow**, and the **Country/Language filter UI**. Still waiting on
 > provisioning/credentials: audio/video media, the Vectorize index, non-email
-> notification delivery, and the other bot channels (Telegram/email/extension) —
+> notification delivery, and the remaining bot channels (email/extension) —
 > flagged on their items.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
@@ -74,7 +75,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   binding or an external transcription API (neither provisioned). Wire it as a
   new branch in `partitionMedia`/`analyzeMedia` once available.
 
-### [~] Bot channels — WhatsApp built; Telegram/email/extension pending
+### [~] Bot channels — WhatsApp + Telegram built; email/extension pending
 - **Built (WhatsApp):** the Business Cloud API webhook
   (`src/pages/api/webhooks/whatsapp.ts`) — GET verification handshake, inbound
   `X-Hub-Signature-256` validation, `parseInbound` (text/image/caption; audio/
@@ -86,10 +87,21 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 - **Blocker (WhatsApp, human-only, [setup.md](setup.md)):** `WHATSAPP_ACCESS_TOKEN`,
   `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, and
   a verified business number; register the callback URL in the Meta dashboard.
-- **Still open:** Telegram, email inbound, and the browser extension. Each is a
-  new webhook/route that normalises its payload into a `CheckRequest`, calls
-  `runPipeline`, and formats for that channel — mirror the WhatsApp structure
-  (a `src/lib/channels/<name>.ts` + a route). Telegram/email need their own
+- **Built (Telegram):** the Bot API webhook (`src/pages/api/webhooks/telegram.ts`)
+  — `X-Telegram-Bot-Api-Secret-Token` validation (no GET handshake; the webhook
+  is registered out-of-band with setWebhook), `parseInbound` (text/photo/
+  document/caption, `/start`+`/help` guidance; audio/video flagged),
+  `runPipeline` reused unchanged, a plain-text `formatReply` per TYPE, and a send
+  path. Photos take the largest size in the ladder (always JPEG). Logic in
+  `src/lib/channels/telegram.ts`, unit-tested (`test/telegram.test.ts`); the
+  route is thin glue. Inert until credentials are set.
+- **Blocker (Telegram, human-only, [setup.md](setup.md)):** `TELEGRAM_BOT_TOKEN`
+  (from BotFather) and a `TELEGRAM_WEBHOOK_SECRET` you choose; register the
+  webhook URL + secret with the Bot API `setWebhook` method.
+- **Still open:** email inbound and the browser extension. Each is a new
+  webhook/route that normalises its payload into a `CheckRequest`, calls
+  `runPipeline`, and formats for that channel — mirror the WhatsApp/Telegram
+  structure (a `src/lib/channels/<name>.ts` + a route). Email needs its own
   credentials.
 
 ### [x] Background jobs — crawler & re-check
@@ -199,5 +211,6 @@ codebase. Required unless marked optional.
 ### Blockers for roadmap items not yet started
 
 - [ ] Provision a Vectorize index — blocker for embedding-based fingerprinting.
-- [ ] Obtain Meta / Telegram credentials + a verified number — blocker for the
-      WhatsApp/Telegram bot channels.
+- [ ] Obtain Meta credentials + a verified number (WhatsApp) and a BotFather
+      token + chosen webhook secret (Telegram) — the two channels are built but
+      inert until these are set and their webhooks registered.

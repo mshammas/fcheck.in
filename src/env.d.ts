@@ -41,6 +41,10 @@ declare namespace Cloudflare {
     WHATSAPP_APP_SECRET?: string;
     /** Graph API version override; defaults to v21.0. */
     WHATSAPP_API_VERSION?: string;
+    /** Telegram Bot API token (from BotFather) — the bot channel is inert without it. */
+    TELEGRAM_BOT_TOKEN?: string;
+    /** Secret we set on setWebhook and check on every inbound X-Telegram-Bot-Api-Secret-Token. */
+    TELEGRAM_WEBHOOK_SECRET?: string;
   }
 }
 

@@ -4,12 +4,13 @@ How a submission becomes a response. The response *types* themselves are defined
 in [product.md](product.md); not-yet-built stages are tracked in
 [roadmap.md](roadmap.md).
 
-**Status:** stages 1–6 are built for the **web**, **api**, and **whatsapp**
-channels, with text, URLs, images, and PDFs fully processed. Audio and video are
-accepted and flagged but not yet analysed (pending transcription). Background
-jobs and the automatic promotions they drive are built. WhatsApp is wired but
-inert until Meta credentials are set ([setup.md](setup.md)); Telegram, email, and
-the browser extension are on the roadmap.
+**Status:** stages 1–6 are built for the **web**, **api**, **whatsapp**, and
+**telegram** channels, with text, URLs, images, and PDFs fully processed. Audio
+and video are accepted and flagged but not yet analysed (pending transcription).
+Background jobs and the automatic promotions they drive are built. WhatsApp and
+Telegram are wired but inert until their credentials are set
+([setup.md](setup.md)); email inbound and the browser extension are on the
+roadmap.
 
 ---
 
@@ -19,7 +20,7 @@ fcheck.in must accept inputs from wherever users encounter misinformation.
 
 ### Mobile (highest priority)
 - WhatsApp bot — user forwards message (text, image, PDF; audio/video flagged) to fcheck.in number *(built: `src/pages/api/webhooks/whatsapp.ts`; inert until Meta credentials are set — [setup.md](setup.md))*
-- Telegram bot — same pattern *(planned)*
+- Telegram bot — same pattern *(built: `src/pages/api/webhooks/telegram.ts`; inert until `TELEGRAM_BOT_TOKEN` is set — [setup.md](setup.md))*
 - PWA with Web Share Target — fcheck.in appears as share destination on Android/iOS without app install *(planned)*
 - iOS Share Extension / Android Share Intent — for future native app *(planned)*
 
@@ -191,5 +192,6 @@ and reports remaining queue depth for the low-queue alert. `jobs/trending.ts`.
 | API | Structured JSON with verdict, confidence, sources, status |
 | Social (Twitter/X) | Concise reply with verdict + link |
 
-Web, API, and WhatsApp formats are built (WhatsApp: `formatReply` in
-`src/lib/channels/whatsapp.ts`); the rest arrive with their channels.
+Web, API, WhatsApp, and Telegram formats are built (`formatReply` in
+`src/lib/channels/whatsapp.ts` and `src/lib/channels/telegram.ts`); the rest
+arrive with their channels.

@@ -192,6 +192,38 @@ replies outside the 24-hour customer-service window.
 
 ---
 
+### 5. Telegram bot channel — optional (BotFather token)
+
+The webhook at `POST /api/webhooks/telegram` turns forwarded Telegram messages
+into checks and replies with a short verdict. Same shape as WhatsApp — reuses the
+pipeline unchanged and is inert until `TELEGRAM_BOT_TOKEN` is set, so it is safe
+to leave off. Unlike WhatsApp there is no GET handshake; the webhook is
+registered out-of-band with the Bot API's `setWebhook`.
+
+1. Talk to [@BotFather](https://t.me/BotFather), `/newbot`, and note the **bot
+   token**. Choose any string as your **webhook secret**. Set the two secrets:
+
+   ```bash
+   wrangler secret put TELEGRAM_BOT_TOKEN
+   wrangler secret put TELEGRAM_WEBHOOK_SECRET
+   ```
+
+2. Register the webhook, passing the same secret so Telegram echoes it on every
+   update (the route rejects any POST whose `X-Telegram-Bot-Api-Secret-Token`
+   header doesn't match):
+
+   ```bash
+   curl "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d "url=https://<your-domain>/api/webhooks/telegram" \
+     -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+   ```
+
+Text, photo, and PDF messages are checked; audio/video get a "send it as
+text/image" reply until transcription lands. `/start` and `/help` return a short
+usage hint rather than running the pipeline.
+
+---
+
 ## Admin authentication
 
 `src/middleware.ts` gates `/admin` and `/api/admin`. `src/lib/auth.ts`

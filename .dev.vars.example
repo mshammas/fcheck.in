@@ -32,3 +32,10 @@ CRON_SECRET="dev-cron-secret-change-me"
 # WHATSAPP_PHONE_NUMBER_ID="1234567890"
 # WHATSAPP_VERIFY_TOKEN="a-random-string-you-choose"
 # WHATSAPP_APP_SECRET="..."
+
+# Telegram bot channel (optional). Without BOT_TOKEN the /api/webhooks/telegram
+# route can't reply and stays inert. WEBHOOK_SECRET is a value you choose and
+# pass to setWebhook; the route rejects any update whose secret-token header
+# doesn't match. See docs/setup.md.
+# TELEGRAM_BOT_TOKEN="123456:ABC-DEF..."
+# TELEGRAM_WEBHOOK_SECRET="a-random-string-you-choose"
