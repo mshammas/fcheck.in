@@ -18,6 +18,8 @@ declare namespace Cloudflare {
     CF_ACCESS_AUD?: string;
     /** Local-only admin identity. Ignored unless ENVIRONMENT is 'development'. */
     ADMIN_DEV_EMAIL?: string;
+    /** Shared bearer secret for POST /api/jobs/:job. Jobs are inert if unset. */
+    CRON_SECRET?: string;
   }
 }
 

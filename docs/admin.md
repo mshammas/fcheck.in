@@ -15,7 +15,11 @@ The one gap is the new-draft alert system (notifications), on the
 ## Draft review
 
 - Queue of draft articles sorted by: submission count (same claim submitted by
-  multiple users), AI confidence score, or age (`getDraftQueue`, `DraftSort`)
+  multiple users), AI confidence score, or age (`getDraftQueue`, `DraftSort`).
+  Membership is **report-based** (`PENDING_DRAFT_PREDICATE`): a claim is pending
+  while it has a preliminary report, has no original yet, and isn't rejected —
+  not keyed on `source_type`. This is what keeps a TYPE 3 → 2 promoted claim (now
+  publicly TYPE 2) in the queue so it can still be published as TYPE 1.
 - Draft detail shows per-channel submission tallies, subscriber count, and
   similar already-published reports to avoid duplication (`getDraftDetail`)
 - One-click **approve / edit / reject** per draft
@@ -23,7 +27,9 @@ The one gap is the new-draft alert system (notifications), on the
     it moves claim + report + audit row in one batch and requires a verdict
   - Edit (`updateDraft`) cannot save evidence lacking a valid source URL — the
     same rule the AI output obeys
-  - Reject (`rejectDraft`) records a reason
+  - Reject (`rejectDraft`) records a reason. For a claim the crawler already
+    promoted to a live TYPE 2, rejecting drops only the AI draft and leaves the
+    external report live; for a pure TYPE 3 it marks the claim `rejected`
 - Opening a draft marks it `under_review` (`markUnderReview`)
 - Mobile-friendly — admins must be able to clear the queue from a phone
 - Deduplication: if multiple users submit the same claim while in draft, one

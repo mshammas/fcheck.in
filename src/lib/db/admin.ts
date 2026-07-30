@@ -19,11 +19,28 @@ import type {
   Verdict,
   EvidenceItem,
 } from '../types';
-import { newId, nowIso } from './client';
+import { newId, nowIso } from './util';
 
 // ── Draft queue ───────────────────────────────────────────────
 
 export type DraftSort = 'submissions' | 'confidence' | 'age';
+
+/**
+ * What counts as a draft awaiting review, as a SQL predicate on `claims c`.
+ *
+ * Report-based rather than keyed on `source_type`, because of the TYPE 3 → 2
+ * special case (docs/pipeline.md): when the crawler finds an authenticated
+ * external report for a claim that already has an AI draft, the claim becomes
+ * TYPE 2 publicly (`external`/`published`) but the AI draft must stay in the
+ * admin queue so an editor can still publish a TYPE 1 that supersedes it. So a
+ * claim is a pending draft when it has a preliminary report, has not yet been
+ * published as an original, and hasn't been rejected — regardless of whether an
+ * external report has since been attached.
+ */
+export const PENDING_DRAFT_PREDICATE = `
+  EXISTS (SELECT 1 FROM reports rp WHERE rp.claim_id = c.id AND rp.report_type = 'preliminary')
+  AND NOT EXISTS (SELECT 1 FROM reports ro WHERE ro.claim_id = c.id AND ro.report_type = 'original')
+  AND c.status != 'rejected'`;
 
 export interface DraftQueueItem {
   claim_id: string;
@@ -60,8 +77,7 @@ export async function getDraftQueue(db: D1Database, sort: DraftSort = 'submissio
               (SELECT COUNT(*) FROM subscribers s WHERE s.claim_id = c.id) AS subscriber_count
        FROM claims c
        JOIN reports r ON r.claim_id = c.id AND r.report_type = 'preliminary'
-       WHERE c.source_type = 'preliminary'
-         AND c.status IN ('draft', 'under_review')
+       WHERE ${PENDING_DRAFT_PREDICATE}
        ORDER BY ${orderBy}`
     )
     .all<Omit<DraftQueueItem, 'channels'>>();
@@ -105,23 +121,33 @@ export interface DraftDetail {
   channels: Record<string, number>;
   /** Other published reports on similar claims — shown to avoid duplication. */
   similar: { claim_id: string; headline: string; slug: string | null }[];
+  /**
+   * True when the crawler already promoted this claim to a live TYPE 2 while the
+   * AI draft waits here (the TYPE 3 → 2 case). Publishing then supersedes the
+   * external report; the admin UI can note that.
+   */
+  externallyLive: boolean;
 }
 
 export async function getDraftDetail(db: D1Database, claimId: string): Promise<DraftDetail | null> {
   const claim = await db.prepare('SELECT * FROM claims WHERE id = ?').bind(claimId).first<ClaimRow>();
-  if (!claim || claim.source_type !== 'preliminary') return null;
+  if (!claim || claim.status === 'rejected') return null;
 
-  const report = await db
-    .prepare("SELECT * FROM reports WHERE claim_id = ? AND report_type = 'preliminary' ORDER BY published_at DESC LIMIT 1")
-    .bind(claimId)
-    .first<ReportRow>();
-  if (!report) return null;
-
-  const [subs, channels, similar] = await Promise.all([
+  // A pending draft is defined by its reports, not its source_type — see
+  // PENDING_DRAFT_PREDICATE. It needs a preliminary report and no original yet.
+  const [report, original, external, subs, channels, similar] = await Promise.all([
+    db
+      .prepare("SELECT * FROM reports WHERE claim_id = ? AND report_type = 'preliminary' ORDER BY published_at DESC LIMIT 1")
+      .bind(claimId)
+      .first<ReportRow>(),
+    db.prepare("SELECT id FROM reports WHERE claim_id = ? AND report_type = 'original' LIMIT 1").bind(claimId).first(),
+    db.prepare("SELECT id FROM reports WHERE claim_id = ? AND report_type = 'external' LIMIT 1").bind(claimId).first(),
     db.prepare('SELECT COUNT(*) AS n FROM subscribers WHERE claim_id = ?').bind(claimId).first<{ n: number }>(),
     channelBreakdown(db, [claimId]),
     findSimilarPublished(db, claim.canonical_text, claimId),
   ]);
+
+  if (!report || original) return null;
 
   return {
     claim,
@@ -129,6 +155,7 @@ export async function getDraftDetail(db: D1Database, claimId: string): Promise<D
     subscriber_count: subs?.n ?? 0,
     channels: channels[claimId] ?? {},
     similar,
+    externallyLive: Boolean(external),
   };
 }
 
@@ -251,11 +278,11 @@ export interface PublishResult {
  * cannot leave a claim marked published with a report still typed preliminary.
  */
 export async function publishDraft(db: D1Database, admin: AdminUser, claimId: string): Promise<PublishResult> {
+  // getDraftDetail returns null once an original report exists, so a non-null
+  // detail here is always a claim that has not yet been published as TYPE 1 —
+  // whether it's a pure TYPE 3 draft or one the crawler promoted to TYPE 2.
   const detail = await getDraftDetail(db, claimId);
-  if (!detail) throw new AdminActionError('No draft found for this claim.', 404);
-  if (detail.claim.status === 'published') {
-    throw new AdminActionError('This claim is already published.', 409);
-  }
+  if (!detail) throw new AdminActionError('No draft found for this claim, or it is already published.', 404);
   if (!detail.claim.verdict) {
     throw new AdminActionError('A draft cannot be published without a verdict.', 400);
   }
@@ -298,14 +325,26 @@ export async function rejectDraft(
   claimId: string,
   reason: string
 ): Promise<void> {
-  const claim = await db.prepare('SELECT * FROM claims WHERE id = ?').bind(claimId).first<ClaimRow>();
-  if (!claim || claim.source_type !== 'preliminary') {
-    throw new AdminActionError('No reviewable draft found for this claim.', 404);
-  }
-  if (claim.status === 'published' || claim.status === 'rejected') {
-    throw new AdminActionError(`This claim is already ${claim.status}.`, 409);
+  const detail = await getDraftDetail(db, claimId);
+  if (!detail) throw new AdminActionError('No reviewable draft found for this claim.', 404);
+
+  if (detail.externallyLive) {
+    // TYPE 3 → 2 case: the claim is publicly live as an attributed external
+    // report. Rejecting means "we won't write our own TYPE 1" — it must not
+    // pull down the live TYPE 2. Drop just the AI draft so it leaves the queue;
+    // the external report and the claim's published state stand untouched.
+    await db.batch([
+      db.prepare("DELETE FROM reports WHERE id = ? AND report_type = 'preliminary'").bind(detail.report.id),
+      auditStatement(db, admin, 'reject', 'report', detail.report.id, {
+        reason,
+        kept_external: true,
+        headline: detail.report.headline,
+      }),
+    ]);
+    return;
   }
 
+  // Pure TYPE 3: no public verdict is showing, so the claim itself is rejected.
   await db.batch([
     db.prepare("UPDATE claims SET status = 'rejected' WHERE id = ?").bind(claimId),
     auditStatement(db, admin, 'reject', 'claim', claimId, { reason }),
@@ -460,8 +499,8 @@ export async function getOverview(db: D1Database): Promise<AdminOverview> {
   const row = await db
     .prepare(
       `SELECT
-        (SELECT COUNT(*) FROM claims WHERE source_type='preliminary' AND status IN ('draft','under_review')) AS drafts_pending,
-        (SELECT COUNT(*) FROM claims WHERE source_type='preliminary' AND status IN ('draft','under_review') AND confidence >= 75) AS high_confidence_drafts,
+        (SELECT COUNT(*) FROM claims c WHERE ${PENDING_DRAFT_PREDICATE}) AS drafts_pending,
+        (SELECT COUNT(*) FROM claims c WHERE ${PENDING_DRAFT_PREDICATE} AND c.confidence >= 75) AS high_confidence_drafts,
         (SELECT COUNT(*) FROM trending_cards WHERE pinned=1 OR expires_at IS NULL OR expires_at > ?) AS trending_active,
         (SELECT COUNT(*) FROM trending_cards WHERE pinned=0 AND expires_at IS NOT NULL AND expires_at > ? AND expires_at <= ?) AS trending_expiring_soon,
         (SELECT COUNT(*) FROM claims WHERE created_at >= ?) AS claims_today,

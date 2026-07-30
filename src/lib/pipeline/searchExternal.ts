@@ -9,7 +9,7 @@
  * Attribution is not optional. Every TYPE 2 result carries the source name,
  * their verdict, their date, and a link to the original.
  */
-import type { FactCheckerRow, Verdict } from '../types';
+import type { EvidenceItem, FactCheckerRow, Verdict } from '../types';
 import { getActiveFactCheckers, matchFactChecker, parseJsonArray, tierRank } from '../db/factCheckers';
 import { searchFactChecks, normalizeVerdict, type ExternalReview } from '../providers/googleFactCheck';
 
@@ -18,6 +18,58 @@ export interface ExternalHit {
   /** The matching network entry, or null for a publisher outside the network. */
   factChecker: FactCheckerRow | null;
   verdict: Verdict | null;
+}
+
+/** The fields needed to store a TYPE 2 report from an external result. */
+export interface ExternalReportFields {
+  verdict: Verdict | null;
+  headline: string;
+  summary: string;
+  body: string;
+  evidence: EvidenceItem[];
+  country: string | null;
+  language: string | null;
+  externalUrl: string;
+  factCheckerId: string | null;
+}
+
+/**
+ * Maps an external search result to a storable TYPE 2 report.
+ *
+ * Shared by the pipeline (stage 5) and the crawler job, so a claim promoted to
+ * TYPE 2 in the background is stored identically to one found at check time —
+ * same attribution, same "Also reported by" runners-up.
+ */
+export function externalHitToReport(
+  best: ExternalHit,
+  others: ExternalHit[] = [],
+  filters: { countries?: string[] } = {}
+): ExternalReportFields {
+  const name = best.factChecker?.name ?? best.review.publisherName;
+  return {
+    verdict: best.verdict,
+    headline: best.review.title,
+    summary: best.review.textualRating
+      ? `${name} rated this claim "${best.review.textualRating}".`
+      : `Reviewed by ${name}.`,
+    body: best.review.claimText,
+    evidence: [best, ...others].map(hitToEvidence),
+    country: filters.countries?.[0] ?? null,
+    language: best.review.languageCode ?? null,
+    externalUrl: best.review.url,
+    factCheckerId: best.factChecker?.id ?? null,
+  };
+}
+
+function hitToEvidence(hit: ExternalHit): EvidenceItem {
+  return {
+    source: hit.factChecker?.name ?? hit.review.publisherName,
+    url: hit.review.url,
+    snippet: hit.review.textualRating
+      ? `Rated "${hit.review.textualRating}" — ${hit.review.claimText}`
+      : hit.review.claimText,
+    date: hit.review.reviewDate ?? undefined,
+  };
 }
 
 export interface ExternalSearchFilters {

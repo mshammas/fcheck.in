@@ -38,14 +38,15 @@ demand is the whole point of the structure.
 **Built:** Astro on Cloudflare Workers + D1; the full check pipeline (stages 1–6);
 all four response TYPEs; the admin dashboard (draft review → publish/reject,
 trending queue); Cloudflare Access admin auth; the web channel; the JSON API;
-an offline test suite. Web + API are the only live input channels.
+background jobs (re-check, crawler, trending-expiry) driving the automatic
+promotions (TYPE 4→3, 4→2, 3→2), scheduled by a dedicated cron worker; an offline
+test suite. Web + API are the only live input channels.
 
 **Not built yet (see [docs/roadmap.md](docs/roadmap.md)):** bot channels
-(WhatsApp/Telegram/email/extension), background crawler + re-check jobs and the
-automatic promotions they drive, subscriber notifications, embedding-based claim
-fingerprinting (currently hash + FTS), media analysis (OCR / transcription /
-frames — media is accepted and flagged only), editorial-mode homepage, and the
-TL;DR share flow.
+(WhatsApp/Telegram/email/extension), subscriber notification *delivery* (the jobs
+compute who to notify but nothing sends), embedding-based claim fingerprinting
+(currently hash + FTS), media analysis (OCR / transcription / frames — media is
+accepted and flagged only), editorial-mode homepage, and the TL;DR share flow.
 
 Two things only a human with credentials can do (both in [docs/setup.md](docs/setup.md)):
 set the API keys, and wire Cloudflare Access for `/admin` in production.
@@ -82,13 +83,15 @@ Details: [docs/pipeline.md](docs/pipeline.md).
 | Path | What lives here |
 | --- | --- |
 | `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `matcher`, `searchInternal`, `searchExternal`, `index`) |
+| `src/lib/jobs/` | Background jobs: `recheck`, `crawler`, `trending`, `promote` (automatic promotions), `index` (dispatch) |
 | `src/lib/providers/` | External APIs: `anthropic.ts` (Claude), `googleFactCheck.ts` |
-| `src/lib/db/` | D1 data access: `claims`, `admin`, `factCheckers`, `client` |
+| `src/lib/db/` | D1 data access: `claims`, `admin`, `factCheckers`, `client` (bindings), `util` (pure helpers — no runtime coupling) |
 | `src/lib/auth.ts`, `src/middleware.ts` | Admin identity + `/admin` gating |
-| `src/pages/` | Web pages (`index`, `check/[id]`, `article/[slug]`, `admin/*`) and API (`api/v1/*`, `api/admin/*`) |
+| `src/pages/` | Web pages (`index`, `check/[id]`, `article/[slug]`, `admin/*`) and API (`api/v1/*`, `api/admin/*`, `api/jobs/[job]`) |
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
+| `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
 | `migrations/` | D1 schema + seeds (`0001`–`0004`) |
-| `test/` | Offline tests: auth JWT, AI editorial invariants |
+| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
 

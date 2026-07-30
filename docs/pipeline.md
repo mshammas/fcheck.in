@@ -127,15 +127,21 @@ to notify all subscribed users.
 
 | Transition | Trigger | Human needed? | Notification | Status |
 |---|---|---|---|---|
-| TYPE 4 → TYPE 3 | Re-check job finds sufficient facts | No (queues draft for admin) | "An early analysis is ready" | planned |
-| TYPE 4 → TYPE 2 | Crawler finds authenticated report | No | "A verified report is ready" | planned |
+| TYPE 4 → TYPE 3 | Re-check job finds sufficient facts | No (queues draft for admin) | "An early analysis is ready" | **built** |
+| TYPE 4 → TYPE 2 | Crawler finds authenticated report | No | "A verified report is ready" | **built** |
 | TYPE 3 → TYPE 1 | Admin approves draft | Yes | "Full reviewed report is ready" | **built** |
-| TYPE 3 → TYPE 2 | Crawler finds authenticated report before admin approves | No | "A verified report is ready" | planned |
-| TYPE 2 → TYPE 1 | fcheck.in team publishes original report | Yes | "fcheck.in full report now available" | partial |
+| TYPE 3 → TYPE 2 | Crawler finds authenticated report before admin approves | No | "A verified report is ready" | **built** |
+| TYPE 2 → TYPE 1 | fcheck.in team publishes original report | Yes | "fcheck.in full report now available" | **built** |
 
-Only the admin publish path (TYPE 3 → 1) is implemented today (`publishDraft`).
-The crawler/re-check-driven promotions and subscriber notifications are on the
-[roadmap](roadmap.md).
+The transitions are implemented (`publishDraft` for the admin path;
+`src/lib/jobs/promote.ts` for the automatic ones). What is **not** built is the
+*notification delivery* — the promotions compute who to notify but nothing
+sends yet. See [roadmap.md](roadmap.md).
+
+Editorial invariant preserved throughout: the automatic promotions never set
+`original` and never put an AI verdict live. TYPE → 3 only ever writes a `draft`
+for a human; TYPE → 2 writes an attributed external verdict (the carve-out
+enforced in `insertClaim`). The one path to `original` remains `publishDraft`.
 
 **TYPE 3 → TYPE 2 special case:** Draft remains in admin queue — admin can still
 publish TYPE 1 later, which then supersedes TYPE 2. External sources move to
@@ -146,15 +152,21 @@ notification link, the page always reflects current `source_type` — they never
 see a stale TYPE. This is why `buildResponse()` re-reads the claim from the DB
 rather than returning what it just computed.
 
-### Background jobs *(planned — see [roadmap.md](roadmap.md))*
+### Background jobs *(built — `src/lib/jobs/`)*
 
-**Crawler job** — continuously monitors authenticated fact-checker sources for
-new reports; matches against stored claim fingerprints; triggers TYPE 4→2 and
-TYPE 3→2 promotions automatically.
+Each is a pure `(db, deps)` function, dispatched by `runJob` (`jobs/index.ts`),
+run via `POST /api/jobs/:job` (bearer `CRON_SECRET`), and scheduled by the cron
+worker in `workers/cron/`. All are bounded per run.
 
-**Re-check job** — periodically re-runs AI analysis on TYPE 4 claims to check if
-sufficient sources have emerged; promotes to TYPE 3 and queues a draft if yes.
-Runs every 6 hours by default.
+**Crawler job** *(every 15m)* — polls the fact-checker network for claims with no
+fcheck.in original yet; promotes any that now have an authenticated external
+report (TYPE 4→2 and TYPE 3→2). `jobs/crawler.ts`.
+
+**Re-check job** *(every 6h)* — re-runs the AI deep-check on TYPE 4 claims; when
+enough sources have emerged, promotes to TYPE 3 and queues a draft. `jobs/recheck.ts`.
+
+**Trending-expiry job** *(every 30m)* — removes expired non-pinned trending cards
+and reports remaining queue depth for the low-queue alert. `jobs/trending.ts`.
 
 ---
 

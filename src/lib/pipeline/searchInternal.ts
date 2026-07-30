@@ -6,7 +6,7 @@
  * pipeline stops.
  */
 import type { ClaimRow, ReportRow } from '../types';
-import { toFtsQuery } from '../db/client';
+import { toFtsQuery } from '../db/util';
 
 export interface InternalHit {
   claim: ClaimRow;

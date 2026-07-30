@@ -6,7 +6,7 @@
  * exist yet. See CLAUDE.md — "AI must never publish a verdict autonomously".
  */
 import type { ClaimRow, ReportRow, SourceType, Verdict, Channel } from '../types';
-import { newId, nowIso } from './client';
+import { newId, nowIso } from './util';
 
 export async function getClaimById(db: D1Database, id: string): Promise<ClaimRow | null> {
   return db.prepare('SELECT * FROM claims WHERE id = ?').bind(id).first<ClaimRow>();

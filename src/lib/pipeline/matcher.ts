@@ -17,7 +17,7 @@
  */
 import type { ClaimRow } from '../types';
 import { getClaimByFingerprint } from '../db/claims';
-import { toFtsQuery } from '../db/client';
+import { toFtsQuery } from '../db/util';
 
 export interface ClaimMatcher {
   /** Stable identifier for a claim's meaning. */

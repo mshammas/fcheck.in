@@ -1,0 +1,31 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "fcheck-in-cron",
+  "main": "index.ts",
+  "compatibility_date": "2026-01-15",
+
+  // Fires the app's job endpoints on a schedule. Keep in sync with the SCHEDULE
+  // map in index.ts. Times are UTC.
+  "triggers": {
+    "crons": [
+      "0 */6 * * *", // recheck — every 6 hours
+      "*/15 * * * *", // crawler — every 15 minutes
+      "*/30 * * * *" // trending — every 30 minutes
+    ]
+  },
+
+  "observability": { "enabled": true },
+
+  // Origin of the deployed app. Override per environment. CRON_SECRET is a
+  // secret (`wrangler secret put CRON_SECRET`), not a var — never commit it.
+  "vars": {
+    "APP_BASE_URL": "https://fcheck.in"
+  },
+
+  "env": {
+    "staging": {
+      "name": "fcheck-in-cron-staging",
+      "vars": { "APP_BASE_URL": "https://staging.fcheck.in" }
+    }
+  }
+}

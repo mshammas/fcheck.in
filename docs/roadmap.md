@@ -54,21 +54,32 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
   channel formatter; the pipeline is reused unchanged.
 - **Blocker:** Meta / Telegram credentials and a verified number.
 
-### [ ] Background jobs — crawler & re-check
-- **Why:** drive the automatic promotions (TYPE 4→2, 4→3, 3→2) that cannot happen
-  today; only admin-driven TYPE 3→1 exists.
-- **Where:** Cloudflare cron triggers (`triggers.crons` in `wrangler.jsonc`) +
-  a `scheduled()` handler. Re-check re-runs `deepCheck` on TYPE 4 claims every 6h;
-  crawler polls fact-checker sources and matches stored fingerprints.
-- **Next action:** add the `scheduled()` skeleton and implement the re-check job
-  first (it reuses existing pipeline code); crawler second.
+### [x] Background jobs — crawler & re-check
+- **Built:** the automatic promotions TYPE 4→3 (re-check), 4→2 and 3→2 (crawler),
+  plus the trending-expiry job. Logic in `src/lib/jobs/` (`recheck`, `crawler`,
+  `trending`, `promote`), exposed at `POST /api/jobs/:job` behind a `CRON_SECRET`
+  bearer. The 3→2 case required the admin draft queue to become report-based
+  (`PENDING_DRAFT_PREDICATE` in `src/lib/db/admin.ts`) so a claim promoted to
+  live TYPE 2 stays reviewable and can still be published as TYPE 1.
+- **Scheduling:** a dedicated scheduler worker (`workers/cron/`) with
+  `triggers.crons` + a `scheduled()` handler fires those endpoints — the Astro
+  adapter's generated worker exports only `fetch`, so the schedule lives in a
+  thin second worker. Deploy + `CRON_SECRET` steps in [setup.md](setup.md).
+- **Verified:** the promotions and report-based queue have real-SQL integration
+  tests (`test/jobs.test.ts`); the trending job + endpoint auth were run against
+  local D1. Re-check/crawler full runs need the API keys below to hit live
+  Claude/Google.
+- **Still open:** subscriber *delivery* (next item) — the jobs count subscribers
+  to notify but nothing sends yet.
 
 ### [ ] Subscriber notifications
 - **Why:** every promotion is supposed to notify subscribers. The `subscribers`
-  table and counts exist; nothing sends. See the `TODO(M2+)` in `publishDraft()`
-  (`src/lib/db/admin.ts`).
-- **Where:** a notification service called from `publishDraft` and the future
-  jobs; a subscribe endpoint for the web/results pages.
+  table and counts exist, and the jobs + `publishDraft` already compute who to
+  notify — nothing sends. See the `TODO(M2+)` in `publishDraft()` and the
+  `subscribers` field returned by the promotion helpers (`src/lib/jobs/promote.ts`).
+- **Where:** a notification service called from `publishDraft` and the jobs; a
+  subscribe endpoint for the web/results pages (the results page has the
+  "notify me" form, but it currently only says notifications aren't on yet).
 - **Next action:** build the subscribe endpoint + an email send path first, then
   wire it into publish and the promotions.
 

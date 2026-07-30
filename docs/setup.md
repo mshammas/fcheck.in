@@ -145,9 +145,9 @@ can open and edit drafts but not ship them.
 
 ## Deployment
 
-Deploys as a **Cloudflare Worker with static assets** (not Pages), so the
-background cron jobs from `../wireframes/pipeline.html` can later live in the
-same deployment.
+Deploys as a **Cloudflare Worker with static assets** (not Pages). The
+background jobs run in a **separate** scheduler worker (`../workers/cron/`) that
+shares nothing but an authenticated HTTP call — see [Background jobs](#background-jobs).
 
 ```bash
 # one-time, per environment: create the D1 database and paste its id into
@@ -161,3 +161,42 @@ npm run deploy                # astro build && wrangler deploy
 Before the first staging deploy, replace the `PLACEHOLDER` values in
 `wrangler.jsonc`: the staging D1 `database_id`, and the two `CF_ACCESS_*`
 values from [step 2 above](#2-cloudflare-access--protects-admin-in-production).
+
+---
+
+## Background jobs
+
+The re-check, crawler, and trending-expiry jobs run via `POST /api/jobs/:job`,
+guarded by a `CRON_SECRET` bearer, and are fired on a schedule by the standalone
+cron worker in [`../workers/cron/`](../workers/cron/). The app worker owns all
+the logic and D1 access; the cron worker is just a timer (the Astro adapter's
+generated worker exports only `fetch`, not `scheduled`).
+
+**Local:** `.dev.vars.example` sets a `CRON_SECRET`; with it, you can run a job
+by hand (note the JSON content-type — Astro's CSRF guard needs it):
+
+```bash
+curl -s -X POST localhost:4321/api/jobs/trending \
+  -H 'content-type: application/json' \
+  -H "authorization: Bearer $CRON_SECRET" -d '{}'
+# → {"job":"trending","summary":{"expired":N,"remaining":M,"lowQueue":bool}}
+```
+
+Jobs: `recheck` (TYPE 4→3, needs `ANTHROPIC_API_KEY`), `crawler` (TYPE 4/3→2,
+needs `GOOGLE_FACT_CHECK_API_KEY`), `trending` (expiry, no keys). Without
+`CRON_SECRET` the endpoints are inert (503) rather than open.
+
+**Production — deploy the cron worker (once):**
+
+```bash
+# a strong shared secret, identical on both workers
+wrangler secret put CRON_SECRET                                   # app worker
+cd workers/cron
+wrangler secret put CRON_SECRET --env staging                    # cron worker
+# set APP_BASE_URL in workers/cron/wrangler.jsonc to the deployed app origin
+wrangler deploy --env staging                                    # registers triggers.crons
+```
+
+The cron worker's `triggers.crons` (every 6h / 15m / 30m, UTC) then fire the job
+endpoints automatically. Keep the `SCHEDULE` map in `workers/cron/index.ts` in
+sync with `triggers.crons`.

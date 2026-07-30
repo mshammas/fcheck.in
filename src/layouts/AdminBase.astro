@@ -36,10 +36,16 @@ const initial = admin?.name?.[0]?.toUpperCase() ?? '?';
 
 // Live badge counts so every page shows the same, accurate queue state.
 const db = getDb();
+// Draft count uses the same report-based predicate as the queue itself
+// (src/lib/db/admin.ts → PENDING_DRAFT_PREDICATE) so the badge and the queue
+// never disagree — including for TYPE 3→2 promoted claims.
 const badges = await db
   .prepare(
     `SELECT
-       (SELECT COUNT(*) FROM claims WHERE source_type='preliminary' AND status IN ('draft','under_review')) AS drafts,
+       (SELECT COUNT(*) FROM claims c
+        WHERE EXISTS (SELECT 1 FROM reports rp WHERE rp.claim_id = c.id AND rp.report_type = 'preliminary')
+          AND NOT EXISTS (SELECT 1 FROM reports ro WHERE ro.claim_id = c.id AND ro.report_type = 'original')
+          AND c.status != 'rejected') AS drafts,
        (SELECT COUNT(*) FROM trending_cards WHERE pinned=0 AND (expires_at IS NULL OR expires_at > ?)) AS trending`
   )
   .bind(new Date().toISOString())

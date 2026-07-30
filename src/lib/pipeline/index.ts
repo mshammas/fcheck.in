@@ -16,7 +16,7 @@
  * No path through this pipeline sets a claim to `published`. TYPE 3 writes a
  * draft and queues it for a human. Publication is an admin action.
  */
-import type { CheckRequest, CheckResponse, Channel, EvidenceItem } from '../types';
+import type { CheckRequest, CheckResponse, Channel } from '../types';
 import { TYPE_NUMBER, parseEvidence } from '../types';
 import { getClient, extractClaim, deepCheck } from '../providers/anthropic';
 import {
@@ -30,7 +30,7 @@ import {
 import { normalize } from './normalize';
 import { hashMatcher } from './matcher';
 import { searchInternal } from './searchInternal';
-import { searchExternal } from './searchExternal';
+import { searchExternal, externalHitToReport } from './searchExternal';
 
 export interface PipelineEnv {
   db: D1Database;
@@ -106,7 +106,7 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   }
 
   if (external) {
-    const { best, others } = external;
+    const report = externalHitToReport(external.best, external.others, filters);
     const claim = await insertClaim(env.db, {
       fingerprint,
       canonicalText,
@@ -115,27 +115,22 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
       // fully attributed, with no AI verdict layered on top. An editor may
       // later publish an fcheck.in original that supersedes it (TYPE 2 → 1).
       status: 'published',
-      verdict: best.verdict,
+      verdict: report.verdict,
       confidence: null,
     });
 
     await insertReport(env.db, {
       claimId: claim.id,
       reportType: 'external',
-      headline: best.review.title,
-      summary: best.review.textualRating
-        ? `${best.factChecker?.name ?? best.review.publisherName} rated this claim "${best.review.textualRating}".`
-        : `Reviewed by ${best.factChecker?.name ?? best.review.publisherName}.`,
-      body: best.review.claimText,
-      evidence: [
-        ...toEvidence(best),
-        ...others.map((o) => toEvidence(o)[0]).filter((e): e is EvidenceItem => Boolean(e)),
-      ],
+      headline: report.headline,
+      summary: report.summary,
+      body: report.body,
+      evidence: report.evidence,
       tags: [],
-      country: filters.countries?.[0] ?? null,
-      language: best.review.languageCode ?? null,
-      externalUrl: best.review.url,
-      factCheckerId: best.factChecker?.id ?? null,
+      country: report.country,
+      language: report.language,
+      externalUrl: report.externalUrl,
+      factCheckerId: report.factCheckerId,
     });
 
     await recordSubmission(env.db, claim.id, channel, {
@@ -281,21 +276,6 @@ async function buildResponse(
   };
 }
 
-function toEvidence(hit: {
-  review: { publisherName: string; url: string; claimText: string; textualRating: string; reviewDate: string | null };
-  factChecker: { name: string } | null;
-}): EvidenceItem[] {
-  return [
-    {
-      source: hit.factChecker?.name ?? hit.review.publisherName,
-      url: hit.review.url,
-      snippet: hit.review.textualRating
-        ? `Rated "${hit.review.textualRating}" — ${hit.review.claimText}`
-        : hit.review.claimText,
-      date: hit.review.reviewDate ?? undefined,
-    },
-  ];
-}
 
 /** Confidence is never padded and never floored — only bounded to 0-100. */
 function clampConfidence(value: number | null): number | null {
