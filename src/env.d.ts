@@ -20,6 +20,8 @@ declare namespace Cloudflare {
     ADMIN_DEV_EMAIL?: string;
     /** Shared bearer secret for POST /api/jobs/:job. Jobs are inert if unset. */
     CRON_SECRET?: string;
+    /** Deployed app origin, e.g. "https://fcheck.in". Used for links in alert emails. */
+    APP_BASE_URL?: string;
     /** Transactional-email HTTP API endpoint for subscriber notifications. */
     EMAIL_API_URL?: string;
     /** Bearer token for EMAIL_API_URL. Email is inert if unset. */

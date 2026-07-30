@@ -4,14 +4,17 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — New-draft & low-trending-queue admin alerts.** When resuming
-> ("continue with next step"), work the item marked **▶ Next** in the M3 list
-> below. No external blocker — the counts already exist in `getOverview`, and the
-> email send path (`src/lib/notify/`) can be reused; the task is a trigger + an
-> admin-recipient list. (Absent an explicit ▶ marker, the default is the first
-> item not `[x]`.)
+> **▶ Next step — no coded items remain in M3.** Every M2/M3 feature that can be
+> built without external credentials is now `[x]`. What's left is all
+> provisioning/credentials (see *Human-only setup* and *Blockers* below): the
+> Vectorize index, audio/video transcription, the other bot channels
+> (Telegram/email/extension), and non-email notification/alert delivery. Absent
+> an explicit ▶ marker, the default is the first item not `[x]` — but those are
+> blocked on humans, not code. Setting the `EMAIL_*` keys lights up both
+> subscriber notifications and the new admin alerts at once.
 >
-> Built so far in M2/M3: *Subscriber notifications* (email), *Media analysis*
+> Built so far in M2/M3: *Subscriber notifications* (email), *Admin alerts*
+> (new-draft & low-trending, email), *Media analysis*
 > (images + PDFs), *Embedding fingerprinting* (falls back to hash + FTS until a
 > Vectorize index is provisioned), the **WhatsApp** bot channel (inert until Meta
 > credentials are set), the **Editorial-mode homepage**, the **TL;DR share
@@ -154,10 +157,23 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   ride on the `POST /api/v1/check` body (`countries` / `languages`), which the
   pipeline already honours. Tests: `test/locales.test.ts`.
 
-### ▶ Next: New-draft & low-trending-queue alerts
-- **Where:** admin dashboard ([admin.md](admin.md)); counts already exist in
-  `getOverview`. Needs a delivery channel (email/push), shared with subscriber
-  notifications above.
+### [x] New-draft & low-trending-queue admin alerts
+- **Built:** the `alerts` background job (`src/lib/jobs/alerts.ts`) emails every
+  active admin when new drafts arrive and when the non-pinned trending queue
+  drops below `TRENDING_LOW_THRESHOLD` (5). Registered in the job dispatch
+  (`src/lib/jobs/index.ts`), exposed at `POST /api/jobs/alerts`, and scheduled
+  every 20 min by the cron worker (`workers/cron/`). Reuses the subscriber email
+  send path (`src/lib/notify/email.ts`); links point at `APP_BASE_URL`.
+- **Dedup:** a new `admin_alert_state` table (migration `0005`) holds one row per
+  kind. *new_drafts* is watermark-triggered — only drafts newer than the last
+  alerted one fire, and the watermark advances only after a send lands.
+  *low_trending* is edge-triggered — one alert when the queue crosses below the
+  mark, silence until it recovers (no recovery email). Data access in
+  `src/lib/db/alerts.ts`. Tests: `test/alerts.test.ts`.
+- **Delivery contract:** mirrors subscriber notifications — with the `EMAIL_*`
+  keys unset the job is inert (nothing sent, no state advanced), so the first
+  configured run delivers the current state rather than a swallowed backlog.
+  Non-email admin push (web-push/Slack) is not built.
 
 ---
 
@@ -175,8 +191,10 @@ codebase. Required unless marked optional.
       `APP_BASE_URL`, and deploy `workers/cron/` to register `triggers.crons` —
       without it the job endpoints are inert (503) and no automatic promotions fire.
 - [ ] *(optional)* Set `EMAIL_API_URL`, `EMAIL_API_TOKEN`, `EMAIL_FROM` for
-      subscriber email delivery — until then the send path is inert and the
-      backlog delivers once configured.
+      email delivery — powers both subscriber notifications and the new-draft /
+      low-trending admin alerts. Until then the send path is inert and the
+      backlog delivers once configured. Set `APP_BASE_URL` too so alert-email
+      links point at the deployed origin (it also feeds the cron worker).
 
 ### Blockers for roadmap items not yet started
 

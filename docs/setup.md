@@ -73,11 +73,13 @@ Then edit `.dev.vars` and fill in:
 - `GOOGLE_FACT_CHECK_API_KEY` — <https://console.cloud.google.com> → enable
   **Fact Check Tools API** → create an API key
 
-Optional — subscriber email notifications. Without all three set, the send path
-is inert: subscriptions are still recorded and no one is marked notified, so the
-backlog delivers once the keys are added. The payload matches Resend and similar
-(`POST` of `{from,to,subject,text,html}` with a bearer token); point the URL at
-whatever transactional-email service you use.
+Optional — email notifications. These power both subscriber notifications and
+the new-draft / low-trending admin alerts (the `alerts` job). Without all three
+set, the send path is inert: subscriptions and alert conditions are still
+tracked and nothing is marked sent, so the backlog delivers once the keys are
+added. The payload matches Resend and similar (`POST` of
+`{from,to,subject,text,html}` with a bearer token); point the URL at whatever
+transactional-email service you use.
 
 - `EMAIL_API_URL` — the provider's send endpoint (e.g. `https://api.resend.com/emails`)
 - `EMAIL_API_TOKEN` — the provider API key (bearer)
@@ -232,8 +234,9 @@ values from [step 2 above](#2-cloudflare-access--protects-admin-in-production).
 
 ## Background jobs
 
-The re-check, crawler, and trending-expiry jobs run via `POST /api/jobs/:job`,
-guarded by a `CRON_SECRET` bearer, and are fired on a schedule by the standalone
+The re-check, crawler, trending-expiry, and admin-alert jobs run via
+`POST /api/jobs/:job`, guarded by a `CRON_SECRET` bearer, and are fired on a
+schedule by the standalone
 cron worker in [`../workers/cron/`](../workers/cron/). The app worker owns all
 the logic and D1 access; the cron worker is just a timer (the Astro adapter's
 generated worker exports only `fetch`, not `scheduled`).
@@ -249,8 +252,10 @@ curl -s -X POST localhost:4321/api/jobs/trending \
 ```
 
 Jobs: `recheck` (TYPE 4→3, needs `ANTHROPIC_API_KEY`), `crawler` (TYPE 4/3→2,
-needs `GOOGLE_FACT_CHECK_API_KEY`), `trending` (expiry, no keys). Without
-`CRON_SECRET` the endpoints are inert (503) rather than open.
+needs `GOOGLE_FACT_CHECK_API_KEY`), `trending` (expiry, no keys), `alerts`
+(new-draft & low-trending admin emails, needs `EMAIL_*` to actually send;
+`APP_BASE_URL` sets the link origin). Without `CRON_SECRET` the endpoints are
+inert (503) rather than open.
 
 **Production — deploy the cron worker (once):**
 

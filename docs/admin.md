@@ -7,7 +7,8 @@ approval happens. Auth for `/admin` and `/api/admin` is covered in
 **Status:** built. Pages under `src/pages/admin/*`, API under
 `src/pages/api/admin/*`, data access in `src/lib/db/admin.ts`. Every mutating
 action writes an `audit_log` row in the same batch as the change it records.
-The one gap is the new-draft alert system (notifications), on the
+Admins are alerted about new drafts and a low trending queue by the `alerts`
+background job (email; see *Alerts* below). Non-email admin push is on the
 [roadmap](roadmap.md).
 
 ---
@@ -35,7 +36,8 @@ The one gap is the new-draft alert system (notifications), on the
 - Deduplication: if multiple users submit the same claim while in draft, one
   draft is created; users who opt in via the results-page "notify me" form
   (`POST /api/v1/subscribe`) are notified when it publishes
-- **Alert system** (push/email when new drafts arrive) — *planned*
+- **Alert system** — new drafts trigger an email to every active admin (see
+  *Alerts* below)
 
 ---
 
@@ -48,8 +50,9 @@ Cards on the homepage trending rail are pulled from this admin-managed queue.
   unpins (`setPinned`)
 - Non-pinned cards — 48-hour countdown from admin approval; head of queue pops
   first when expired
-- Admin receives a low-queue alert when fewer than 5 non-pinned cards remain
-  *(alert planned; the count is surfaced via `getOverview`)*
+- Admin receives a low-queue email alert when fewer than 5 non-pinned cards
+  remain (`TRENDING_LOW_THRESHOLD`), fired by the `alerts` job (see *Alerts*
+  below); the count is also surfaced live via `getOverview`
 
 **Candidate pipeline**
 - Algorithm surfaces candidates by submission volume + recency + verdict weight
@@ -77,3 +80,26 @@ From `admin_users.role`, enforced in `src/lib/auth.ts` / `src/middleware.ts`:
 drafts, active/expiring trending cards, claims today, published this week,
 TYPE 4 awaiting re-check, TYPE 3 preliminary, and subscribers waiting to be
 notified.
+
+---
+
+## Alerts
+
+Between logins, the editorial team is pushed two signals by the `alerts`
+background job (`src/lib/jobs/alerts.ts`, `POST /api/jobs/alerts`, scheduled
+every 20 min by the cron worker). Both go by email to **every active admin**
+(`admin_users.active = 1`), reusing the subscriber email transport
+(`src/lib/notify/email.ts`); with the `EMAIL_*` keys unset the job is inert.
+
+- **New drafts** — watermark-triggered. Each run alerts only on drafts created
+  since the last alerted one (the report-based `PENDING_DRAFT_PREDICATE`, so it
+  agrees with the drafts-pending tile), then advances the watermark — but only
+  after a send actually lands, so an inert transport delivers the backlog once
+  keys are set. Links to `/admin`.
+- **Low trending queue** — edge-triggered. One alert when non-pinned live cards
+  drop below `TRENDING_LOW_THRESHOLD` (5), then silence until the queue recovers
+  above the mark (no recovery email, no repeat spam). Links to `/admin/trending`.
+
+Dedup state lives in `admin_alert_state` (one row per kind; migration `0005`),
+read/written via `src/lib/db/alerts.ts`. Non-email admin push (web-push/Slack)
+is on the [roadmap](roadmap.md).

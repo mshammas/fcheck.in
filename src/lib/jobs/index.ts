@@ -11,10 +11,11 @@ import type { JobDeps } from './recheck';
 import { recheckSubmitted } from './recheck';
 import { crawlForExternal } from './crawler';
 import { expireTrending } from './trending';
+import { dispatchAdminAlerts } from './alerts';
 
-export type JobName = 'recheck' | 'crawler' | 'trending';
+export type JobName = 'recheck' | 'crawler' | 'trending' | 'alerts';
 
-export const JOB_NAMES: readonly JobName[] = ['recheck', 'crawler', 'trending'];
+export const JOB_NAMES: readonly JobName[] = ['recheck', 'crawler', 'trending', 'alerts'];
 
 export function isJobName(value: string): value is JobName {
   return (JOB_NAMES as readonly string[]).includes(value);
@@ -29,6 +30,8 @@ export async function runJob(name: JobName, db: D1Database, deps: JobDeps): Prom
       return crawlForExternal(db, deps);
     case 'trending':
       return expireTrending(db);
+    case 'alerts':
+      return dispatchAdminAlerts(db, { email: deps.email, siteUrl: deps.siteUrl });
   }
 }
 

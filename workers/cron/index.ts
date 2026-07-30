@@ -25,6 +25,7 @@ const SCHEDULE: Record<string, string> = {
   '0 */6 * * *': 'recheck', // re-check TYPE 4 claims every 6 hours
   '*/15 * * * *': 'crawler', // poll the fact-checker network every 15 minutes
   '*/30 * * * *': 'trending', // expire trending cards every 30 minutes
+  '*/20 * * * *': 'alerts', // notify admins of new drafts / low trending every 20 minutes
 };
 
 export default {

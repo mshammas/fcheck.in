@@ -19,8 +19,10 @@ import { nowIso } from '../db/util';
 export interface JobDeps {
   anthropicApiKey?: string;
   googleFactCheckApiKey?: string;
-  /** Email transport for subscriber notifications; delivery is inert if unset. */
+  /** Email transport for subscriber and admin notifications; inert if unset. */
   email?: EmailConfig;
+  /** Origin for links in notification emails (admin alerts). Defaults to prod. */
+  siteUrl?: string;
 }
 
 export interface RecheckResult {

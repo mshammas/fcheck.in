@@ -52,15 +52,16 @@ inert until Meta credentials are set); the editorial-mode homepage (featured
 report, latest-reports grid, category/region filters, weekly stats); the TL;DR
 share flow on published reports (WhatsApp/X/copy, report-scoped Claude TL;DR with
 a deterministic fallback); the homepage Country/Language filter dropdowns (feed
-the pipeline's existing filters); an offline test suite. Web + API are the live
+the pipeline's existing filters); new-draft & low-trending-queue admin alerts
+(the `alerts` job emails active admins on a schedule, inert until `EMAIL_*` is
+set); an offline test suite. Web + API are the live
 input channels; WhatsApp is built and waits on credentials.
 
 **Not built yet (see [docs/roadmap.md](docs/roadmap.md)):** the other bot channels
-(Telegram/email/extension), subscriber notification delivery on the non-email
-channels (WhatsApp/Telegram/web-push subscribers are recorded but not sent),
-audio/video media analysis (images + PDFs are analysed; audio/video are accepted
-and flagged, pending transcription), and new-draft / low-trending-queue admin
-alerts.
+(Telegram/email/extension), subscriber notification and admin-alert delivery on
+the non-email channels (WhatsApp/Telegram/web-push subscribers and non-email
+admin push are not sent), and audio/video media analysis (images + PDFs are
+analysed; audio/video are accepted and flagged, pending transcription).
 
 Two things only a human with credentials can do (both in [docs/setup.md](docs/setup.md)):
 set the API keys, and wire Cloudflare Access for `/admin` in production.
@@ -97,17 +98,17 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 | Path | What lives here |
 | --- | --- |
 | `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `media` (image/PDF analysis), `matcher` + `embeddings` (semantic matching), `searchInternal`, `searchExternal`, `index`) |
-| `src/lib/jobs/` | Background jobs: `recheck`, `crawler`, `trending`, `promote` (automatic promotions), `index` (dispatch) |
+| `src/lib/jobs/` | Background jobs: `recheck`, `crawler`, `trending`, `promote` (automatic promotions), `alerts` (new-draft & low-trending admin alerts), `index` (dispatch) |
 | `src/lib/providers/` | External APIs: `anthropic.ts` (Claude), `googleFactCheck.ts` |
 | `src/lib/notify/` | Subscriber notifications: `index` (service, called on publish/promotion), `email` (provider-agnostic HTTP send path) |
 | `src/lib/channels/` | Bot-channel adapters: `whatsapp` (parse inbound → `CheckRequest`, `runPipeline`, format + send reply). Webhook route in `src/pages/api/webhooks/` |
-| `src/lib/db/` | D1 data access: `claims`, `admin`, `subscribers`, `factCheckers`, `client` (bindings), `util` (pure helpers — no runtime coupling) |
+| `src/lib/db/` | D1 data access: `claims`, `admin`, `subscribers`, `alerts` (admin-alert counts + dedup state), `factCheckers`, `client` (bindings), `util` (pure helpers — no runtime coupling) |
 | `src/lib/auth.ts`, `src/middleware.ts` | Admin identity + `/admin` gating |
 | `src/pages/` | Web pages (`index`, `check/[id]`, `article/[slug]`, `admin/*`) and API (`api/v1/*`, `api/admin/*`, `api/jobs/[job]`) |
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
-| `migrations/` | D1 schema + seeds (`0001`–`0004`) |
-| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, media analysis, semantic matching, WhatsApp channel, editorial homepage, share TL;DR, locale filters (real-SQL via `d1.ts`) |
+| `migrations/` | D1 schema + seeds (`0001`–`0005`) |
+| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, admin alerts, media analysis, semantic matching, WhatsApp channel, editorial homepage, share TL;DR, locale filters (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
 

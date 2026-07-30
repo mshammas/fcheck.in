@@ -39,6 +39,7 @@ export const POST: APIRoute = async (context) => {
       anthropicApiKey: env.ANTHROPIC_API_KEY,
       googleFactCheckApiKey: env.GOOGLE_FACT_CHECK_API_KEY,
       email: emailConfigFromEnv(env),
+      siteUrl: env.APP_BASE_URL,
     });
     return json({ job: name, ran_at: new Date().toISOString(), summary }, 200);
   } catch (err) {
