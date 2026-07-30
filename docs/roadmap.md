@@ -4,12 +4,18 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — Subscriber notification delivery.** When resuming ("continue
-> with next step"), work the item marked **▶ Next** in the M2 list below
-> (*Subscriber notifications*). The background jobs and `publishDraft` already
-> compute *who* to notify on every promotion; the missing piece is the subscribe
-> endpoint and a send path. (Absent an explicit ▶ marker, the default is the
-> first item not `[x]`.)
+> **▶ Next step — Media analysis (OCR / transcription / frames).** When resuming
+> ("continue with next step"), work the item marked **▶ Next** in the M2 list
+> below (*Media analysis*). It is the next item with no external blocker — the
+> other open M2 items wait on provisioning (Vectorize) or credentials (bot
+> channels). (Absent an explicit ▶ marker, the default is the first item not
+> `[x]`.)
+>
+> *Subscriber notifications* is now built for **email**: a public subscribe
+> endpoint (`POST /api/v1/subscribe`), an email send path
+> (`src/lib/notify/`), and delivery wired into publish and every promotion.
+> WhatsApp/Telegram/web-push subscribers are recorded but not yet delivered —
+> that rides on the bot-channels item.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -42,7 +48,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   in `findMatch`, keeping the FTS pass as fallback.
 - **Blocker:** a Vectorize index must be provisioned.
 
-### [ ] Media analysis (OCR / transcription / frame extraction)
+### ▶ Next: Media analysis (OCR / transcription / frame extraction)
 - **Why:** images, video, audio, PDFs are accepted and recorded but not analysed;
   a media-only submission is routed straight to TYPE 4 today.
 - **Where:** `src/lib/pipeline/normalize.ts` (see `hasUnprocessedMedia` and the
@@ -79,16 +85,21 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 - **Still open:** subscriber *delivery* (next item) — the jobs count subscribers
   to notify but nothing sends yet.
 
-### ▶ Next: Subscriber notifications
-- **Why:** every promotion is supposed to notify subscribers. The `subscribers`
-  table and counts exist, and the jobs + `publishDraft` already compute who to
-  notify — nothing sends. See the `TODO(M2+)` in `publishDraft()` and the
-  `subscribers` field returned by the promotion helpers (`src/lib/jobs/promote.ts`).
-- **Where:** a notification service called from `publishDraft` and the jobs; a
-  subscribe endpoint for the web/results pages (the results page has the
-  "notify me" form, but it currently only says notifications aren't on yet).
-- **Next action:** build the subscribe endpoint + an email send path first, then
-  wire it into publish and the promotions.
+### [~] Subscriber notifications — email built, other channels pending
+- **Built:** the subscribe endpoint (`POST /api/v1/subscribe`, wired to the
+  results-page "notify me" form), subscriber persistence with channel inference
+  (`src/lib/db/subscribers.ts`), a provider-agnostic email send path
+  (`src/lib/notify/email.ts`, `EMAIL_API_URL/TOKEN/FROM` — see [setup.md](setup.md)),
+  and a notification service (`src/lib/notify/index.ts`) called after the admin
+  publish (TYPE 3 → 1) and after every automatic promotion in the jobs.
+- **Delivery contract:** `notified_at` is stamped only after a send actually
+  lands; an inert (unconfigured) or failing transport leaves subscribers pending,
+  so the backlog delivers once keys are set. Each subscriber is notified once, on
+  the first promotion that gives the claim a visible verdict. Tests:
+  `test/notify.test.ts`.
+- **Still open:** WhatsApp/Telegram/web-push subscribers are accepted and stored
+  but skipped at delivery — those rides on the bot-channels item below. A live
+  email run needs `EMAIL_*` set (human-only, [setup.md](setup.md)).
 
 ---
 
@@ -120,8 +131,23 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 
 ## Human-only setup (not code — see [setup.md](setup.md))
 
-- [ ] Set `ANTHROPIC_API_KEY` and `GOOGLE_FACT_CHECK_API_KEY` — stages 5–6 error
-      without them.
+Credentials, dashboard actions, and provisioning that can't be done from the
+codebase. Required unless marked optional.
+
+- [ ] Set `ANTHROPIC_API_KEY` and `GOOGLE_FACT_CHECK_API_KEY` — stages 5–6 (and
+      the `recheck`/`crawler` jobs) error without them.
 - [ ] Wire Cloudflare Access for `/admin` + `/api/admin` in staging/production;
       fill the `CF_ACCESS_*` and staging D1 `database_id` placeholders in
       `wrangler.jsonc`.
+- [ ] Set `CRON_SECRET` on **both** the app worker and the cron worker, set
+      `APP_BASE_URL`, and deploy `workers/cron/` to register `triggers.crons` —
+      without it the job endpoints are inert (503) and no automatic promotions fire.
+- [ ] *(optional)* Set `EMAIL_API_URL`, `EMAIL_API_TOKEN`, `EMAIL_FROM` for
+      subscriber email delivery — until then the send path is inert and the
+      backlog delivers once configured.
+
+### Blockers for roadmap items not yet started
+
+- [ ] Provision a Vectorize index — blocker for embedding-based fingerprinting.
+- [ ] Obtain Meta / Telegram credentials + a verified number — blocker for the
+      WhatsApp/Telegram bot channels.
