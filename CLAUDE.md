@@ -6,6 +6,12 @@ wherever the user already is.
 
 This file is the **map**. It stays deliberately short — detail lives in `docs/`.
 
+**Working in this repo:** this file is loaded automatically — read it first for
+context. Then open **only** the `docs/` file(s) relevant to your task (use the
+[Docs index](#docs-index) to choose the right one), and consult the code as
+needed. Don't load docs you don't need; keeping this file thin and reading on
+demand is the whole point of the structure.
+
 ## Product principles
 
 1. **Three clicks to a verdict** — no friction, no registration wall on the check
@@ -88,15 +94,23 @@ Details: [docs/pipeline.md](docs/pipeline.md).
 
 ## Docs index
 
-| Doc | Covers |
+Open the single file whose topic matches your task. Each topic is single-homed —
+it lives in exactly one doc, with cross-links instead of duplication — so you
+rarely need to open more than one.
+
+| Doc | Single source of truth for… |
 | --- | --- |
-| [docs/product.md](docs/product.md) | TYPE hierarchy, verdicts, editorial policy, what fcheck.in is NOT |
-| [docs/pipeline.md](docs/pipeline.md) | Processing pipeline, input channels & types, persistence & promotion |
-| [docs/data-model.md](docs/data-model.md) | Claim record, DB schema, fact-checker network |
-| [docs/admin.md](docs/admin.md) | Admin dashboard, draft queue, trending queue |
-| [docs/homepage.md](docs/homepage.md) | Search & editorial modes, filters, TL;DR share |
-| [docs/roadmap.md](docs/roadmap.md) | Everything not yet built — the resumable work log |
-| [docs/setup.md](docs/setup.md) | Run, test, deploy, and the two human-only setup steps |
+| [docs/product.md](docs/product.md) | Response TYPE definitions, verdict meanings, AI usage rules, editorial policy, scope ("what fcheck.in is NOT") |
+| [docs/pipeline.md](docs/pipeline.md) | The 6 processing stages, input channels & types, claim persistence, and the promotion/lifecycle rules |
+| [docs/data-model.md](docs/data-model.md) | Claim record, DB tables & schema, the fact-checker network entity |
+| [docs/admin.md](docs/admin.md) | Admin dashboard behaviour: draft review/publish/reject, trending queue, roles |
+| [docs/homepage.md](docs/homepage.md) | Public UI: search & editorial modes, filters, trending cards, TL;DR share |
+| [docs/roadmap.md](docs/roadmap.md) | What is not built yet — the resumable work log; start here to continue unfinished work |
+| [docs/setup.md](docs/setup.md) | Run, test, deploy, and the two human-only setup steps (API keys, Cloudflare Access) |
+
+Maintenance: when adding or editing docs, keep each row's description
+discriminative and single-home every topic. If two docs would cover the same
+thing, pick one owner and cross-link from the other.
 
 ## Tech stack
 
