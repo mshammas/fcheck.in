@@ -4,20 +4,21 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — Country / Language filter UI.** When resuming ("continue with
-> next step"), work the item marked **▶ Next** in the M3 list below (*Country /
-> Language filter UI*). No external blocker — the filter backend already works
-> (`searchInternal`/`searchExternal`); the task is the Search-mode input controls
-> and passing the selections through to `runPipeline`. (Absent an explicit ▶
-> marker, the default is the first item not `[x]`.)
+> **▶ Next step — New-draft & low-trending-queue admin alerts.** When resuming
+> ("continue with next step"), work the item marked **▶ Next** in the M3 list
+> below. No external blocker — the counts already exist in `getOverview`, and the
+> email send path (`src/lib/notify/`) can be reused; the task is a trigger + an
+> admin-recipient list. (Absent an explicit ▶ marker, the default is the first
+> item not `[x]`.)
 >
 > Built so far in M2/M3: *Subscriber notifications* (email), *Media analysis*
 > (images + PDFs), *Embedding fingerprinting* (falls back to hash + FTS until a
 > Vectorize index is provisioned), the **WhatsApp** bot channel (inert until Meta
-> credentials are set), the **Editorial-mode homepage**, and the **TL;DR share
-> flow**. Still waiting on provisioning/credentials: audio/video media, the
-> Vectorize index, non-email notification delivery, and the other bot channels
-> (Telegram/email/extension) — flagged on their items.
+> credentials are set), the **Editorial-mode homepage**, the **TL;DR share
+> flow**, and the **Country/Language filter UI**. Still waiting on
+> provisioning/credentials: audio/video media, the Vectorize index, non-email
+> notification delivery, and the other bot channels (Telegram/email/extension) —
+> flagged on their items.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -145,12 +146,15 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   is appended client-side, never by the model. Only TYPE 1/2 are shareable (409
   otherwise). Tests: `test/share.test.ts`.
 
-### ▶ Next: Country / Language filter UI
-- **Note:** the backend already honours these filters (`searchInternal.ts`,
-  `searchExternal.ts`). The remaining work is the homepage input controls and
-  passing the selections through to `runPipeline`.
+### [x] Country / Language filter UI
+- **Built:** searchable multi-select dropdowns for both chips in
+  `SearchBar.astro`, options in `src/lib/locales.ts` (ISO country codes + BCP-47
+  language subtags). Selecting countries marks their common languages with a ★
+  and floats them up (`suggestedLanguages` / `LANGUAGE_COUNTRIES`). Selections
+  ride on the `POST /api/v1/check` body (`countries` / `languages`), which the
+  pipeline already honours. Tests: `test/locales.test.ts`.
 
-### [ ] New-draft & low-trending-queue alerts
+### ▶ Next: New-draft & low-trending-queue alerts
 - **Where:** admin dashboard ([admin.md](admin.md)); counts already exist in
   `getOverview`. Needs a delivery channel (email/push), shared with subscriber
   notifications above.

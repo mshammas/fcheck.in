@@ -3,10 +3,9 @@
 The public front door. Design ported from `wireframes/homepage.html` (+ the
 mobile variants) into `src/pages/index.astro`.
 
-**Status:** Search mode, Editorial mode, and the TL;DR share flow are all built.
-The Country/Language filter UI (for Search → `runPipeline`) is on the
-[roadmap](roadmap.md); the filter backend already works
-([data-model.md](data-model.md)).
+**Status:** Search mode (including the Country/Language filters), Editorial mode,
+and the TL;DR share flow are all built. The filter backend has always worked
+([data-model.md](data-model.md)); the input controls now feed it.
 
 ---
 
@@ -32,13 +31,18 @@ The Country/Language filter UI (for Search → `runPipeline`) is on the
   detected", "🔗 URL detected", "🎬 Video URL detected", "📎 2 files attached")
 - Input type is never restricted by a mode selector — the system detects automatically
 
-**Filters below the input area**
+**Filters below the input area** *(built — `SearchBar.astro`, options in
+`src/lib/locales.ts`)*
 - **Country** — multi-select searchable dropdown; filters both fcheck.in DB and
   external fact-checker queries by country coverage; default: All
 - **Language** — multi-select; filters language of the report returned (not the
-  language of input); default: All; selecting a country auto-suggests common
-  languages for that country but remains overridable
+  language of input); default: All; selecting a country marks that country's
+  common languages with a ★ and floats them to the top, but they remain
+  overridable (`suggestedLanguages` / `LANGUAGE_COUNTRIES`)
 - The two filters are independent but offer smart suggestions when one is set
+- Selections are sent as ISO country codes and BCP-47 language subtags on the
+  `POST /api/v1/check` body (`countries` / `languages`), which the pipeline
+  already honours (`searchInternal` / `searchExternal`)
 - Trust anchor below filters: "Checked by X trusted fact-checkers worldwide"
 - Trending section below (see below)
 - Toggle in top-right header: [Search] [Editorial] — active mode underlined

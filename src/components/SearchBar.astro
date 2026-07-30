@@ -10,6 +10,8 @@
  * Detection logic (detectContent / guessUrlType / addChip / handleFiles /
  * drag-drop) is carried over from wireframes/homepage.html.
  */
+import { COUNTRIES, LANGUAGES, LANGUAGE_COUNTRIES } from '../lib/locales';
+
 interface Props {
   factCheckerCount: number;
 }
@@ -53,8 +55,41 @@ const { factCheckerCount } = Astro.props;
     <div class="attachments-row" id="attachments-row"></div>
 
     <div class="filter-row">
-      <button type="button" class="fchip" id="country-chip">🌍 Country: All</button>
-      <button type="button" class="fchip" id="language-chip">🗣 Language: All</button>
+      <div class="filter-group" data-filter="countries">
+        <button type="button" class="fchip" data-filter-chip aria-haspopup="listbox" aria-expanded="false">
+          🌍 <span data-chip-label>Country: All</span>
+        </button>
+        <div class="filter-pop" data-filter-pop hidden>
+          <input type="text" class="filter-search" data-filter-search placeholder="Search countries" aria-label="Search countries" />
+          <ul class="filter-opts" role="listbox" aria-multiselectable="true">
+            {COUNTRIES.map((c) => (
+              <li>
+                <label class="filter-opt" data-code={c.code} data-name={c.name.toLowerCase()}>
+                  <input type="checkbox" value={c.code} /> <span>{c.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div class="filter-group" data-filter="languages">
+        <button type="button" class="fchip" data-filter-chip aria-haspopup="listbox" aria-expanded="false">
+          🗣 <span data-chip-label>Language: All</span>
+        </button>
+        <div class="filter-pop" data-filter-pop hidden>
+          <input type="text" class="filter-search" data-filter-search placeholder="Search languages" aria-label="Search languages" />
+          <ul class="filter-opts" role="listbox" aria-multiselectable="true">
+            {LANGUAGES.map((l) => (
+              <li>
+                <label class="filter-opt" data-code={l.code} data-name={l.name.toLowerCase()} data-countries={(LANGUAGE_COUNTRIES[l.code] ?? []).join('|')}>
+                  <input type="checkbox" value={l.code} /> <span>{l.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
 
     <p class="status" id="check-status" role="status" hidden></p>
@@ -230,6 +265,70 @@ const { factCheckerCount } = Astro.props;
   }
 
   .fchip:hover { border-color: var(--brand); color: var(--brand); }
+  .fchip.has-selection { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-light); }
+
+  .filter-group { position: relative; }
+
+  .filter-pop {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    max-width: 80vw;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow);
+    padding: 10px;
+    text-align: left;
+  }
+
+  .filter-search {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .filter-search:focus { outline: none; border-color: var(--brand); }
+
+  .filter-opts {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .filter-opt {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--text-primary);
+    padding: 7px 8px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+  }
+
+  .filter-opt:hover { background: var(--bg); }
+  .filter-opt.hidden { display: none; }
+  .filter-opt.suggested { order: -1; }
+  .filter-opt.suggested span::after {
+    content: '★';
+    margin-left: 6px;
+    font-size: 10px;
+    color: var(--brand-mid);
+  }
+  .filter-opt input { accent-color: var(--brand); }
 
   .status {
     margin-top: 14px;
@@ -384,6 +483,80 @@ const { factCheckerCount } = Astro.props;
     return base;
   }
 
+  // ── Country / Language filters ───────────────────────────────
+  // Multi-select dropdowns whose selections ride along on the check request.
+  const groups = document.querySelectorAll<HTMLElement>('[data-filter]');
+
+  /** Selected codes for a filter group ('countries' | 'languages'). */
+  function selectedFilter(kind: string): string[] {
+    const group = document.querySelector<HTMLElement>(`[data-filter="${kind}"]`);
+    if (!group) return [];
+    return Array.from(group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')).map((c) => c.value);
+  }
+
+  groups.forEach((group) => {
+    const kind = group.dataset.filter!;
+    const noun = kind === 'countries' ? 'Country' : 'Language';
+    const chip = group.querySelector<HTMLButtonElement>('[data-filter-chip]')!;
+    const label = group.querySelector<HTMLElement>('[data-chip-label]')!;
+    const pop = group.querySelector<HTMLElement>('[data-filter-pop]')!;
+    const search = group.querySelector<HTMLInputElement>('[data-filter-search]')!;
+    const opts = Array.from(group.querySelectorAll<HTMLElement>('.filter-opt'));
+
+    function updateLabel() {
+      const checked = opts.filter((o) => o.querySelector<HTMLInputElement>('input')!.checked);
+      if (checked.length === 0) label.textContent = `${noun}: All`;
+      else if (checked.length === 1) label.textContent = `${noun}: ${checked[0].querySelector('span')!.textContent}`;
+      else label.textContent = `${noun}: ${checked.length} selected`;
+      chip.classList.toggle('has-selection', checked.length > 0);
+    }
+
+    function setOpen(show: boolean) {
+      pop.hidden = !show;
+      chip.setAttribute('aria-expanded', String(show));
+      if (show) search.focus();
+    }
+
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = pop.hidden !== false;
+      // Close any other open dropdown first.
+      document.querySelectorAll<HTMLElement>('[data-filter-pop]').forEach((p) => (p.hidden = true));
+      setOpen(willOpen);
+    });
+
+    // Type to filter the option list.
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      opts.forEach((o) => o.classList.toggle('hidden', q !== '' && !o.dataset.name!.includes(q)));
+    });
+
+    group.addEventListener('change', () => {
+      updateLabel();
+      // When countries change, surface their common languages in the language list.
+      if (kind === 'countries') applyLanguageSuggestions(selectedFilter('countries'));
+    });
+  });
+
+  /** Marks (and floats to the top) the languages common to the chosen countries. */
+  function applyLanguageSuggestions(countryCodes: string[]) {
+    const langGroup = document.querySelector<HTMLElement>('[data-filter="languages"]');
+    if (!langGroup) return;
+    const chosen = new Set(countryCodes);
+    langGroup.querySelectorAll<HTMLElement>('.filter-opt').forEach((opt) => {
+      const forCountries = (opt.dataset.countries || '').split('|').filter(Boolean);
+      opt.classList.toggle('suggested', forCountries.some((c) => chosen.has(c)));
+    });
+  }
+
+  // Close dropdowns when clicking outside any filter group.
+  document.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('[data-filter]')) {
+      document.querySelectorAll<HTMLElement>('[data-filter-pop]').forEach((p) => (p.hidden = true));
+      document.querySelectorAll<HTMLElement>('[data-filter-chip]').forEach((c) => c.setAttribute('aria-expanded', 'false'));
+    }
+  });
+
   input.addEventListener('input', detectContent);
   attachBtn?.addEventListener('click', () => fileInput!.click());
   fileInput.addEventListener('change', () => {
@@ -425,6 +598,8 @@ const { factCheckerCount } = Astro.props;
           text,
           urls: text.match(URL_RE) ?? [],
           files,
+          countries: selectedFilter('countries'),
+          languages: selectedFilter('languages'),
           channel: 'web',
         }),
       });
