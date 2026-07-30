@@ -4,18 +4,19 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — Bot channels (start with WhatsApp).** When resuming ("continue
-> with next step"), work the item marked **▶ Next** in the M2 list below (*Bot
-> channels*). Note its **blocker**: Meta/Telegram credentials and a verified
-> number are needed to run it live — build the inbound webhook + channel
-> formatter against the existing `runPipeline`, and flag the credential step.
-> (Absent an explicit ▶ marker, the default is the first item not `[x]`.)
+> **▶ Next step — Editorial-mode homepage.** When resuming ("continue with next
+> step"), work the item marked **▶ Next** in the M3 list below (*Editorial-mode
+> homepage*). It is the next item with no external blocker — the remaining M2
+> items all wait on provisioning or credentials. (Absent an explicit ▶ marker,
+> the default is the first item not `[x]`.)
 >
-> *Subscriber notifications* is built for **email**; *Media analysis* reads
-> **images and PDFs** inline; *Embedding fingerprinting* is built and falls back
-> to hash + FTS until a Vectorize index is provisioned. Audio/video media,
-> non-email notification delivery, and the Vectorize index all wait on
-> provisioning/credentials — flagged on their items below.
+> Built so far in M2: *Subscriber notifications* (email), *Media analysis*
+> (images + PDFs), *Embedding fingerprinting* (falls back to hash + FTS until a
+> Vectorize index is provisioned), and the **WhatsApp** bot channel (inbound
+> webhook → pipeline → reply, inert until Meta credentials are set). Still
+> waiting on provisioning/credentials: audio/video media, the Vectorize index,
+> non-email notification delivery, and the other bot channels (Telegram/email/
+> extension) — flagged on their items.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -68,15 +69,23 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   binding or an external transcription API (neither provisioned). Wire it as a
   new branch in `partitionMedia`/`analyzeMedia` once available.
 
-### ▶ Next: Bot channels — WhatsApp, Telegram, email, browser extension
-- **Why:** highest-priority reach per the Bible; only `web` and `api` are wired.
-  The `submissions.channel` enum already allows the others.
-- **Where:** new webhook routes under `src/pages/api/`; each normalises its
-  payload into a `CheckRequest`, calls `runPipeline`, then formats the response
-  for that channel (see Output Formats in [pipeline.md](pipeline.md)).
-- **Next action:** start with WhatsApp Business API — one inbound webhook + one
-  channel formatter; the pipeline is reused unchanged.
-- **Blocker:** Meta / Telegram credentials and a verified number.
+### [~] Bot channels — WhatsApp built; Telegram/email/extension pending
+- **Built (WhatsApp):** the Business Cloud API webhook
+  (`src/pages/api/webhooks/whatsapp.ts`) — GET verification handshake, inbound
+  `X-Hub-Signature-256` validation, `parseInbound` (text/image/caption; audio/
+  video flagged), `runPipeline` reused unchanged, a 3-line `formatReply` per
+  TYPE, and a send path. All logic lives in `src/lib/channels/whatsapp.ts` and is
+  unit-tested (`test/whatsapp.test.ts`); the route is thin glue. Inbound images
+  are fetched and analysed via the media pipeline; audio/video get a "send it as
+  text/image" reply. Inert until credentials are set.
+- **Blocker (WhatsApp, human-only, [setup.md](setup.md)):** `WHATSAPP_ACCESS_TOKEN`,
+  `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, and
+  a verified business number; register the callback URL in the Meta dashboard.
+- **Still open:** Telegram, email inbound, and the browser extension. Each is a
+  new webhook/route that normalises its payload into a `CheckRequest`, calls
+  `runPipeline`, and formats for that channel — mirror the WhatsApp structure
+  (a `src/lib/channels/<name>.ts` + a route). Telegram/email need their own
+  credentials.
 
 ### [x] Background jobs — crawler & re-check
 - **Built:** the automatic promotions TYPE 4→3 (re-check), 4→2 and 3→2 (crawler),
@@ -93,8 +102,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   tests (`test/jobs.test.ts`); the trending job + endpoint auth were run against
   local D1. Re-check/crawler full runs need the API keys below to hit live
   Claude/Google.
-- **Still open:** subscriber *delivery* (next item) — the jobs count subscribers
-  to notify but nothing sends yet.
+- **Subscriber delivery:** built — each promotion now notifies subscribers over
+  email on commit (see *Subscriber notifications* below).
 
 ### [~] Subscriber notifications — email built, other channels pending
 - **Built:** the subscribe endpoint (`POST /api/v1/subscribe`, wired to the
@@ -116,7 +125,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 
 ## M3 — surface & polish
 
-### [ ] Editorial-mode homepage
+### ▶ Next: Editorial-mode homepage
 - **Where:** `src/pages/index.astro` renders a placeholder for the `editorial`
   panel today.
 - **Next action:** build featured report, latest-reports grid, and the sticky

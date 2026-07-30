@@ -23,3 +23,12 @@ CRON_SECRET="dev-cron-secret-change-me"
 # EMAIL_API_URL="https://api.resend.com/emails"
 # EMAIL_API_TOKEN="re_..."
 # EMAIL_FROM="fcheck.in <noreply@fcheck.in>"
+
+# WhatsApp Business Cloud API (optional). Without ACCESS_TOKEN + PHONE_NUMBER_ID
+# the /api/webhooks/whatsapp route can't reply and stays inert. VERIFY_TOKEN is a
+# value you choose and paste into the Meta webhook config; APP_SECRET validates
+# inbound signatures. See docs/setup.md.
+# WHATSAPP_ACCESS_TOKEN="EAAG..."
+# WHATSAPP_PHONE_NUMBER_ID="1234567890"
+# WHATSAPP_VERIFY_TOKEN="a-random-string-you-choose"
+# WHATSAPP_APP_SECRET="..."

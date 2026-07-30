@@ -157,6 +157,37 @@ left commented because an unbound Vectorize index breaks `wrangler dev`). The
 claims are indexed automatically on submission; there is no backfill for claims
 created before the index existed — they remain matchable by hash + FTS.
 
+### 4. WhatsApp bot channel — optional (Meta credentials)
+
+The webhook at `POST/GET /api/webhooks/whatsapp` turns forwarded WhatsApp
+messages into checks and replies with a short verdict. It reuses the pipeline
+unchanged and is inert until the credentials below are set, so it is safe to
+leave off.
+
+Setup, in the [Meta App Dashboard](https://developers.facebook.com/) → WhatsApp:
+
+1. Create a Meta app with the WhatsApp product; note the **Phone number ID** and
+   generate an **access token** (a permanent system-user token for production).
+2. Choose any string as your **verify token**. Set the four secrets:
+
+   ```bash
+   wrangler secret put WHATSAPP_ACCESS_TOKEN
+   wrangler secret put WHATSAPP_PHONE_NUMBER_ID
+   wrangler secret put WHATSAPP_VERIFY_TOKEN
+   wrangler secret put WHATSAPP_APP_SECRET     # App Dashboard → Settings → Basic
+   ```
+
+3. In **WhatsApp → Configuration → Webhook**, set the callback URL to
+   `https://<your-domain>/api/webhooks/whatsapp`, paste the same **verify token**,
+   and subscribe to the **messages** field. Meta calls `GET` to verify, then
+   `POST`s each inbound message.
+
+The route validates the `X-Hub-Signature-256` on every POST against
+`WHATSAPP_APP_SECRET`, so leave that secret set in production. Text, image, and
+PDF messages are checked; audio/video get a "send it as text/image" reply until
+transcription lands. A verified business phone number is required to send
+replies outside the 24-hour customer-service window.
+
 ---
 
 ## Admin authentication

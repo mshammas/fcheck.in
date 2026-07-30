@@ -30,6 +30,15 @@ declare namespace Cloudflare {
     AI?: Ai;
     /** Vectorize index of claim embeddings. Must be provisioned; see docs/setup.md. */
     CLAIM_VECTORS?: VectorizeIndex;
+    /** WhatsApp Business Cloud API — the bot channel is inert without these. */
+    WHATSAPP_ACCESS_TOKEN?: string;
+    WHATSAPP_PHONE_NUMBER_ID?: string;
+    /** Shared value we echo during Meta's webhook verification handshake. */
+    WHATSAPP_VERIFY_TOKEN?: string;
+    /** App secret, for validating inbound X-Hub-Signature-256. */
+    WHATSAPP_APP_SECRET?: string;
+    /** Graph API version override; defaults to v21.0. */
+    WHATSAPP_API_VERSION?: string;
   }
 }
 
