@@ -105,6 +105,74 @@ export async function extractClaim(
   return parseStructured<ExtractedClaim>(response.content);
 }
 
+// ── Stage 1: media extraction (image / PDF) ───────────────────
+
+/** A file whose bytes Claude can read directly — image or PDF, base64-encoded. */
+export interface AnalyzableMedia {
+  name: string;
+  /** MIME type: an `image/*` or `application/pdf`. */
+  type: string;
+  /** base64-encoded bytes, no `data:` prefix. */
+  data: string;
+}
+
+export interface MediaExtract {
+  name: string;
+  text: string;
+}
+
+const MEDIA_SYSTEM = `You transcribe the factual content of an attached image or document so it can be fact-checked.
+
+Read every piece of visible text verbatim — captions, overlays, headlines, chyrons, posts, document body. If the file is a photo or screenshot with little text, describe plainly what it depicts, but only the parts that bear on a factual claim (who, what, where, when).
+
+Do not assess whether anything is true or false. Do not add context the file does not contain. If the file carries no factual claim at all, say so in one line. Output plain text only.`;
+
+/**
+ * Reads image and PDF attachments into text, one Claude call per file so a
+ * single unreadable file can't sink the rest. The returned text is folded into
+ * the claim package by normalize(); stage 2 then extracts the canonical claim
+ * from it exactly as it would from pasted text or a fetched page. The verdict is
+ * never formed here — this only surfaces what the file says.
+ */
+export async function extractFromMedia(
+  client: Anthropic,
+  files: AnalyzableMedia[]
+): Promise<MediaExtract[]> {
+  const out: MediaExtract[] = [];
+
+  for (const file of files) {
+    const block: Anthropic.ContentBlockParam =
+      file.type === 'application/pdf'
+        ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: file.data } }
+        : {
+            type: 'image',
+            source: { type: 'base64', media_type: file.type as Anthropic.Base64ImageSource['media_type'], data: file.data },
+          };
+
+    try {
+      const response = await client.messages.create({
+        model: EXTRACT_MODEL,
+        max_tokens: 1500,
+        system: MEDIA_SYSTEM,
+        messages: [{ role: 'user', content: [block, { type: 'text', text: 'Transcribe and describe this file.' }] }],
+      } as Anthropic.MessageCreateParamsNonStreaming);
+
+      const text = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+        .map((b) => b.text)
+        .join('\n')
+        .trim();
+      if (text) out.push({ name: file.name, text });
+    } catch (err) {
+      // One bad file doesn't fail the submission — it falls back to "recorded,
+      // not analysed" like an unsupported type.
+      console.error(`media extract failed for ${file.name}`, err);
+    }
+  }
+
+  return out;
+}
+
 // ── Stage 6: AI deep-check ────────────────────────────────────
 
 export interface DeepCheckResult {

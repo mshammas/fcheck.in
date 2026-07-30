@@ -4,10 +4,10 @@ How a submission becomes a response. The response *types* themselves are defined
 in [product.md](product.md); not-yet-built stages are tracked in
 [roadmap.md](roadmap.md).
 
-**Status:** stages 1–6 are built for the **web** and **api** channels, text and
-URLs fully processed. Media is accepted and flagged but not analysed. Bot
-channels, background jobs, and the automatic promotions they drive are on the
-roadmap.
+**Status:** stages 1–6 are built for the **web** and **api** channels, with text,
+URLs, images, and PDFs fully processed. Audio and video are accepted and flagged
+but not yet analysed (pending transcription). Background jobs and the automatic
+promotions they drive are built; bot channels are on the roadmap.
 
 ---
 
@@ -61,10 +61,13 @@ components are processed together and contribute to a single verdict. A text
 caption on an image is not processed separately from the image — both are
 analysed as one claim.
 
-**Current limitation:** text and URLs are fully processed (`normalize()` fetches
-and strips linked pages). Media (image/video/audio/document) is recorded and
-flagged but not yet analysed — OCR, transcription, and frame extraction are on
-the [roadmap](roadmap.md).
+**Media processing:** text and URLs are fully processed (`normalize()` fetches
+and strips linked pages). Images and PDFs are read inline by Claude (vision +
+document input, via `src/lib/pipeline/media.ts`) and folded into the claim
+package as text, so stages 2+ treat them like any other input. Audio and video
+are still recorded and flagged only — transcription and frame extraction are on
+the [roadmap](roadmap.md). File bytes ride in on `CheckFile.data` (base64,
+bounded) and are stripped before the submission is stored.
 
 ---
 

@@ -44,15 +44,17 @@ trending queue); Cloudflare Access admin auth; the web channel; the JSON API;
 background jobs (re-check, crawler, trending-expiry) driving the automatic
 promotions (TYPE 4→3, 4→2, 3→2), scheduled by a dedicated cron worker;
 subscriber notifications over email (subscribe endpoint + send path, wired into
-publish and the promotions); an offline test suite. Web + API are the only live
-input channels.
+publish and the promotions); image + PDF analysis (read inline by Claude and
+folded into the claim package); an offline test suite. Web + API are the only
+live input channels.
 
 **Not built yet (see [docs/roadmap.md](docs/roadmap.md)):** bot channels
 (WhatsApp/Telegram/email/extension), subscriber notification delivery on the
 non-email channels (WhatsApp/Telegram/web-push subscribers are recorded but not
 sent — rides on bot channels), embedding-based claim fingerprinting
-(currently hash + FTS), media analysis (OCR / transcription / frames — media is
-accepted and flagged only), editorial-mode homepage, and the TL;DR share flow.
+(currently hash + FTS), audio/video media analysis (images + PDFs are analysed;
+audio/video are accepted and flagged, pending transcription), editorial-mode
+homepage, and the TL;DR share flow.
 
 Two things only a human with credentials can do (both in [docs/setup.md](docs/setup.md)):
 set the API keys, and wire Cloudflare Access for `/admin` in production.
@@ -88,7 +90,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 
 | Path | What lives here |
 | --- | --- |
-| `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `matcher`, `searchInternal`, `searchExternal`, `index`) |
+| `src/lib/pipeline/` | The check pipeline — one file per stage (`normalize`, `media` (image/PDF analysis), `matcher`, `searchInternal`, `searchExternal`, `index`) |
 | `src/lib/jobs/` | Background jobs: `recheck`, `crawler`, `trending`, `promote` (automatic promotions), `index` (dispatch) |
 | `src/lib/providers/` | External APIs: `anthropic.ts` (Claude), `googleFactCheck.ts` |
 | `src/lib/notify/` | Subscriber notifications: `index` (service, called on publish/promotion), `email` (provider-agnostic HTTP send path) |
@@ -98,7 +100,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
 | `migrations/` | D1 schema + seeds (`0001`–`0004`) |
-| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications (real-SQL via `d1.ts`) |
+| `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, media analysis (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
 

@@ -4,18 +4,18 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
-> **▶ Next step — Media analysis (OCR / transcription / frames).** When resuming
+> **▶ Next step — Embedding-based claim fingerprinting.** When resuming
 > ("continue with next step"), work the item marked **▶ Next** in the M2 list
-> below (*Media analysis*). It is the next item with no external blocker — the
-> other open M2 items wait on provisioning (Vectorize) or credentials (bot
-> channels). (Absent an explicit ▶ marker, the default is the first item not
-> `[x]`.)
+> below (*Embedding fingerprinting*). Note its **blocker**: a Vectorize index
+> must be provisioned (a human-only step) before the query path can run — do the
+> code behind the existing `ClaimMatcher` interface and flag the provisioning.
+> (Absent an explicit ▶ marker, the default is the first item not `[x]`.)
 >
-> *Subscriber notifications* is now built for **email**: a public subscribe
-> endpoint (`POST /api/v1/subscribe`), an email send path
-> (`src/lib/notify/`), and delivery wired into publish and every promotion.
-> WhatsApp/Telegram/web-push subscribers are recorded but not yet delivered —
-> that rides on the bot-channels item.
+> *Subscriber notifications* is built for **email**; *Media analysis* now reads
+> **images and PDFs** inline (Claude vision + document input) and folds them into
+> the claim package. Audio/video are still recorded and flagged — they need
+> transcription (a Workers AI / external-API blocker). WhatsApp/Telegram/web-push
+> subscribers are recorded but not yet delivered — both ride on later items.
 
 Milestones: **M1 = shipped** (pipeline, admin, web + API). **M2 = in progress.**
 
@@ -37,7 +37,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
 
 ## M2 — core intelligence & reach
 
-### [ ] Embedding-based claim fingerprinting
+### ▶ Next: Embedding-based claim fingerprinting
 - **Why:** the Bible specifies semantic matching so "warm water cures covid" and
   "hot water kills the virus" resolve to one record. Today it's SHA-256 of
   normalised text + an FTS5 second pass (≥ 0.75 token overlap).
@@ -48,14 +48,20 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done · `▶` next up
   in `findMatch`, keeping the FTS pass as fallback.
 - **Blocker:** a Vectorize index must be provisioned.
 
-### ▶ Next: Media analysis (OCR / transcription / frame extraction)
-- **Why:** images, video, audio, PDFs are accepted and recorded but not analysed;
-  a media-only submission is routed straight to TYPE 4 today.
-- **Where:** `src/lib/pipeline/normalize.ts` (see `hasUnprocessedMedia` and the
-  `[Attached, not yet analysed: …]` placeholder).
-- **Next action:** branch by MIME type — OCR for images, transcription for
-  audio/video, text extraction for PDF — and fold the output into `combinedText`
-  so stages 2+ treat it as one claim package.
+### [~] Media analysis — images + PDFs built, audio/video pending
+- **Built:** images and PDFs are read inline by Claude (vision + document input)
+  and folded into `combinedText`, so a photo or PDF of a claim is fact-checked
+  exactly like pasted text. The API now carries file bytes (`CheckFile.data`,
+  base64, bounded and stripped before D1); the upload UI base64-encodes
+  image/PDF attachments. Code: `src/lib/pipeline/media.ts` (MIME branching),
+  `extractFromMedia` in `src/lib/providers/anthropic.ts`, folding in
+  `normalize.ts`, client build order in `pipeline/index.ts`. Tests:
+  `test/media.test.ts`.
+- **Still open:** audio and video (and unsupported document types) are still
+  recorded and flagged — a media-only submission of those routes to TYPE 4.
+  They need transcription/frame extraction, a **blocker**: a Workers AI Whisper
+  binding or an external transcription API (neither provisioned). Wire it as a
+  new branch in `partitionMedia`/`analyzeMedia` once available.
 
 ### [ ] Bot channels — WhatsApp, Telegram, email, browser extension
 - **Why:** highest-priority reach per the Bible; only `web` and `api` are wired.

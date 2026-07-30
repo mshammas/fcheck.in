@@ -16,9 +16,10 @@
  * No path through this pipeline sets a claim to `published`. TYPE 3 writes a
  * draft and queues it for a human. Publication is an admin action.
  */
-import type { CheckRequest, CheckResponse, Channel } from '../types';
+import type { CheckRequest, CheckResponse, Channel, CheckFile } from '../types';
 import { TYPE_NUMBER, parseEvidence } from '../types';
 import { getClient, extractClaim, deepCheck } from '../providers/anthropic';
+import { mediaAnalyzer } from './media';
 import {
   getClaimById,
   getPrimaryReport,
@@ -44,8 +45,12 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   const channel: Channel = request.channel ?? 'web';
   const notes: string[] = [];
 
-  // ── Stage 1 — normalise ────────────────────────────────────
-  const input = await normalize(request);
+  // The Claude client is needed for both media analysis (stage 1) and claim
+  // extraction (stage 2), so it is built up front.
+  const claude = getClient(env.anthropicApiKey);
+
+  // ── Stage 1 — normalise (reads image/PDF attachments into text) ──
+  const input = await normalize(request, { analyzeMedia: mediaAnalyzer(claude) });
   notes.push(...input.notes);
 
   if (!input.combinedText) {
@@ -53,7 +58,6 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   }
 
   // ── Stage 2 — extract the checkable assertion ──────────────
-  const claude = getClient(env.anthropicApiKey);
   const extracted = await extractClaim(claude, input.combinedText);
   const canonicalText = extracted.canonical_text.trim();
 
@@ -75,7 +79,7 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
     // already have — no reprocessing, no second bill for the same question.
     await Promise.all([
       incrementSubmissionCount(env.db, cached.id),
-      recordSubmission(env.db, cached.id, channel, { text: request.text, urls: input.urls, files: request.files }),
+      recordSubmission(env.db, cached.id, channel, { text: request.text, urls: input.urls, files: fileMetadata(request.files) }),
     ]);
     return buildResponse(env, cached.id, { cached: true, notes });
   }
@@ -88,7 +92,7 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
       recordSubmission(env.db, internal.claim.id, channel, {
         text: request.text,
         urls: input.urls,
-        files: request.files,
+        files: fileMetadata(request.files),
       }),
     ]);
     return buildResponse(env, internal.claim.id, { cached: false, notes });
@@ -136,7 +140,7 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
     await recordSubmission(env.db, claim.id, channel, {
       text: request.text,
       urls: input.urls,
-      files: request.files,
+      files: fileMetadata(request.files),
     });
     return buildResponse(env, claim.id, { cached: false, notes });
   }
@@ -185,13 +189,19 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   await recordSubmission(env.db, claim.id, channel, {
     text: request.text,
     urls: input.urls,
-    files: request.files,
+    files: fileMetadata(request.files),
   });
 
   return buildResponse(env, claim.id, { cached: false, notes });
 }
 
 // ── Helpers ───────────────────────────────────────────────────
+
+/** Drops inline file bytes before a submission is stored — D1 keeps only the
+ * metadata (name/type/size), never megabytes of base64. */
+function fileMetadata(files: CheckFile[] | undefined): { name: string; type: string; size: number }[] {
+  return (files ?? []).map(({ name, type, size }) => ({ name, type, size }));
+}
 
 /** TYPE 4 — no verdict shown, claim queued, user can subscribe. */
 async function storeSubmitted(
@@ -217,7 +227,7 @@ async function storeSubmitted(
   await recordSubmission(env.db, claim.id, args.channel, {
     text: args.request.text,
     urls: args.input.urls,
-    files: args.request.files,
+    files: fileMetadata(args.request.files),
   });
 
   return buildResponse(env, claim.id, { cached: false, notes: args.notes });

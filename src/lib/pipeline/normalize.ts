@@ -5,10 +5,12 @@
  * A caption on an image is not a separate claim from the image: all components
  * of a submission are combined and analysed together.
  *
- * M1 scope: text and URLs are fully processed. Media is accepted, recorded, and
- * flagged — OCR, transcription, and frame extraction land in M2.
+ * Text and URLs are fully processed. Images and PDFs are read by Claude (via the
+ * injected `analyzeMedia`) and folded in as text; audio and video are still
+ * accepted, recorded, and flagged until transcription is wired.
  */
-import type { CheckRequest } from '../types';
+import type { CheckRequest, CheckFile } from '../types';
+import type { MediaAnalysis } from './media';
 
 const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
 
@@ -29,7 +31,12 @@ export interface NormalizedInput {
 const MAX_FETCHED_CHARS = 6000;
 const FETCH_TIMEOUT_MS = 8000;
 
-export async function normalize(request: CheckRequest): Promise<NormalizedInput> {
+export interface NormalizeOptions {
+  /** Reads image/PDF attachments into text. Omitted → media stays unprocessed. */
+  analyzeMedia?: (files: CheckFile[]) => Promise<MediaAnalysis>;
+}
+
+export async function normalize(request: CheckRequest, opts: NormalizeOptions = {}): Promise<NormalizedInput> {
   const notes: string[] = [];
   const detectedTypes: string[] = [];
   const parts: string[] = [];
@@ -61,17 +68,33 @@ export async function normalize(request: CheckRequest): Promise<NormalizedInput>
   }
 
   const files = request.files ?? [];
-  const hasUnprocessedMedia = files.length > 0;
-  if (hasUnprocessedMedia) {
-    for (const file of files) {
-      const kind = file.type.split('/')[0] || 'document';
-      if (!detectedTypes.includes(kind)) detectedTypes.push(kind);
+  for (const file of files) {
+    const kind = file.type.split('/')[0] || 'document';
+    if (!detectedTypes.includes(kind)) detectedTypes.push(kind);
+  }
+
+  // Images and PDFs are read into text and treated as part of the claim. What
+  // the analyzer can't handle (audio/video, or bytes it wasn't given) stays
+  // flagged for the review queue.
+  let unprocessed = files;
+  if (files.length > 0 && opts.analyzeMedia) {
+    const analysis = await opts.analyzeMedia(files);
+    unprocessed = analysis.unprocessed;
+    for (const extract of analysis.extracts) {
+      parts.push(`[Content of attached file ${extract.name}]\n${extract.text}`);
     }
+    if (analysis.extracts.length > 0) {
+      notes.push(`Read ${analysis.extracts.length} attached file${analysis.extracts.length > 1 ? 's' : ''}.`);
+    }
+  }
+
+  const hasUnprocessedMedia = unprocessed.length > 0;
+  if (hasUnprocessedMedia) {
     notes.push(
-      `${files.length} attached file${files.length > 1 ? 's were' : ' was'} recorded but not analysed — ` +
-        'image, video, audio and document analysis is not yet available.'
+      `${unprocessed.length} attached file${unprocessed.length > 1 ? 's were' : ' was'} recorded but not analysed — ` +
+        'audio, video, and unsupported document types are not yet available.'
     );
-    parts.push(`[Attached, not yet analysed: ${files.map((f) => f.name).join(', ')}]`);
+    parts.push(`[Attached, not yet analysed: ${unprocessed.map((f) => f.name).join(', ')}]`);
   }
 
   return {

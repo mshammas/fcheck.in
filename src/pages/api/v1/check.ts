@@ -16,6 +16,11 @@ const CHANNELS: Channel[] = ['web', 'whatsapp', 'telegram', 'email', 'extension'
 const MAX_TEXT_LENGTH = 20_000;
 const MAX_URLS = 10;
 const MAX_FILES = 10;
+/** Cap on inline base64 file bytes we accept for analysis (~5 MB decoded).
+ * Oversize files keep their metadata but drop the bytes — they get flagged,
+ * not analysed, rather than ballooning the request. */
+const MAX_FILE_DATA_CHARS = 7_000_000;
+const ANALYZABLE_TYPE = /^image\/|^application\/pdf$/;
 
 export const POST: APIRoute = async (context) => {
   let body: unknown;
@@ -66,10 +71,16 @@ function validate(body: unknown): CheckRequest {
   const files = Array.isArray(b.files)
     ? b.files.slice(0, MAX_FILES).map((f) => {
         const file = f as Record<string, unknown>;
+        const type = String(file.type ?? 'application/octet-stream');
+        // Keep bytes only for the types we can analyse, and only within the cap.
+        const rawData = typeof file.data === 'string' ? file.data : undefined;
+        const data =
+          rawData && ANALYZABLE_TYPE.test(type) && rawData.length <= MAX_FILE_DATA_CHARS ? rawData : undefined;
         return {
           name: String(file.name ?? 'file'),
-          type: String(file.type ?? 'application/octet-stream'),
+          type,
           size: Number(file.size ?? 0),
+          ...(data ? { data } : {}),
         };
       })
     : [];

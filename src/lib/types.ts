@@ -170,12 +170,22 @@ export function parseTags(json: string | null | undefined): string[] {
 
 // ── API contract ──────────────────────────────────────────────
 
+/** An attached file. `data` (base64, no data: prefix) is present only for the
+ * types we can analyse inline (images, PDFs); other types carry metadata only.
+ * `data` is stripped before the submission is persisted — it never reaches D1. */
+export interface CheckFile {
+  name: string;
+  type: string;
+  size: number;
+  data?: string;
+}
+
 /** What POST /api/v1/check accepts. Any combination of fields is valid. */
 export interface CheckRequest {
   text?: string;
   urls?: string[];
-  /** Media is accepted and recorded, but not yet analysed — see deepCheck. */
-  files?: { name: string; type: string; size: number }[];
+  /** Images and PDFs are analysed inline; audio/video are recorded and flagged. */
+  files?: CheckFile[];
   channel?: Channel;
   countries?: string[];
   languages?: string[];
