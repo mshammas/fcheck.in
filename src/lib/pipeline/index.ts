@@ -18,7 +18,8 @@
  */
 import type { CheckRequest, CheckResponse, Channel, CheckFile } from '../types';
 import { TYPE_NUMBER, parseEvidence } from '../types';
-import { getClient, extractClaim, deepCheck } from '../providers/anthropic';
+import { getClientOrNull, extractClaim, deepCheck } from '../providers/anthropic';
+import { staticExtract } from './fallback';
 import { mediaAnalyzer } from './media';
 import {
   getClaimById,
@@ -45,16 +46,28 @@ export interface PipelineEnv {
   origin: string;
 }
 
+/** Shown when AI is unavailable and a claim falls through to the TYPE 4 queue —
+ *  distinct from the genuine "insufficient facts" wording so the two read
+ *  differently. Exported for the tests that assert on the degraded path. */
+export const AI_UNAVAILABLE_NOTE =
+  'Our AI checker is temporarily unavailable — your claim has been queued and will be checked automatically. Subscribe to be notified of the verdict.';
+
 export async function runPipeline(env: PipelineEnv, request: CheckRequest): Promise<CheckResponse> {
   const channel: Channel = request.channel ?? 'web';
   const notes: string[] = [];
 
-  // The Claude client is needed for both media analysis (stage 1) and claim
-  // extraction (stage 2), so it is built up front.
-  const claude = getClient(env.anthropicApiKey);
+  // The Claude client is used for media analysis (stage 1), claim extraction
+  // (stage 2), and the deep-check (stage 6). It is optional: when the key is
+  // unset — or a call fails at runtime — we drop onto the static failover path
+  // so the AI-free stages (cache, internal DB, external network) still serve a
+  // result, and anything that truly needs AI is queued as TYPE 4.
+  const claude = getClientOrNull(env.anthropicApiKey);
+  let aiDegraded = claude === null;
 
   // ── Stage 1 — normalise (reads image/PDF attachments into text) ──
-  const input = await normalize(request, { analyzeMedia: mediaAnalyzer(claude) });
+  // Without a client there is no media analyzer, so attachments stay
+  // unprocessed and route to TYPE 4 the same way audio/video already do.
+  const input = await normalize(request, claude ? { analyzeMedia: mediaAnalyzer(claude) } : {});
   notes.push(...input.notes);
 
   if (!input.combinedText) {
@@ -62,7 +75,21 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   }
 
   // ── Stage 2 — extract the checkable assertion ──────────────
-  const extracted = await extractClaim(claude, input.combinedText);
+  let extracted: Awaited<ReturnType<typeof extractClaim>>;
+  if (claude) {
+    try {
+      extracted = await extractClaim(claude, input.combinedText);
+    } catch (err) {
+      // A Claude failure here (rate limit / overload / timeout) must not sink
+      // the check — fall back to a deterministic canonical text so the AI-free
+      // search stages can still run.
+      console.error('claim extraction failed — using static failover', err);
+      aiDegraded = true;
+      extracted = staticExtract(input.combinedText);
+    }
+  } else {
+    extracted = staticExtract(input.combinedText);
+  }
   const canonicalText = extracted.canonical_text.trim();
 
   if (!extracted.is_checkable) {
@@ -160,14 +187,21 @@ export async function runPipeline(env: PipelineEnv, request: CheckRequest): Prom
   }
 
   let analysis: Awaited<ReturnType<typeof deepCheck>> | null = null;
-  try {
-    analysis = await deepCheck(claude, canonicalText, filters);
-  } catch (err) {
-    notes.push('The AI analysis could not be completed for this claim.');
-    console.error('deep check failed', err);
+  if (claude && !aiDegraded) {
+    try {
+      analysis = await deepCheck(claude, canonicalText, filters);
+    } catch (err) {
+      // A failure this late (e.g. rate limit after extraction succeeded) still
+      // degrades to the static path rather than erroring the whole request.
+      aiDegraded = true;
+      console.error('deep check failed', err);
+    }
   }
 
   if (!analysis || !analysis.sufficient_evidence || !analysis.verdict) {
+    // No AI verdict. When AI was unavailable, say so honestly; otherwise this is
+    // the genuine "not enough sources yet" case handled inside storeSubmitted.
+    if (aiDegraded) notes.push(AI_UNAVAILABLE_NOTE);
     return storeSubmitted(env, { fingerprint, canonicalText, channel, request, input, notes });
   }
 

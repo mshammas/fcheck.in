@@ -25,6 +25,16 @@ export function getClient(apiKey: string | undefined): Anthropic {
   return new Anthropic({ apiKey });
 }
 
+/**
+ * Like {@link getClient}, but returns null instead of throwing when the key is
+ * unset. Callers that can degrade gracefully — the pipeline and the re-check
+ * job — use this so a missing key drops us onto the static failover path rather
+ * than sinking the request.
+ */
+export function getClientOrNull(apiKey: string | undefined): Anthropic | null {
+  return apiKey ? new Anthropic({ apiKey }) : null;
+}
+
 /** Pulls the JSON payload out of a response constrained by output_config.format. */
 function parseStructured<T>(content: Anthropic.ContentBlock[]): T {
   // With server tools in play, the JSON answer is the last text block, not the

@@ -10,7 +10,7 @@
  * number of Claude calls. Oldest-checked claims go first.
  */
 import type { ClaimRow, Verdict } from '../types';
-import { getClient, deepCheck } from '../providers/anthropic';
+import { getClientOrNull, deepCheck } from '../providers/anthropic';
 import { promoteToPreliminary, type PromotionResult } from './promote';
 import { notifyClaimSubscribers, type NotifyResult } from '../notify';
 import type { EmailConfig } from '../notify/email';
@@ -37,7 +37,10 @@ export async function recheckSubmitted(
   deps: JobDeps,
   { limit = 5 }: { limit?: number } = {}
 ): Promise<RecheckResult> {
-  const client = getClient(deps.anthropicApiKey);
+  // No key → no AI to re-check with. No-op cleanly rather than throwing; the
+  // TYPE 4 backlog simply waits, and this same job drains it once AI returns.
+  const client = getClientOrNull(deps.anthropicApiKey);
+  if (!client) return { checked: 0, promoted: 0, promotions: [], notifications: [] };
 
   // Oldest-touched first. NULL last_rechecked_at (never re-checked) sorts first
   // in SQLite, so brand-new TYPE 4 claims are picked up on the next run.
