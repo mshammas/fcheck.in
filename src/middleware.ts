@@ -15,12 +15,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
   const needsAuth = PROTECTED.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 
-  if (!needsAuth) return next();
+  if (!needsAuth) return withCachePolicy(await next(), path);
 
   try {
     const identity = await requireAdmin(context.request, getDb(), getEnv());
     context.locals.admin = identity.user;
-    return next();
+    return withCachePolicy(await next(), path);
   } catch (err) {
     if (!(err instanceof AuthError)) throw err;
 
@@ -28,16 +28,48 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (path.startsWith('/api/')) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: err.status,
-        headers: { 'content-type': 'application/json; charset=utf-8' },
+        headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
       });
     }
 
     return new Response(deniedPage(err), {
       status: err.status,
-      headers: { 'content-type': 'text/html; charset=utf-8' },
+      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
     });
   }
 });
+
+/**
+ * Explicit cache policy for server-rendered HTML. Without it, browsers apply
+ * heuristic caching and can serve stale HTML that points at an old (immutable)
+ * stylesheet after a deploy. Admin HTML is private (`no-store`); public HTML
+ * must revalidate so a fresh deploy is picked up immediately. API routes set
+ * their own `cache-control`, and static `/_astro/*` assets never reach this
+ * middleware — both are left untouched.
+ */
+function withCachePolicy(response: Response, path: string): Response {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('text/html')) return response;
+  if (response.headers.has('cache-control')) return response;
+
+  const isAdmin =
+    path === '/admin' || path.startsWith('/admin/') || path.startsWith('/api/admin');
+  const policy = isAdmin ? 'no-store' : 'public, max-age=0, must-revalidate';
+
+  try {
+    response.headers.set('cache-control', policy);
+    return response;
+  } catch {
+    // Some responses arrive with immutable headers — reconstruct to set it.
+    const headers = new Headers(response.headers);
+    headers.set('cache-control', policy);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+}
 
 function deniedPage(err: AuthError): string {
   const heading = err.status === 403 ? 'Not authorised' : 'Sign in required';
