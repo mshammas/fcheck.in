@@ -52,6 +52,15 @@ covers the two things that otherwise need live credentials to exercise:
 
 ## Go-live checklist
 
+> **✅ Launched 2026-08-01 — https://fcheck.in is live.** All of Tier 1 below is
+> done and the pipeline is verified against real Google Fact Check. The site runs
+> in **no-AI mode**: `ANTHROPIC_API_KEY` is deliberately deferred, so novel claims
+> degrade to TYPE 4 via the no-AI failover and TYPE 3 AI preliminary verdicts are
+> off until the key is set (`wrangler secret put ANTHROPIC_API_KEY --env production`,
+> no redeploy needed). The checklist is kept as the reproducible record + the
+> runbook for staging or a rebuild. See [Build & deploy notes](#build--deploy-notes)
+> for the non-obvious deploy gotchas discovered at launch.
+
 **The single runbook for taking fcheck.in from "built" to serving public
 traffic.** Start here in a fresh session to see what's pending. Work the tiers
 top to bottom. The **Required** steps each link to a detailed how-to below; the
@@ -65,34 +74,32 @@ what stands between the current build and launch — for remaining *coded* work
 Do them in order; the pipeline, admin review, and background jobs each depend on
 the ones above.
 
-- [ ] **Provision remote D1 + migrate.** `wrangler d1 create fcheck` (and
-      `fcheck-staging`), paste each `database_id` into the matching block in
-      `wrangler.jsonc`, then `npm run db:migrate:remote`. → [Deployment](#deployment)
-- [ ] **Set the AI keys** — `ANTHROPIC_API_KEY` and `GOOGLE_FACT_CHECK_API_KEY`
-      as worker secrets. Without them stages 5–6 error and no check completes.
+- [x] **Provision remote D1 + migrate.** `fcheck` (prod) and `fcheck-staging`
+      both created and migrated (`0001`–`0007`); ids in `wrangler.jsonc`. Migrate
+      staging with `npm run db:migrate:staging` (needs `--env staging`). → [Deployment](#deployment)
+- [x] **Set the AI keys** — `GOOGLE_FACT_CHECK_API_KEY` set.
+      `ANTHROPIC_API_KEY` **intentionally deferred** (no-AI failover). Without
+      Anthropic, stage 6 degrades gracefully rather than erroring.
       → [§1 API keys](#things-only-you-can-do)
-- [ ] **Wire Cloudflare Access** for `/admin` + `/api/admin`; fill the
-      `CF_ACCESS_*` placeholders in `wrangler.jsonc`. Without it no human can
-      review or publish, so the *human-review-before-publication* rule can't be
-      honoured and no TYPE 3 ever becomes a TYPE 1.
+- [x] **Wire Cloudflare Access** for `/admin` + `/api/admin`. `CF_ACCESS_*` in the
+      `env.production` block of `wrangler.jsonc` (team `fcheck.cloudflareaccess.com`).
       → [§2 Cloudflare Access](#2-cloudflare-access--protects-admin-in-production)
-- [ ] **Seed a real admin** — insert at least one `super_admin` (or `editor`)
-      row into `admin_users` on remote D1, keyed to the email that will sign in
-      via Access; otherwise the dashboard rejects everyone.
+- [x] **Seed a real admin** — `super_admin` seeded on remote D1; demo seed rows
+      from `0004` deleted so the public homepage starts empty.
       → [Admin authentication](#admin-authentication)
-- [ ] **Enable background jobs** — set `CRON_SECRET` (identical on the app worker
-      and the cron worker), set `APP_BASE_URL`, and deploy `workers/cron/`.
-      Without it: no automatic promotions (4→3, 4→2, 3→2), no trending expiry, no
-      admin alerts. → [Background jobs](#background-jobs)
-- [ ] **Deploy the app** — `npm run deploy`. → [Deployment](#deployment)
-- [ ] **Smoke-test on staging with live keys** (next section) — the live
-      pipeline has never run end-to-end (all tests are offline), so this is the
-      first proof it works against real Claude/Google.
+- [x] **Enable background jobs** — `CRON_SECRET` set identically on `fcheck-in`
+      and `fcheck-in-cron`; `APP_BASE_URL=https://fcheck.in`; cron worker deployed.
+      → [Background jobs](#background-jobs)
+- [x] **Deploy the app** — `npm run deploy` (see the env note in [Deployment](#deployment)).
+- [x] **Attach the custom domain** — `fcheck.in` added as a Custom Domain on the
+      `fcheck-in` worker; `*.workers.dev` disabled so the domain is the only surface.
+- [x] **Smoke-test with live keys** — verified live: debunked claim → TYPE 2 w/
+      attribution; obscure claim → TYPE 4 failover; all four job endpoints → 200.
 
-### Tier 1b — Staging smoke test (before any public traffic)
+### Tier 1b — Smoke test (record of what was verified at launch)
 
-Offline tests all pass, but stages 5–6 hitting real Claude/Google have never
-executed. Against the staging deploy, confirm each by hand:
+Run this against staging (or the prod worker's URL before the DNS cutover) on any
+rebuild. At launch it was run against the deployed worker and passed:
 
 1. Submit a well-known debunked claim → expect **TYPE 2** with an attributed
    fact-checker.
@@ -333,13 +340,50 @@ shares nothing but an authenticated HTTP call — see [Background jobs](#backgro
 # the matching block in wrangler.jsonc
 wrangler d1 create fcheck-staging
 
-npm run db:migrate:remote     # apply migrations to remote D1
-npm run deploy                # astro build && wrangler deploy
+npm run db:migrate:remote     # migrate prod (fcheck)
+npm run db:migrate:staging    # migrate staging (needs --env staging)
+npm run deploy                # -> production; deploy:staging -> staging
 ```
 
-Before the first staging deploy, replace the `PLACEHOLDER` values in
-`wrangler.jsonc`: the staging D1 `database_id`, and the two `CF_ACCESS_*`
-values from [step 2 above](#2-cloudflare-access--protects-admin-in-production).
+`npm run deploy` runs `CLOUDFLARE_ENV=production astro build && wrangler deploy
+--env production`. The environment **must** be chosen at build time — see the
+note below. Before a first staging deploy, fill the staging D1 `database_id` and
+`CF_ACCESS_*` in `wrangler.jsonc`.
+
+---
+
+## Build & deploy notes
+
+Non-obvious things discovered at launch. Read before changing the build config.
+
+- **Environments are wired at build time, not just deploy time.** The Astro
+  Cloudflare adapter bakes the selected env's `vars` into `dist/` during
+  `astro build`; `wrangler deploy --env X` alone is *not* enough. The deploy
+  scripts set `CLOUDFLARE_ENV` for the build. `wrangler.jsonc` structure:
+  **top-level = local dev** (`fcheck-in-dev`, `ENVIRONMENT=development`, admin
+  bypass), and a real **`env.production`** block (`fcheck-in`, `ENVIRONMENT=
+  production`, `CF_ACCESS_*`). A bare `wrangler deploy` (no `--env`) only touches
+  the throwaway dev worker, so it can never ship the dev bypass to production.
+
+- **⚠️ `manualChunks: () => 'app'` in `astro.config.mjs` is load-bearing — do not
+  remove it.** Astro 7 builds with Vite 8, which is rolldown-only. Rolldown split
+  Astro's SSR render runtime across chunks, breaking an identity check so *every*
+  server-rendered page returned the literal string `[object Object]` (API/`.ts`
+  routes and `astro dev` were unaffected — only the production build). Coalescing
+  to a single chunk fixes it. If a future Astro/rolldown upgrade resolves this
+  upstream, re-test with a trivial page before removing the override.
+
+- **A layout's global `body`/`html` CSS must be class-gated.** Astro leaves
+  `body`/`html` selectors unscoped, and with everything in one CSS chunk (above)
+  they apply site-wide. `AdminBase.astro`'s sidebar layout is scoped to
+  `body.admin-shell` for exactly this reason — an unqualified `body { display:
+  flex }` there once broke the public homepage layout.
+
+- **SSR HTML gets an explicit cache policy** (`src/middleware.ts`,
+  `withCachePolicy`): public HTML → `public, max-age=0, must-revalidate` (so a
+  deploy is picked up immediately, no stale HTML pointing at an old immutable
+  stylesheet); admin/denied HTML → `no-store`. API routes and `/_astro/*` are
+  left untouched.
 
 ---
 

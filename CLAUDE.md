@@ -36,7 +36,7 @@ demand is the whole point of the structure.
 - **Confidence is never padded** — it reflects real source quality and quantity.
 - **External sources are authoritative and attributed** — no AI verdict layered on top.
 
-## Current status — M1 shipped
+## Current status — M1 shipped · LIVE at fcheck.in (2026-08-01)
 
 **Built:** Astro on Cloudflare Workers + D1; the full check pipeline (stages 1–6);
 all four response TYPEs; the admin dashboard (draft review → publish/reject,
@@ -64,12 +64,17 @@ subscribers and non-email admin push are not sent), and audio/video media
 analysis (images + PDFs are analysed; audio/video are accepted and flagged,
 pending transcription).
 
-To take the current build live, follow the ordered
-[Go-live checklist](docs/setup.md#go-live-checklist) — provision + migrate remote
-D1, set the AI keys, wire Cloudflare Access for `/admin`, seed an admin, enable
-the cron worker, deploy, then run the staging smoke test. Fast-follow credentials
-(email, WhatsApp, Telegram, Vectorize) and the not-yet-built work are tiered in
-that same checklist; remaining *coded* work lives in [docs/roadmap.md](docs/roadmap.md).
+**Live since 2026-08-01** at `https://fcheck.in` (Cloudflare Worker `fcheck-in`,
+`*.workers.dev` disabled). Deployed with `npm run deploy`
+(`CLOUDFLARE_ENV=production astro build && wrangler deploy --env production` — the
+environment is chosen at **build** time; see the [Build & deploy
+notes](docs/setup.md#build--deploy-notes) for that and other launch gotchas, incl.
+the load-bearing rolldown `manualChunks` override). Running in **no-AI mode**:
+`ANTHROPIC_API_KEY` is deferred, so novel claims use the no-AI failover and TYPE 3
+is off until it's set. The ordered [Go-live checklist](docs/setup.md#go-live-checklist)
+is the reproducible record + the runbook for staging/rebuilds; fast-follow
+credentials (Anthropic, email, WhatsApp, Telegram, Vectorize) and not-yet-built
+work are tiered there, and remaining *coded* work lives in [docs/roadmap.md](docs/roadmap.md).
 
 ## Response TYPE hierarchy (first match wins)
 
@@ -112,7 +117,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 | `src/pages/` | Web pages (`index`, `check/[id]`, `article/[slug]`, `admin/*`) and API (`api/v1/*`, `api/admin/*`, `api/jobs/[job]`) |
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
-| `migrations/` | D1 schema + seeds (`0001`–`0005`) |
+| `migrations/` | D1 schema + seeds (`0001`–`0007`) |
 | `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, admin alerts, media analysis, semantic matching, WhatsApp + Telegram channels, editorial homepage, share TL;DR, locale filters (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
