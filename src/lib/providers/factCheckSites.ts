@@ -167,11 +167,16 @@ async function searchPage(
     .map(({ a }) => toReview(source, a.text, a.href, null));
 }
 
+/** Nav/header/footer/aside chrome, stripped before anchor extraction so a
+ *  menu-heavy header can't crowd out the actual result links. */
+const CHROME_BLOCKS = /<(script|style|nav|header|footer|aside|form)[\s\S]*?<\/\1>/gi;
+
 /** Pulls on-site article links and their anchor text from a search-results page. */
 export function extractAnchors(html: string, host: string | null): { href: string; text: string }[] {
+  const body = html.replace(CHROME_BLOCKS, ' ');
   const out: { href: string; text: string }[] = [];
   const seen = new Set<string>();
-  for (const m of html.matchAll(/<a\b[^>]*?href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+  for (const m of body.matchAll(/<a\b[^>]*?href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
     if (out.length >= MAX_ITEMS_SCANNED) break;
     const href = m[1].trim();
     const text = decodeEntities(stripHtml(m[2]));

@@ -85,6 +85,16 @@ describe('extractAnchors', () => {
     expect(anchors[0].href).toBe('https://example.org/fact-checks/vaccines-do-not-cause-autism');
     expect(anchors[0].text).toContain('Vaccines do not cause autism');
   });
+
+  it('ignores links inside nav/header/footer chrome blocks', () => {
+    const html = `
+      <nav><a href="/fact-checks/some-long-nav-label-here">Some long nav label here</a></nav>
+      <main><a href="/fact-checks/real-result-article-link">The real result article headline</a></main>
+      <footer><a href="/fact-checks/footer-long-link-label">Footer long link label text</a></footer>`;
+    const anchors = extractAnchors(html, 'example.org');
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0].href).toContain('real-result-article-link');
+  });
 });
 
 // ── searchSites (adapters + resilience) ───────────────────────
