@@ -12,6 +12,7 @@
  * which one ran.
  */
 import type { ExtractedClaim } from '../providers/anthropic';
+import { cleanClaim } from '../db/util';
 
 /** Marker labels normalize inserts around fetched/attached content. We strip the
  *  labels (they are scaffolding, not claim text) but keep the content lines. */
@@ -28,10 +29,9 @@ const MAX_CANONICAL_CHARS = 500;
  * search stages running; the missing verdict is handled downstream as TYPE 4).
  */
 export function staticExtract(combinedText: string): ExtractedClaim {
-  const canonical = combinedText
-    .replace(MARKER_LINE, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  // Drop the normalize scaffolding, then peel off question/framing packaging so
+  // the query is the assertion itself (better internal FTS + external matches).
+  const canonical = cleanClaim(combinedText.replace(MARKER_LINE, ' '))
     .slice(0, MAX_CANONICAL_CHARS)
     .trim();
 

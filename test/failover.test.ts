@@ -39,6 +39,9 @@ beforeEach(() => {
   ({ db, raw } = freshDb());
   extractImpl.mockReset();
   deepImpl.mockReset();
+  // Migration 0006 seeds live feed URLs; clear them so tests never touch the
+  // network. The one direct-fallback test opts back in with its own mock.
+  raw.prepare('UPDATE fact_checkers SET api_endpoint = NULL, search_url = NULL').run();
 });
 
 afterEach(() => {
@@ -156,6 +159,45 @@ describe('no AI key — AI-free stages still serve results', () => {
   });
 });
 
+describe('no AI + Google miss — direct fact-check-site fallback', () => {
+  it('answers an existing story from a configured feed as TYPE 2', async () => {
+    // A seeded source gets a feed; Google returns nothing for this claim.
+    raw
+      .prepare("UPDATE fact_checkers SET api_endpoint = 'https://africacheck.org/feed' WHERE id = 'fc-africacheck'")
+      .run();
+
+    const feed = `<?xml version="1.0"?><rss><channel>
+      <item><title>No, vaccines do not cause autism</title>
+        <link>https://africacheck.org/fact-checks/vaccines-autism</link></item>
+    </channel></rss>`;
+
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('factchecktools.googleapis.com')) {
+        return new Response(JSON.stringify({ claims: [] }), { status: 200 });
+      }
+      if (url.startsWith('https://africacheck.org/feed')) {
+        return new Response(feed, { status: 200 });
+      }
+      return new Response('not found', { status: 404 });
+    }) as typeof fetch;
+
+    try {
+      const res = await runPipeline(
+        env({ googleFactCheckApiKey: 'fake-google-key' }), // no anthropicApiKey → AI down
+        check('do vaccines cause autism')
+      );
+      expect(res.type).toBe(2);
+      expect(res.attribution?.name).toBe('Africa Check');
+      expect(res.url).toBeTruthy();
+      expect(extractImpl).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});
+
 describe('runtime AI failure — degrades to the static path', () => {
   it('falls back when extractClaim throws (key present)', async () => {
     extractImpl.mockRejectedValue(new Error('429 rate_limit'));
@@ -210,7 +252,7 @@ describe('staticExtract', () => {
   it('strips normalize markers, collapses whitespace, and clips', () => {
     const input = '[Content of https://x.com]\nThe   actual\n\nclaim text.\n[Attached, not yet analysed: a.mp3]';
     const out = staticExtract(input);
-    expect(out.canonical_text).toBe('The actual claim text.');
+    expect(out.canonical_text).toBe('The actual claim text');
     expect(out.is_checkable).toBe(true);
     expect(out.assertions).toEqual([]);
     expect(out.country).toBeNull();

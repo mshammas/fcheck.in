@@ -12,6 +12,7 @@
 import type { EvidenceItem, FactCheckerRow, Verdict } from '../types';
 import { getActiveFactCheckers, matchFactChecker, parseJsonArray, tierRank } from '../db/factCheckers';
 import { searchFactChecks, normalizeVerdict, type ExternalReview } from '../providers/googleFactCheck';
+import { searchSites } from '../providers/factCheckSites';
 
 export interface ExternalHit {
   review: ExternalReview;
@@ -87,13 +88,25 @@ export async function searchExternal(
   canonicalText: string,
   filters: ExternalSearchFilters = {}
 ): Promise<{ best: ExternalHit; others: ExternalHit[] } | null> {
-  const [reviews, factCheckers] = await Promise.all([
+  const [googleReviews, factCheckers] = await Promise.all([
+    // The aggregator is the first call, but a missing key or an API error must
+    // not sink the search — it degrades to an empty result so the direct
+    // per-site fallback below can still answer.
     searchFactChecks(apiKey, canonicalText, {
       languageCode: filters.languages?.[0],
       pageSize: 10,
+    }).catch((err) => {
+      console.error('google fact check search failed — falling back to direct sites', err);
+      return [] as ExternalReview[];
     }),
     getActiveFactCheckers(db),
   ]);
+
+  // Only when the aggregator finds nothing do we go to the sites directly — so
+  // there's no added latency on the common (aggregator-hit) path, and no
+  // cross-source dedup to reconcile.
+  const reviews =
+    googleReviews.length > 0 ? googleReviews : await searchSites(factCheckers, canonicalText, { filters });
 
   if (reviews.length === 0) return null;
 

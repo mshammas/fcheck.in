@@ -125,7 +125,11 @@ export interface FactCheckerRow {
   tier: FactCheckerTier;
   countries: string; // JSON string[]
   languages: string; // JSON string[]
+  /** A source's RSS/Atom feed URL, queried directly when the aggregator misses. */
   api_endpoint: string | null;
+  /** A source's HTML search-page template with a `{q}` placeholder; scraped as a
+   *  last resort. Null → the source is Google-only. */
+  search_url: string | null;
   homepage_url: string;
   active: number;
 }
