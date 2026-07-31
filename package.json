@@ -1,5 +1,5 @@
 {
-  "name": "fcheck-in",
+  "name": "fcheck.in",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,19 +7,21 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro build && wrangler dev",
-    "deploy": "astro build && wrangler deploy",
+    "deploy": "CLOUDFLARE_ENV=production astro build && wrangler deploy --env production",
+    "deploy:staging": "CLOUDFLARE_ENV=staging astro build && wrangler deploy --env staging",
     "check": "wrangler types && astro check",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "wrangler d1 migrations apply fcheck --local",
     "db:migrate:remote": "wrangler d1 migrations apply fcheck --remote",
+    "db:migrate:staging": "wrangler d1 migrations apply fcheck-staging --remote --env staging",
     "db:query": "wrangler d1 execute fcheck --local --command",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
-    "@astrojs/cloudflare": "^14.1.5",
-    "astro": "^7.1.4"
+    "@astrojs/cloudflare": "^14.1.7",
+    "astro": "^7.1.6"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
@@ -29,5 +31,9 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
     "wrangler": "^4.114.0"
+  },
+  "overrides": {
+    "vite": "8.2.0",
+    "rolldown": "1.2.1"
   }
 }

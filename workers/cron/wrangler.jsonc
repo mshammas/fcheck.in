@@ -4,6 +4,10 @@
   "main": "index.ts",
   "compatibility_date": "2026-01-15",
 
+  // Scheduler only — never serves HTTP. Turn off its public URLs.
+  "workers_dev": false,
+  "preview_urls": false,
+
   // Fires the app's job endpoints on a schedule. Keep in sync with the SCHEDULE
   // map in index.ts. Times are UTC.
   "triggers": {

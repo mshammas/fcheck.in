@@ -15,5 +15,12 @@ export default defineConfig({
     ssr: {
       external: ['node:crypto'],
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: () => 'app',
+        },
+      },
+    },
   },
 });

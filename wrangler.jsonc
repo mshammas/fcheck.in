@@ -1,6 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "fcheck-in",
+  // Top-level = LOCAL DEVELOPMENT only. Renamed from "fcheck-in" so a bare
+  // `wrangler deploy` (no --env) can never overwrite the production worker with
+  // this development-mode config (ENVIRONMENT=development enables the admin
+  // bypass in src/lib/auth.ts). Production is the `env.production` block below;
+  // deploy it with `wrangler deploy --env production` (see the `deploy` script).
+  "name": "fcheck-in-dev",
   "compatibility_date": "2026-01-15",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -57,7 +62,29 @@
         {
           "binding": "DB",
           "database_name": "fcheck-staging",
-          "database_id": "PLACEHOLDER_RUN_WRANGLER_D1_CREATE",
+          "database_id": "480448c7-d1cd-45e6-84c4-6ea372bf4535",
+          "migrations_dir": "migrations"
+        }
+      ]
+    },
+
+    "production": {
+      "name": "fcheck-in",
+      // Only fcheck.in (the custom domain) serves in production — the
+      // *.workers.dev and preview URLs are turned off.
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "ENVIRONMENT": "production",
+        // From: Cloudflare dashboard → Zero Trust → Access → Applications
+        "CF_ACCESS_TEAM_DOMAIN": "fcheck.cloudflareaccess.com",
+        "CF_ACCESS_AUD": "04ed69941a444607582045c09f945b1a48d1a09c88adaf6cb84a55a4859f8328"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "fcheck",
+          "database_id": "401c7e62-024e-4df0-a51d-e24a802d9418",
           "migrations_dir": "migrations"
         }
       ]
