@@ -91,7 +91,7 @@ function isActive(item: NavItem): boolean {
       rel="stylesheet"
     />
   </head>
-  <body>
+  <body class="admin-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <span class="logo-mark" aria-hidden="true">✓</span>
@@ -185,14 +185,16 @@ function isActive(item: NavItem): boolean {
         padding: 0;
       }
 
+      /* Layout (display/min-height) is gated to .admin-shell in the is:global
+         block below — Astro leaves `body` selectors unscoped, so an unqualified
+         `body { display: flex }` here would leak onto every public page when the
+         CSS is bundled together. */
       body {
         font-family: var(--font-body);
         color: var(--text-primary);
         background: var(--bg);
         line-height: 1.5;
         -webkit-font-smoothing: antialiased;
-        display: flex;
-        min-height: 100vh;
       }
 
       .sidebar {
@@ -459,5 +461,11 @@ function isActive(item: NavItem): boolean {
 <style is:global>
   a {
     color: var(--brand);
+  }
+  /* Admin shell layout — gated to admin pages so it never affects the public
+     site, even though all CSS is bundled into one stylesheet. */
+  body.admin-shell {
+    display: flex;
+    min-height: 100vh;
   }
 </style>
