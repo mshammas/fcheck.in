@@ -22,8 +22,11 @@ import { parseJsonArray } from '../db/factCheckers';
 import { stripHtml, decodeEntities } from '../util/html';
 
 const DEFAULT_TIMEOUT_MS = 6000;
-/** How many sources we're willing to fan out to on a single Google miss. */
-const DEFAULT_SOURCE_LIMIT = 6;
+/** How many sources we fan out to on a single Google miss. The network is small
+ *  (~15) and WP-REST probes 404 fast, so we cover it all rather than dropping the
+ *  regional (tier-2) sources — the no-AI path can't detect the claim's country to
+ *  prioritise them, so a hard cap would silently exclude the right source. */
+const DEFAULT_SOURCE_LIMIT = 25;
 /** Items/anchors scanned per source, and hits kept per source. */
 const MAX_ITEMS_SCANNED = 40;
 const MAX_HITS_PER_SOURCE = 3;
@@ -70,11 +73,18 @@ export async function searchSites(
   return out;
 }
 
-/** Configured, active sources first; those matching the claim's locale ranked ahead. */
+/**
+ * Active sources, those matching the claim's locale ranked ahead.
+ *
+ * Every active source is a candidate — WordPress REST is auto-detected from the
+ * homepage, so a source needs no explicit feed/search config to be usable (a
+ * non-WP site simply 404s and is skipped inside searchOneSource). The `limit`
+ * cap in the caller keeps the fan-out bounded.
+ */
 function selectSources(sources: FactCheckerRow[], filters?: SiteSearchOptions['filters']): FactCheckerRow[] {
-  const configured = sources.filter((s) => s.active === 1 && (s.api_endpoint || s.search_url));
+  const active = sources.filter((s) => s.active === 1);
   const { countries, languages } = filters ?? {};
-  if (!countries?.length && !languages?.length) return configured;
+  if (!countries?.length && !languages?.length) return active;
 
   const relevant = (s: FactCheckerRow): boolean => {
     const c = parseJsonArray(s.countries);
@@ -83,16 +93,33 @@ function selectSources(sources: FactCheckerRow[], filters?: SiteSearchOptions['f
     const lOk = !languages?.length || l.length === 0 || l.some((x: string) => languages.includes(x));
     return cOk && lOk;
   };
-  return [...configured].sort((a, b) => Number(relevant(b)) - Number(relevant(a)));
+  return [...active].sort((a, b) => Number(relevant(b)) - Number(relevant(a)));
 }
 
-/** Feed first (structured, cheap); fall back to the search page if it yields nothing. */
+/**
+ * Tries the reliable, query-driven source first and stops at the first hit:
+ *
+ *   1. WordPress REST — /wp-json/wp/v2/posts?search=, searches the whole archive
+ *      as JSON (no JS, works with a plain fetch). Most fact-checkers run
+ *      WordPress, so this is the workhorse. Auto-detected from the homepage; a
+ *      non-WP site just 404s and we move on.
+ *   2. Feed — recent items only, so keyword-filtered (it isn't query-driven).
+ *   3. Search page — HTML scrape, the fragile last resort (JS/bot-blocks common).
+ */
 async function searchOneSource(
   source: FactCheckerRow,
   query: string,
   keywords: Set<string>,
   timeoutMs: number
 ): Promise<ExternalReview[]> {
+  // WordPress AND-matches every term, so search on the bare key words — and drop
+  // standalone numbers, which are usually the *variable* detail of a claim (the
+  // same hoax circulates about a ₹500 and a ₹2000 note) and would over-constrain.
+  const textKeywords = [...keywords].filter((k) => !/^\d+$/.test(k));
+  const keywordQuery = (textKeywords.length ? textKeywords : [...keywords]).join(' ');
+  const viaWp = await searchWpRest(source, keywordQuery, keywords, timeoutMs).catch(() => []);
+  if (viaWp.length > 0) return viaWp;
+
   if (source.api_endpoint) {
     const viaFeed = await searchFeed(source, keywords, timeoutMs).catch(() => []);
     if (viaFeed.length > 0) return viaFeed;
@@ -101,6 +128,55 @@ async function searchOneSource(
     return searchPage(source, query, keywords, timeoutMs).catch(() => []);
   }
   return [];
+}
+
+// ── WordPress REST adapter ────────────────────────────────────
+
+interface WpPost {
+  title?: { rendered?: string };
+  excerpt?: { rendered?: string };
+  link?: string;
+  date?: string;
+}
+
+/**
+ * Searches a WordPress site's full archive via its REST API.
+ *
+ * WordPress `?search=` matches title *and body*, which recalls broadly but ranks
+ * loosely — its top hit can be only tangentially related. So we keep only posts
+ * whose title or excerpt actually shares a term with the claim: precise enough
+ * not to present an off-topic fact-check as the answer, but still catching
+ * matches whose relevance is in the body rather than the headline.
+ */
+async function searchWpRest(
+  source: FactCheckerRow,
+  query: string,
+  keywords: Set<string>,
+  timeoutMs: number
+): Promise<ExternalReview[]> {
+  const origin = safeOrigin(source.homepage_url);
+  if (!origin) return [];
+  const url = `${origin}/wp-json/wp/v2/posts?search=${encodeURIComponent(query)}&per_page=${MAX_ITEMS_SCANNED}&_fields=title,link,date,excerpt`;
+  const body = await fetchText(url, timeoutMs, 'application/json');
+  if (!body || !body.trimStart().startsWith('[')) return [];
+
+  let posts: WpPost[];
+  try {
+    posts = JSON.parse(body) as WpPost[];
+  } catch {
+    return [];
+  }
+  return posts
+    .filter((p) => p.link && p.title?.rendered)
+    .map((p) => {
+      const title = decodeEntities(stripHtml(p.title!.rendered!));
+      const excerpt = decodeEntities(stripHtml(p.excerpt?.rendered ?? ''));
+      return { p, title, score: overlap(keywords, keywordsOf(`${title} ${excerpt}`)) };
+    })
+    .filter(({ score }) => score >= 1) // must genuinely touch the claim
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_HITS_PER_SOURCE)
+    .map(({ p, title }) => toReview(source, title, p.link!, p.date ?? null));
 }
 
 // ── Feed adapter ──────────────────────────────────────────────
@@ -215,15 +291,28 @@ function overlap(a: Set<string>, b: Set<string>): number {
   return n;
 }
 
+/** Many fact-check sites 403 a bot user-agent (e.g. Boom); a browser UA gets
+ *  through, and these are public pages either way. */
+const BROWSER_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
 async function fetchText(url: string, timeoutMs: number, accept: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       redirect: 'follow',
       signal: AbortSignal.timeout(timeoutMs),
-      headers: { 'user-agent': 'fcheck.in/0.1 (+https://fcheck.in) fact-check bot', accept },
+      headers: { 'user-agent': BROWSER_UA, accept },
     });
     if (!res.ok) return null;
     return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+function safeOrigin(url: string): string | null {
+  try {
+    return new URL(url).origin;
   } catch {
     return null;
   }

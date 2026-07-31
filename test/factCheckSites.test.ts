@@ -170,6 +170,51 @@ describe('searchSites', () => {
     }
   });
 
+  it('searches a WordPress archive via REST, keeping only on-topic posts', async () => {
+    const wp = JSON.stringify([
+      {
+        title: { rendered: 'No, the ₹2000 note has no nano GPS chip' },
+        excerpt: { rendered: '<p>A viral claim says the note contains a nano chip. It does not.</p>' },
+        link: 'https://wp.example/nano-chip-note',
+        date: '2026-01-10T00:00:00',
+      },
+      {
+        // Off-topic: WP matched a stray word but title/excerpt don't touch the claim.
+        title: { rendered: 'A completely unrelated politics explainer' },
+        excerpt: { rendered: '<p>Nothing to do with the query at all.</p>' },
+        link: 'https://wp.example/unrelated',
+        date: '2026-02-01T00:00:00',
+      },
+    ]);
+    const restore = mockFetch({ 'https://wp.example/wp-json/wp/v2/posts': { body: wp } });
+    try {
+      const reviews = await searchSites(
+        [source({ id: 'fc-wp', name: 'WP Check', homepage_url: 'https://wp.example' })],
+        'nano chip in Rs 500 note'
+      );
+      expect(reviews).toHaveLength(1); // the unrelated post is filtered out
+      expect(reviews[0].url).toBe('https://wp.example/nano-chip-note');
+      expect(reviews[0].publisherName).toBe('WP Check');
+    } finally {
+      restore();
+    }
+  });
+
+  it('falls back to the feed when the WordPress REST endpoint 404s', async () => {
+    // Only the feed is mocked; the /wp-json probe 404s (unmatched) and is skipped.
+    const restore = mockFetch({ 'https://example.org/feed': { body: RSS } });
+    try {
+      const reviews = await searchSites(
+        [source({ id: 'fc-x', name: 'Example Check', api_endpoint: 'https://example.org/feed' })],
+        'do vaccines cause autism'
+      );
+      expect(reviews).toHaveLength(1);
+      expect(reviews[0].url).toBe('https://example.org/vaccines-autism');
+    } finally {
+      restore();
+    }
+  });
+
   it('isolates a failing source — one throws, another returns', async () => {
     const restore = mockFetch({
       'https://dead.example/feed': 'throw',

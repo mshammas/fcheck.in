@@ -34,17 +34,23 @@ vi.mock('../src/lib/providers/anthropic', async (importActual) => {
 
 let db: D1Database;
 let raw: Database.Database;
+let realFetch: typeof fetch;
 
 beforeEach(() => {
   ({ db, raw } = freshDb());
   extractImpl.mockReset();
   deepImpl.mockReset();
   // Migration 0006 seeds live feed URLs; clear them so tests never touch the
-  // network. The one direct-fallback test opts back in with its own mock.
+  // network via the feed adapter. The one direct-fallback test opts back in.
   raw.prepare('UPDATE fact_checkers SET api_endpoint = NULL, search_url = NULL').run();
+  // The direct-site fallback also auto-probes each source's homepage (WP REST),
+  // so block all network by default; tests that need responses install their own.
+  realFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response('blocked', { status: 404 })) as typeof fetch;
 });
 
 afterEach(() => {
+  globalThis.fetch = realFetch;
   vi.restoreAllMocks();
 });
 
