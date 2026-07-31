@@ -1,0 +1,6 @@
+#!/bin/sh
+# Doc-drift guard — keeps CLAUDE.md + docs/ honest about the code.
+# Version-controlled hook; active because core.hooksPath = .githooks
+# (run `git config core.hooksPath .githooks` once per clone if needed).
+# Bypass a single commit with: git commit --no-verify
+node scripts/check-docs.mjs || exit 1
