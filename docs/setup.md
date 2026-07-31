@@ -50,12 +50,91 @@ covers the two things that otherwise need live credentials to exercise:
 
 ---
 
+## Go-live checklist
+
+**The single runbook for taking fcheck.in from "built" to serving public
+traffic.** Start here in a fresh session to see what's pending. Work the tiers
+top to bottom. The **Required** steps each link to a detailed how-to below; the
+**Fast-follow** and **Not-built** tiers can wait. This checklist covers only
+what stands between the current build and launch — for remaining *coded* work
+(new channels, transcription, etc.) the source of truth is
+[roadmap.md](roadmap.md).
+
+### Tier 1 — Required (the site can't do its job until these are done)
+
+Do them in order; the pipeline, admin review, and background jobs each depend on
+the ones above.
+
+- [ ] **Provision remote D1 + migrate.** `wrangler d1 create fcheck` (and
+      `fcheck-staging`), paste each `database_id` into the matching block in
+      `wrangler.jsonc`, then `npm run db:migrate:remote`. → [Deployment](#deployment)
+- [ ] **Set the AI keys** — `ANTHROPIC_API_KEY` and `GOOGLE_FACT_CHECK_API_KEY`
+      as worker secrets. Without them stages 5–6 error and no check completes.
+      → [§1 API keys](#things-only-you-can-do)
+- [ ] **Wire Cloudflare Access** for `/admin` + `/api/admin`; fill the
+      `CF_ACCESS_*` placeholders in `wrangler.jsonc`. Without it no human can
+      review or publish, so the *human-review-before-publication* rule can't be
+      honoured and no TYPE 3 ever becomes a TYPE 1.
+      → [§2 Cloudflare Access](#2-cloudflare-access--protects-admin-in-production)
+- [ ] **Seed a real admin** — insert at least one `super_admin` (or `editor`)
+      row into `admin_users` on remote D1, keyed to the email that will sign in
+      via Access; otherwise the dashboard rejects everyone.
+      → [Admin authentication](#admin-authentication)
+- [ ] **Enable background jobs** — set `CRON_SECRET` (identical on the app worker
+      and the cron worker), set `APP_BASE_URL`, and deploy `workers/cron/`.
+      Without it: no automatic promotions (4→3, 4→2, 3→2), no trending expiry, no
+      admin alerts. → [Background jobs](#background-jobs)
+- [ ] **Deploy the app** — `npm run deploy`. → [Deployment](#deployment)
+- [ ] **Smoke-test on staging with live keys** (next section) — the live
+      pipeline has never run end-to-end (all tests are offline), so this is the
+      first proof it works against real Claude/Google.
+
+### Tier 1b — Staging smoke test (before any public traffic)
+
+Offline tests all pass, but stages 5–6 hitting real Claude/Google have never
+executed. Against the staging deploy, confirm each by hand:
+
+1. Submit a well-known debunked claim → expect **TYPE 2** with an attributed
+   fact-checker.
+2. Submit a novel factual claim → expect **TYPE 3/4**; open `/admin`, review the
+   draft, and **publish** it → confirm it becomes **TYPE 1** with a slug.
+3. Fire each job once with the `CRON_SECRET` bearer (`recheck`, `crawler`,
+   `trending`, `alerts`) → 200 + a sane summary. → [Background jobs](#background-jobs)
+4. Confirm the cron worker's scheduled triggers actually fire (check its logs).
+
+### Tier 2 — Fast-follow (launch-safe to skip; flip on by adding credentials)
+
+Each is inert until configured and loses no data meanwhile — the backlog
+delivers once the keys are set.
+
+- [ ] **Email delivery** (`EMAIL_*`) — subscriber notifications + admin alerts.
+      → [§1, Email note](#things-only-you-can-do)
+- [ ] **WhatsApp channel** — `WHATSAPP_*` + registered webhook.
+      → [§4 WhatsApp](#4-whatsapp-bot-channel--optional-meta-credentials)
+- [ ] **Telegram channel** — `TELEGRAM_BOT_TOKEN` + `setWebhook`.
+      → [§5 Telegram](#5-telegram-bot-channel--optional-botfather-token)
+- [ ] **Semantic matching** (Workers AI + Vectorize) — falls back to hash + FTS
+      until provisioned. → [§3 Semantic claim matching](#things-only-you-can-do)
+
+### Tier 3 — Not built yet (genuine roadmap work, not a config flip)
+
+No credential turns these on; tracked in [roadmap.md](roadmap.md):
+
+- **Audio/video analysis** (transcription) — such media is accepted but flagged
+  and routed to TYPE 4.
+- **Email-inbound** and **browser-extension** channels.
+- **Non-email notification/alert delivery** — WhatsApp/Telegram/web-push
+  subscribers and non-email admin push are recorded but never sent.
+
+---
+
 ## Things only you can do
 
-Everything else in the app is built and verified. These need credentials or a
-Cloudflare-dashboard/CLI action, so they can't be done from the codebase. The
-first two are required for the live pipeline; the third is optional and the app
-runs without it.
+The detailed how-to for each credentialed step in the [Go-live
+checklist](#go-live-checklist) above. These need credentials or a
+Cloudflare-dashboard/CLI action, so they can't be done from the codebase.
+§§1–2 are required for the live pipeline; §§3–5 are the fast-follow tier and the
+app runs without them.
 
 ### 1. API keys — makes the live check pipeline run
 

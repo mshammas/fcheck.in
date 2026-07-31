@@ -4,6 +4,12 @@ Everything specified but not yet built. Each item is written so any session can
 pick it up cold: what it is, current status, the concrete next action, and where
 the code lives or would live.
 
+> **To launch, not to code:** the ordered runbook for taking the current build
+> live (required credentials, the deploy, and the staging smoke test) is the
+> [Go-live checklist](setup.md#go-live-checklist). This file is the *coded*
+> backlog; that checklist is the *operational* one. Between them they cover
+> everything pending.
+
 > **▶ Next step — email inbound / browser-extension channels.** When resuming
 > ("continue with next step"), the next codeable item is another bot channel:
 > **email inbound** or the **browser extension**, each mirroring the

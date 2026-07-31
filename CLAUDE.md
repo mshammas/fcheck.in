@@ -64,8 +64,12 @@ subscribers and non-email admin push are not sent), and audio/video media
 analysis (images + PDFs are analysed; audio/video are accepted and flagged,
 pending transcription).
 
-Two things only a human with credentials can do (both in [docs/setup.md](docs/setup.md)):
-set the API keys, and wire Cloudflare Access for `/admin` in production.
+To take the current build live, follow the ordered
+[Go-live checklist](docs/setup.md#go-live-checklist) — provision + migrate remote
+D1, set the AI keys, wire Cloudflare Access for `/admin`, seed an admin, enable
+the cron worker, deploy, then run the staging smoke test. Fast-follow credentials
+(email, WhatsApp, Telegram, Vectorize) and the not-yet-built work are tiered in
+that same checklist; remaining *coded* work lives in [docs/roadmap.md](docs/roadmap.md).
 
 ## Response TYPE hierarchy (first match wins)
 
@@ -127,7 +131,7 @@ rarely need to open more than one.
 | [docs/admin.md](docs/admin.md) | Admin dashboard behaviour: draft review/publish/reject, trending queue, roles |
 | [docs/homepage.md](docs/homepage.md) | Public UI: search & editorial modes, filters, trending cards, TL;DR share |
 | [docs/roadmap.md](docs/roadmap.md) | What is not built yet — the resumable work log; start here to continue unfinished work |
-| [docs/setup.md](docs/setup.md) | Run, test, deploy, and the two human-only setup steps (API keys, Cloudflare Access) |
+| [docs/setup.md](docs/setup.md) | Run, test, deploy, the **Go-live checklist** (the tiered launch runbook + staging smoke test), and the human-only credential steps |
 
 Maintenance: when adding or editing docs, keep each row's description
 discriminative and single-home every topic. If two docs would cover the same
