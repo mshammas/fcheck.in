@@ -365,6 +365,19 @@ Non-obvious things discovered at launch. Read before changing the build config.
   production`, `CF_ACCESS_*`). A bare `wrangler deploy` (no `--env`) only touches
   the throwaway dev worker, so it can never ship the dev bypass to production.
 
+- **`No targets deployed for fcheck-in` on production deploy is normal — the code
+  still goes live.** `env.production` sets `workers_dev: false` and declares no
+  `routes` (the `fcheck.in` custom domain is dashboard-attached and points at the
+  worker's active deployment). "No targets" refers to *route/trigger* changes, of
+  which there are none — `wrangler deploy --env production` still uploads the new
+  Version *and* promotes it to 100%, so `npm run deploy` is genuinely one-shot. Do
+  **not** chain `wrangler versions deploy` after it: with no explicit version-id
+  that command deploys 0 versions and errors. **Verify a deploy** with `wrangler
+  deployments list --env production` — the list prints **oldest-first, so read the
+  *last* block**; its `(100%)` version id must equal the `Current Version ID`
+  printed by the build. (Reading the top of that list shows the *oldest*
+  deployment and will look like the deploy didn't land when it did.)
+
 - **⚠️ `manualChunks: () => 'app'` in `astro.config.mjs` is load-bearing — do not
   remove it.** Astro 7 builds with Vite 8, which is rolldown-only. Rolldown split
   Astro's SSR render runtime across chunks, breaking an identity check so *every*
