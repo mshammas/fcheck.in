@@ -384,6 +384,10 @@ export async function getTrendingCandidates(db: D1Database, limit = 12): Promise
        WHERE c.source_type IN ('original', 'external')
          AND c.status = 'published'
          AND NOT EXISTS (SELECT 1 FROM trending_cards t WHERE t.claim_id = c.id)
+         AND NOT EXISTS (
+           SELECT 1 FROM trending_ignores ti
+           WHERE ti.claim_id = c.id AND c.submission_count <= ti.ignored_at_count
+         )
        ORDER BY
          (CASE c.verdict WHEN 'FALSE' THEN 2 WHEN 'MISLEADING' THEN 2 ELSE 0 END
           + c.submission_count) DESC,
@@ -444,7 +448,49 @@ export async function approveTrending(db: D1Database, admin: AdminUser, claimId:
          VALUES (?, ?, ?, 0, ?, ?, ?, ?)`
       )
       .bind(cardId, claimId, row.report_id, nextPos, expiresAt, admin.id, now),
+    // Any lingering "ignore" watermark is moot once the claim is in the queue —
+    // drop it so a later removal doesn't leave the claim invisibly suppressed.
+    db.prepare('DELETE FROM trending_ignores WHERE claim_id = ?').bind(claimId),
     auditStatement(db, admin, 'approve_trending', 'trending_card', cardId, { claim_id: claimId }),
+  ]);
+}
+
+/**
+ * Dismiss a candidate from the queue "for this instance" — not permanently.
+ *
+ * We record the claim's current submission_count as a watermark; getTrendingCandidates
+ * keeps the claim hidden only while its count stays at or below it. The next
+ * submission of the same story bumps the count past the watermark and the
+ * candidate returns. Re-ignoring just moves the watermark up to the new count.
+ */
+export async function ignoreTrendingCandidate(db: D1Database, admin: AdminUser, claimId: string): Promise<void> {
+  const claim = await db
+    .prepare('SELECT id, source_type, status, submission_count FROM claims WHERE id = ?')
+    .bind(claimId)
+    .first<{ id: string; source_type: string; status: string; submission_count: number }>();
+
+  if (!claim) throw new AdminActionError('Claim not found.', 404);
+  if (!['original', 'external'].includes(claim.source_type) || claim.status !== 'published') {
+    throw new AdminActionError('Only published TYPE 1 and TYPE 2 candidates can be ignored.', 400);
+  }
+
+  const existing = await db.prepare('SELECT id FROM trending_cards WHERE claim_id = ?').bind(claimId).first();
+  if (existing) throw new AdminActionError('This claim is already in the trending queue.', 409);
+
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO trending_ignores (claim_id, ignored_at_count, ignored_by, ignored_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (claim_id) DO UPDATE SET
+           ignored_at_count = excluded.ignored_at_count,
+           ignored_by = excluded.ignored_by,
+           ignored_at = excluded.ignored_at`
+      )
+      .bind(claimId, claim.submission_count, admin.id, nowIso()),
+    auditStatement(db, admin, 'ignore_trending', 'claim', claimId, {
+      ignored_at_count: claim.submission_count,
+    }),
   ]);
 }
 

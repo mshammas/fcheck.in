@@ -59,7 +59,13 @@ Cards on the homepage trending rail are pulled from this admin-managed queue.
   (FALSE/MISLEADING rank higher) — `getTrendingCandidates`
 - Only TYPE 1 and TYPE 2 are eligible — no preliminary or unreviewed content
   (enforced in `approveTrending`)
-- Admin sees a "Trending Candidates" queue: approve / reject / manually nominate
+- Admin sees a "Trending Candidates" queue: approve / ignore / manually nominate
+- **Ignore** dismisses a candidate for now without a verdict change —
+  `ignoreTrendingCandidate` records the claim's current `submission_count` as a
+  watermark in `trending_ignores`, and `getTrendingCandidates` hides the claim
+  only while its count stays at or below it. The next submission of the same
+  story bumps the count past the watermark and the candidate returns. Re-ignoring
+  moves the watermark up; approving clears the row
 - Admin can pin any approved card to keep it in rotation indefinitely
 - Admin sets card order within the approved queue (`queue_position`)
 

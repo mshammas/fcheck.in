@@ -125,6 +125,14 @@ function cardUrl(row: any): string {
               </div>
               <div class="tcard-actions">
                 <button type="button" class="mini approve" data-action="approve">✓ Approve</button>
+                <button
+                  type="button"
+                  class="mini"
+                  data-action="ignore"
+                  title="Hide until someone reports this story again"
+                >
+                  Ignore
+                </button>
               </div>
             </li>
           ))}
@@ -346,6 +354,8 @@ function cardUrl(row: any): string {
 
       if (action === 'approve' && claimId) {
         ok = await act('/api/admin/trending', 'POST', { claim_id: claimId });
+      } else if (action === 'ignore' && claimId) {
+        ok = await act('/api/admin/trending/ignore', 'POST', { claim_id: claimId });
       } else if (action === 'remove' && cardId) {
         ok = await act(`/api/admin/trending/${cardId}`, 'DELETE');
       } else if ((action === 'pin' || action === 'unpin') && cardId) {

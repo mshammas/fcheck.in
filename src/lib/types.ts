@@ -31,6 +31,7 @@ export type AuditAction =
   | 'pin'
   | 'unpin'
   | 'approve_trending'
+  | 'ignore_trending'
   | 'remove_trending';
 
 export type AuditEntityType = 'claim' | 'report' | 'trending_card';

@@ -117,7 +117,7 @@ recorded, pending bot channels). Details: [docs/pipeline.md](docs/pipeline.md).
 | `src/pages/` | Web pages (`index`, `check/[id]`, `article/[slug]`, `admin/*`) and API (`api/v1/*`, `api/admin/*`, `api/jobs/[job]`) |
 | `src/components/`, `src/layouts/`, `src/styles/` | Astro UI |
 | `workers/cron/` | Standalone cron scheduler worker — fires the job endpoints on a schedule |
-| `migrations/` | D1 schema + seeds (`0001`–`0007`) |
+| `migrations/` | D1 schema + seeds (`0001`–`0008`) |
 | `test/` | Offline tests: auth JWT, AI editorial invariants, job promotions, subscriber notifications, admin alerts, media analysis, semantic matching, WhatsApp + Telegram channels, editorial homepage, share TL;DR, locale filters (real-SQL via `d1.ts`) |
 | `wireframes/` | HTML design references + `data-model.html` (schema source of truth) |
 | `docs/` | The detailed docs indexed below |
