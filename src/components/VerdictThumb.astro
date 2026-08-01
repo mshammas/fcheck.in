@@ -1,0 +1,132 @@
+---
+/**
+ * Verdict thumbnail — the visual hook that replaces the old emoji placeholder on
+ * cards, and gives the article a hero band.
+ *
+ * Inline SVG/CSS keyed to the verdict tokens (never a raster). Two variants:
+ *   card  — compact block for the homepage grids / trending rail image slot
+ *   hero  — wider band for the top of an article page
+ *
+ * Branding is deliberately the neutral "fcheck.in" wordmark, not a "verified by"
+ * claim: the same component renders on external (TYPE 2) cards, where the verdict
+ * belongs to the attributed fact-checker — attribution stays on the card itself.
+ * A null verdict (TYPE 4, submitted with no verdict) renders an honest
+ * "Under review" state rather than a guessed label.
+ */
+import type { Verdict } from '../lib/types';
+import { VERDICT_LABELS, VERDICT_MEANINGS } from '../lib/types';
+
+interface Props {
+  verdict: Verdict | null;
+  variant?: 'card' | 'hero';
+}
+
+const { verdict, variant = 'card' } = Astro.props;
+const key = verdict ? verdict.toLowerCase() : 'review';
+const label = verdict ? VERDICT_LABELS[verdict].toUpperCase() : 'UNDER REVIEW';
+const meaning = verdict ? VERDICT_MEANINGS[verdict] : 'Submitted for review — no verdict yet';
+---
+
+<div class:list={['vthumb', `v-${key}`, variant]} aria-hidden="true">
+  <span class="vt-brand"><span class="vt-check">✓</span> fcheck.in</span>
+  <span class="vt-dot"></span>
+  <span class="vt-word">{label}</span>
+  {variant === 'hero' && <span class="vt-mean">{meaning}</span>}
+</div>
+
+<style>
+  .vthumb {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--vt-bg);
+    color: var(--vt-text);
+    border-color: var(--vt-bd);
+    overflow: hidden;
+  }
+
+  /* Faint corner glow in the verdict's dot colour — keeps the flat tint alive. */
+  .vthumb::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 70%;
+    height: 160%;
+    background: radial-gradient(closest-side, var(--vt-dot) 0%, transparent 70%);
+    opacity: 0.16;
+    pointer-events: none;
+  }
+
+  .vt-brand {
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    opacity: 0.9;
+  }
+
+  .vt-check { color: var(--brand); }
+
+  .vt-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--vt-dot);
+  }
+
+  .vt-word {
+    font-family: var(--font-brand);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.05;
+  }
+
+  .vt-mean {
+    font-family: var(--font-body);
+    font-weight: 500;
+    opacity: 0.85;
+    margin-top: 8px;
+  }
+
+  /* ── Card variant — drops into the ~96px image slot on the grids ── */
+  .card { height: 100%; min-height: 92px; padding: 14px; }
+  .card .vt-brand { font-size: 9.5px; }
+  .card .vt-dot { top: 12px; right: 14px; width: 9px; height: 9px; }
+  .card .vt-word { font-size: 30px; margin-top: 12px; }
+  .card.v-review .vt-word,
+  .card.v-unverifiable .vt-word { font-size: 21px; }
+
+  /* ── Hero variant — the banner at the top of an article ── */
+  .hero {
+    border: 1px solid var(--vt-bd);
+    border-radius: var(--r);
+    padding: 26px 28px;
+    min-height: 132px;
+  }
+  .hero .vt-brand { font-size: 13px; top: 16px; left: 20px; }
+  .hero .vt-dot { top: 18px; right: 22px; width: 14px; height: 14px; }
+  .hero .vt-word { font-size: 46px; margin-top: 20px; }
+  .hero.v-review .vt-word,
+  .hero.v-unverifiable .vt-word { font-size: 34px; }
+  .hero .vt-mean { font-size: 14px; }
+
+  @media (max-width: 720px) {
+    .hero { padding: 20px 20px; min-height: 112px; }
+    .hero .vt-word { font-size: 34px; }
+    .hero.v-review .vt-word,
+    .hero.v-unverifiable .vt-word { font-size: 26px; }
+  }
+
+  /* ── Verdict palettes (all from tokens.css — no raw hex here) ── */
+  .v-false       { --vt-bg: var(--verdict-false-bg);        --vt-text: var(--verdict-false-text);        --vt-bd: var(--verdict-false-bd);        --vt-dot: var(--verdict-false-dot); }
+  .v-true        { --vt-bg: var(--verdict-true-bg);         --vt-text: var(--verdict-true-text);         --vt-bd: var(--verdict-true-bd);         --vt-dot: var(--verdict-true-dot); }
+  .v-misleading  { --vt-bg: var(--verdict-misleading-bg);   --vt-text: var(--verdict-misleading-text);   --vt-bd: var(--verdict-misleading-bd);   --vt-dot: var(--verdict-misleading-dot); }
+  .v-outdated    { --vt-bg: var(--verdict-outdated-bg);     --vt-text: var(--verdict-outdated-text);     --vt-bd: var(--verdict-outdated-bd);     --vt-dot: var(--verdict-outdated-dot); }
+  .v-unverifiable{ --vt-bg: var(--verdict-unverifiable-bg); --vt-text: var(--verdict-unverifiable-text); --vt-bd: var(--verdict-unverifiable-bd); --vt-dot: var(--verdict-unverifiable-dot); }
+  .v-satire      { --vt-bg: var(--verdict-satire-bg);       --vt-text: var(--verdict-satire-text);       --vt-bd: var(--verdict-satire-bd);       --vt-dot: var(--verdict-satire-dot); }
+  .v-review      { --vt-bg: var(--type-4-bg);               --vt-text: var(--type-4-text);               --vt-bd: var(--type-4-bd);               --vt-dot: var(--text-muted); }
+</style>

@@ -11,6 +11,7 @@
     "deploy:staging": "CLOUDFLARE_ENV=staging astro build && wrangler deploy --env staging",
     "check": "wrangler types && astro check",
     "check:docs": "node scripts/check-docs.mjs",
+    "gen:og": "node scripts/gen-og.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "wrangler d1 migrations apply fcheck --local",

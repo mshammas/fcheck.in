@@ -9,7 +9,7 @@
  * Google Fact Check index we ourselves query in stage 5 — can find our work.
  */
 import Base from '../../layouts/Base.astro';
-import VerdictBadge from '../../components/VerdictBadge.astro';
+import VerdictThumb from '../../components/VerdictThumb.astro';
 import SourceBadge from '../../components/SourceBadge.astro';
 import ShareBar from '../../components/ShareBar.astro';
 import { getDb } from '../../lib/db/client';
@@ -41,6 +41,13 @@ const paragraphs = report.body.split(/\n{2,}/).map((block) => block.trim()).filt
 
 const shareUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 
+// Per-verdict social card (public/og/*.png). Article route is originals-only, so
+// the "Verified by fcheck.in" branding on these cards is always accurate here.
+const ogImage = new URL(
+  claim.verdict ? `/og/verdict-${claim.verdict.toLowerCase()}.png` : '/og/under-review.png',
+  Astro.site ?? Astro.url.origin,
+).toString();
+
 const claimReview = {
   '@context': 'https://schema.org',
   '@type': 'ClaimReview',
@@ -58,10 +65,10 @@ const claimReview = {
 };
 ---
 
-<Base title={`${report.headline} — fcheck.in`} description={report.summary}>
+<Base title={`${report.headline} — fcheck.in`} description={report.summary} image={ogImage}>
   <article class="page">
     <header class="head">
-      <VerdictBadge verdict={claim.verdict} size="lg" />
+      <VerdictThumb verdict={claim.verdict} variant="hero" />
       <h1>{report.headline}</h1>
       <p class="summary">{report.summary}</p>
 

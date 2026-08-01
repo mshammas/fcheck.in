@@ -8,6 +8,7 @@
  */
 import type { SourceType, Verdict } from '../lib/types';
 import VerdictBadge from './VerdictBadge.astro';
+import VerdictThumb from './VerdictThumb.astro';
 import SourceBadge from './SourceBadge.astro';
 
 interface Props {
@@ -36,9 +37,7 @@ function relativeDate(iso: string): string {
 ---
 
 <a class:list={['card', isOwn ? 'own' : 'ext']} href={url}>
-  <div class="card-img" aria-hidden="true">
-    <span>{isOwn ? '✓' : '⬢'}</span>
-  </div>
+  <div class="card-img"><VerdictThumb verdict={verdict} variant="card" /></div>
   <div class="card-body">
     <VerdictBadge verdict={verdict} size="sm" />
     <h3 class="card-hl">{headline}</h3>
@@ -75,20 +74,7 @@ function relativeDate(iso: string): string {
   .card-img {
     width: 100%;
     height: 96px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-  }
-
-  .own .card-img {
-    background: linear-gradient(135deg, var(--brand-light) 0%, #CCFBF1 100%);
-    color: var(--brand);
-  }
-
-  .ext .card-img {
-    background: linear-gradient(135deg, var(--type-2-bg) 0%, var(--type-2-bd) 100%);
-    color: var(--type-2-text);
+    border-bottom: 1px solid var(--border);
   }
 
   .card-body {
