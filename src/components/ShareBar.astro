@@ -89,8 +89,19 @@ const { claimId, url, title } = Astro.props;
   .share-action:hover { border-color: var(--brand-mid); color: var(--brand-dark); }
   .share-action.copy.copied { background: var(--brand-light); border-color: var(--brand-mid); color: var(--brand-dark); }
 
+  /* On phones the Share button sits at either edge depending on the page
+     (left on the results page, right on the article byline), so anchoring the
+     dropdown to the button pushed it off-screen. Pin it as a full-width sheet
+     within the viewport instead — always visible wherever the button is. */
   @media (max-width: 720px) {
-    .share-panel { left: auto; right: 0; }
+    .share-panel {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      top: auto;
+      min-width: 0;
+    }
   }
 </style>
 
