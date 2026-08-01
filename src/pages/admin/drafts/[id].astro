@@ -532,7 +532,14 @@ const totalSubs = Object.values(detail.channels).reduce((a, b) => a + b, 0);
 </style>
 
 <script>
-  const form = document.getElementById('draft-form') as HTMLFormElement;
+  // Guarded IIFE: every component/page client script is merged into one chunk
+  // (manualChunks in astro.config.mjs — load-bearing for the SSR fix), so a
+  // top-level throw here would abort every OTHER script in the shared bundle on
+  // pages without the draft editor (e.g. the trending queue's Approve/pin/remove
+  // wiring). Bail quietly when this page's form isn't present.
+  (() => {
+  const form = document.getElementById('draft-form') as HTMLFormElement | null;
+  if (!form) return; // not the draft-edit page — leave the shared bundle intact
   const claimId = form.dataset.claimId!;
 
   // Keep the selected verdict's swatch highlighted.
@@ -654,4 +661,5 @@ const totalSubs = Object.values(detail.channels).reduce((a, b) => a + b, 0);
       status.textContent = err instanceof Error ? err.message : 'Reject failed.';
     }
   });
+  })();
 </script>
