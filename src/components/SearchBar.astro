@@ -357,264 +357,270 @@ const { factCheckerCount } = Astro.props;
 </style>
 
 <script>
-  const URL_RE = /(https?:\/\/[^\s]+)/g;
+  // Guarded IIFE: all client scripts are merged into one chunk
+  // (manualChunks in astro.config.mjs — load-bearing for the SSR fix), so a
+  // top-level throw here would abort every OTHER component's wiring on pages
+  // without the search bar (ShareBar, the mobile menu, …). Bail quietly instead.
+  (() => {
+    const URL_RE = /(https?:\/\/[^\s]+)/g;
 
-  const form = document.getElementById('check-form') as HTMLFormElement | null;
-  const input = document.getElementById('main-input') as HTMLInputElement | null;
-  const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
-  const bar = document.getElementById('search-bar-wrap');
-  const detectedRow = document.getElementById('detected-row');
-  const attachRow = document.getElementById('attachments-row');
-  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
-  const statusEl = document.getElementById('check-status');
-  const attachBtn = document.getElementById('attach-btn');
+    const form = document.getElementById('check-form') as HTMLFormElement | null;
+    const input = document.getElementById('main-input') as HTMLInputElement | null;
+    const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
+    const bar = document.getElementById('search-bar-wrap');
+    const detectedRow = document.getElementById('detected-row');
+    const attachRow = document.getElementById('attachments-row');
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
+    const statusEl = document.getElementById('check-status');
+    const attachBtn = document.getElementById('attach-btn');
 
-  if (!form || !input || !fileInput || !bar || !detectedRow || !attachRow || !submitBtn || !statusEl) {
-    throw new Error('SearchBar: expected elements missing');
-  }
-
-  /** Files staged for this submission. Kept in JS so chips can be removed. */
-  const attached: File[] = [];
-
-  function guessUrlType(url: string): string {
-    if (/youtube|youtu\.be|tiktok|vimeo/i.test(url)) return '🎬 Video URL detected';
-    if (/twitter|x\.com|instagram|facebook|fb\.com/i.test(url)) return '🔗 Social post URL detected';
-    if (/\.(jpg|jpeg|png|gif|webp)/i.test(url)) return '🖼 Image URL detected';
-    return '🔗 URL detected';
-  }
-
-  function addChip(container: HTMLElement, label: string, onRemove?: () => void) {
-    const chip = document.createElement('span');
-    chip.className = container === attachRow ? 'attachment-chip' : 'detected-chip';
-    chip.append(label);
-    if (onRemove) {
-      const x = document.createElement('button');
-      x.type = 'button';
-      x.className = 'remove';
-      x.textContent = '×';
-      x.setAttribute('aria-label', `Remove ${label}`);
-      x.addEventListener('click', onRemove);
-      chip.appendChild(x);
-    }
-    container.appendChild(chip);
-  }
-
-  /** Re-renders the detection chips from current input + attachments. */
-  function detectContent() {
-    const val = input!.value;
-    detectedRow!.replaceChildren();
-
-    const urls = val.match(URL_RE) ?? [];
-    const hasText = val.replace(URL_RE, '').trim().length > 0;
-
-    if (!hasText && urls.length === 0 && attached.length === 0) {
-      const hint = document.createElement('span');
-      hint.className = 'detected-hint';
-      hint.textContent = 'Accepts any combination — text, links, images, video';
-      detectedRow!.appendChild(hint);
-      return;
+    if (!form || !input || !fileInput || !bar || !detectedRow || !attachRow || !submitBtn || !statusEl) {
+      return; // no search bar on this page — leave the shared bundle intact
     }
 
-    if (hasText) addChip(detectedRow!, '📝 Text detected');
-    urls.forEach((url) => addChip(detectedRow!, guessUrlType(url)));
-    if (attached.length) {
-      addChip(detectedRow!, `📎 ${attached.length} file${attached.length > 1 ? 's' : ''} attached`);
-    }
-  }
+    /** Files staged for this submission. Kept in JS so chips can be removed. */
+    const attached: File[] = [];
 
-  function renderAttachments() {
-    attachRow!.replaceChildren();
-    attached.forEach((file, i) => {
-      const icon = file.type.startsWith('video')
-        ? '🎬'
-        : file.type.startsWith('audio')
-          ? '🎵'
-          : file.type.startsWith('image')
-            ? '🖼'
-            : '📄';
-      addChip(attachRow!, `${icon} ${file.name}`, () => {
-        attached.splice(i, 1);
-        renderAttachments();
-        detectContent();
+    function guessUrlType(url: string): string {
+      if (/youtube|youtu\.be|tiktok|vimeo/i.test(url)) return '🎬 Video URL detected';
+      if (/twitter|x\.com|instagram|facebook|fb\.com/i.test(url)) return '🔗 Social post URL detected';
+      if (/\.(jpg|jpeg|png|gif|webp)/i.test(url)) return '🖼 Image URL detected';
+      return '🔗 URL detected';
+    }
+
+    function addChip(container: HTMLElement, label: string, onRemove?: () => void) {
+      const chip = document.createElement('span');
+      chip.className = container === attachRow ? 'attachment-chip' : 'detected-chip';
+      chip.append(label);
+      if (onRemove) {
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'remove';
+        x.textContent = '×';
+        x.setAttribute('aria-label', `Remove ${label}`);
+        x.addEventListener('click', onRemove);
+        chip.appendChild(x);
+      }
+      container.appendChild(chip);
+    }
+
+    /** Re-renders the detection chips from current input + attachments. */
+    function detectContent() {
+      const val = input!.value;
+      detectedRow!.replaceChildren();
+
+      const urls = val.match(URL_RE) ?? [];
+      const hasText = val.replace(URL_RE, '').trim().length > 0;
+
+      if (!hasText && urls.length === 0 && attached.length === 0) {
+        const hint = document.createElement('span');
+        hint.className = 'detected-hint';
+        hint.textContent = 'Accepts any combination — text, links, images, video';
+        detectedRow!.appendChild(hint);
+        return;
+      }
+
+      if (hasText) addChip(detectedRow!, '📝 Text detected');
+      urls.forEach((url) => addChip(detectedRow!, guessUrlType(url)));
+      if (attached.length) {
+        addChip(detectedRow!, `📎 ${attached.length} file${attached.length > 1 ? 's' : ''} attached`);
+      }
+    }
+
+    function renderAttachments() {
+      attachRow!.replaceChildren();
+      attached.forEach((file, i) => {
+        const icon = file.type.startsWith('video')
+          ? '🎬'
+          : file.type.startsWith('audio')
+            ? '🎵'
+            : file.type.startsWith('image')
+              ? '🖼'
+              : '📄';
+        addChip(attachRow!, `${icon} ${file.name}`, () => {
+          attached.splice(i, 1);
+          renderAttachments();
+          detectContent();
+        });
+      });
+    }
+
+    function handleFiles(files: FileList | null) {
+      if (!files) return;
+      attached.push(...Array.from(files));
+      renderAttachments();
+      detectContent();
+    }
+
+    function setStatus(message: string, isError = false) {
+      statusEl!.textContent = message;
+      statusEl!.hidden = !message;
+      statusEl!.classList.toggle('error', isError);
+    }
+
+    /** Only images and PDFs are analysed server-side, so only they are sent as
+     * bytes. Audio/video go as metadata (still recorded and flagged). Kept small
+     * to bound the request; the server drops anything over its cap anyway. */
+    const ANALYZABLE = /^image\/|^application\/pdf$/;
+    const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+    function fileToBase64(file: File): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.slice(result.indexOf(',') + 1)); // strip the data: prefix
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function toPayloadFile(file: File): Promise<{ name: string; type: string; size: number; data?: string }> {
+      const base = { name: file.name, type: file.type, size: file.size };
+      if (ANALYZABLE.test(file.type) && file.size <= MAX_UPLOAD_BYTES) {
+        try {
+          return { ...base, data: await fileToBase64(file) };
+        } catch {
+          return base; // unreadable → send metadata only; server flags it
+        }
+      }
+      return base;
+    }
+
+    // ── Country / Language filters ───────────────────────────────
+    // Multi-select dropdowns whose selections ride along on the check request.
+    const groups = document.querySelectorAll<HTMLElement>('[data-filter]');
+
+    /** Selected codes for a filter group ('countries' | 'languages'). */
+    function selectedFilter(kind: string): string[] {
+      const group = document.querySelector<HTMLElement>(`[data-filter="${kind}"]`);
+      if (!group) return [];
+      return Array.from(group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')).map((c) => c.value);
+    }
+
+    groups.forEach((group) => {
+      const kind = group.dataset.filter!;
+      const noun = kind === 'countries' ? 'Country' : 'Language';
+      const chip = group.querySelector<HTMLButtonElement>('[data-filter-chip]')!;
+      const label = group.querySelector<HTMLElement>('[data-chip-label]')!;
+      const pop = group.querySelector<HTMLElement>('[data-filter-pop]')!;
+      const search = group.querySelector<HTMLInputElement>('[data-filter-search]')!;
+      const opts = Array.from(group.querySelectorAll<HTMLElement>('.filter-opt'));
+
+      function updateLabel() {
+        const checked = opts.filter((o) => o.querySelector<HTMLInputElement>('input')!.checked);
+        if (checked.length === 0) label.textContent = `${noun}: All`;
+        else if (checked.length === 1) label.textContent = `${noun}: ${checked[0].querySelector('span')!.textContent}`;
+        else label.textContent = `${noun}: ${checked.length} selected`;
+        chip.classList.toggle('has-selection', checked.length > 0);
+      }
+
+      function setOpen(show: boolean) {
+        pop.hidden = !show;
+        chip.setAttribute('aria-expanded', String(show));
+        if (show) search.focus();
+      }
+
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = pop.hidden !== false;
+        // Close any other open dropdown first.
+        document.querySelectorAll<HTMLElement>('[data-filter-pop]').forEach((p) => (p.hidden = true));
+        setOpen(willOpen);
+      });
+
+      // Type to filter the option list.
+      search.addEventListener('input', () => {
+        const q = search.value.trim().toLowerCase();
+        opts.forEach((o) => o.classList.toggle('hidden', q !== '' && !o.dataset.name!.includes(q)));
+      });
+
+      group.addEventListener('change', () => {
+        updateLabel();
+        // When countries change, surface their common languages in the language list.
+        if (kind === 'countries') applyLanguageSuggestions(selectedFilter('countries'));
       });
     });
-  }
 
-  function handleFiles(files: FileList | null) {
-    if (!files) return;
-    attached.push(...Array.from(files));
-    renderAttachments();
-    detectContent();
-  }
+    /** Marks (and floats to the top) the languages common to the chosen countries. */
+    function applyLanguageSuggestions(countryCodes: string[]) {
+      const langGroup = document.querySelector<HTMLElement>('[data-filter="languages"]');
+      if (!langGroup) return;
+      const chosen = new Set(countryCodes);
+      langGroup.querySelectorAll<HTMLElement>('.filter-opt').forEach((opt) => {
+        const forCountries = (opt.dataset.countries || '').split('|').filter(Boolean);
+        opt.classList.toggle('suggested', forCountries.some((c) => chosen.has(c)));
+      });
+    }
 
-  function setStatus(message: string, isError = false) {
-    statusEl!.textContent = message;
-    statusEl!.hidden = !message;
-    statusEl!.classList.toggle('error', isError);
-  }
-
-  /** Only images and PDFs are analysed server-side, so only they are sent as
-   * bytes. Audio/video go as metadata (still recorded and flagged). Kept small
-   * to bound the request; the server drops anything over its cap anyway. */
-  const ANALYZABLE = /^image\/|^application\/pdf$/;
-  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-
-  function fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.slice(result.indexOf(',') + 1)); // strip the data: prefix
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
+    // Close dropdowns when clicking outside any filter group.
+    document.addEventListener('click', (e) => {
+      if (!(e.target as HTMLElement).closest('[data-filter]')) {
+        document.querySelectorAll<HTMLElement>('[data-filter-pop]').forEach((p) => (p.hidden = true));
+        document.querySelectorAll<HTMLElement>('[data-filter-chip]').forEach((c) => c.setAttribute('aria-expanded', 'false'));
+      }
     });
-  }
 
-  async function toPayloadFile(file: File): Promise<{ name: string; type: string; size: number; data?: string }> {
-    const base = { name: file.name, type: file.type, size: file.size };
-    if (ANALYZABLE.test(file.type) && file.size <= MAX_UPLOAD_BYTES) {
+    input.addEventListener('input', detectContent);
+    attachBtn?.addEventListener('click', () => fileInput!.click());
+    fileInput.addEventListener('change', () => {
+      handleFiles(fileInput!.files);
+      fileInput!.value = '';
+    });
+
+    bar.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      bar.classList.add('dragover');
+    });
+    bar.addEventListener('dragleave', () => bar.classList.remove('dragover'));
+    bar.addEventListener('drop', (e) => {
+      e.preventDefault();
+      bar.classList.remove('dragover');
+      handleFiles((e as DragEvent).dataTransfer?.files ?? null);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const text = input!.value.trim();
+      if (!text && attached.length === 0) {
+        setStatus('Paste a claim, a link, or attach a file to check.', true);
+        input!.focus();
+        return;
+      }
+
+      submitBtn!.disabled = true;
+      submitBtn!.classList.add('busy');
+      setStatus('Checking — searching fcheck.in, then the fact-checker network…');
+
       try {
-        return { ...base, data: await fileToBase64(file) };
-      } catch {
-        return base; // unreadable → send metadata only; server flags it
+        const files = await Promise.all(attached.map(toPayloadFile));
+        const res = await fetch('/api/v1/check', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            urls: text.match(URL_RE) ?? [],
+            files,
+            countries: selectedFilter('countries'),
+            languages: selectedFilter('languages'),
+            channel: 'web',
+          }),
+        });
+
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(body?.error || `Check failed (${res.status})`);
+        }
+
+        const data = (await res.json()) as { url: string };
+        window.location.assign(data.url);
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
+        submitBtn!.disabled = false;
+        submitBtn!.classList.remove('busy');
       }
-    }
-    return base;
-  }
-
-  // ── Country / Language filters ───────────────────────────────
-  // Multi-select dropdowns whose selections ride along on the check request.
-  const groups = document.querySelectorAll<HTMLElement>('[data-filter]');
-
-  /** Selected codes for a filter group ('countries' | 'languages'). */
-  function selectedFilter(kind: string): string[] {
-    const group = document.querySelector<HTMLElement>(`[data-filter="${kind}"]`);
-    if (!group) return [];
-    return Array.from(group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')).map((c) => c.value);
-  }
-
-  groups.forEach((group) => {
-    const kind = group.dataset.filter!;
-    const noun = kind === 'countries' ? 'Country' : 'Language';
-    const chip = group.querySelector<HTMLButtonElement>('[data-filter-chip]')!;
-    const label = group.querySelector<HTMLElement>('[data-chip-label]')!;
-    const pop = group.querySelector<HTMLElement>('[data-filter-pop]')!;
-    const search = group.querySelector<HTMLInputElement>('[data-filter-search]')!;
-    const opts = Array.from(group.querySelectorAll<HTMLElement>('.filter-opt'));
-
-    function updateLabel() {
-      const checked = opts.filter((o) => o.querySelector<HTMLInputElement>('input')!.checked);
-      if (checked.length === 0) label.textContent = `${noun}: All`;
-      else if (checked.length === 1) label.textContent = `${noun}: ${checked[0].querySelector('span')!.textContent}`;
-      else label.textContent = `${noun}: ${checked.length} selected`;
-      chip.classList.toggle('has-selection', checked.length > 0);
-    }
-
-    function setOpen(show: boolean) {
-      pop.hidden = !show;
-      chip.setAttribute('aria-expanded', String(show));
-      if (show) search.focus();
-    }
-
-    chip.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const willOpen = pop.hidden !== false;
-      // Close any other open dropdown first.
-      document.querySelectorAll<HTMLElement>('[data-filter-pop]').forEach((p) => (p.hidden = true));
-      setOpen(willOpen);
     });
-
-    // Type to filter the option list.
-    search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
-      opts.forEach((o) => o.classList.toggle('hidden', q !== '' && !o.dataset.name!.includes(q)));
-    });
-
-    group.addEventListener('change', () => {
-      updateLabel();
-      // When countries change, surface their common languages in the language list.
-      if (kind === 'countries') applyLanguageSuggestions(selectedFilter('countries'));
-    });
-  });
-
-  /** Marks (and floats to the top) the languages common to the chosen countries. */
-  function applyLanguageSuggestions(countryCodes: string[]) {
-    const langGroup = document.querySelector<HTMLElement>('[data-filter="languages"]');
-    if (!langGroup) return;
-    const chosen = new Set(countryCodes);
-    langGroup.querySelectorAll<HTMLElement>('.filter-opt').forEach((opt) => {
-      const forCountries = (opt.dataset.countries || '').split('|').filter(Boolean);
-      opt.classList.toggle('suggested', forCountries.some((c) => chosen.has(c)));
-    });
-  }
-
-  // Close dropdowns when clicking outside any filter group.
-  document.addEventListener('click', (e) => {
-    if (!(e.target as HTMLElement).closest('[data-filter]')) {
-      document.querySelectorAll<HTMLElement>('[data-filter-pop]').forEach((p) => (p.hidden = true));
-      document.querySelectorAll<HTMLElement>('[data-filter-chip]').forEach((c) => c.setAttribute('aria-expanded', 'false'));
-    }
-  });
-
-  input.addEventListener('input', detectContent);
-  attachBtn?.addEventListener('click', () => fileInput!.click());
-  fileInput.addEventListener('change', () => {
-    handleFiles(fileInput!.files);
-    fileInput!.value = '';
-  });
-
-  bar.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    bar.classList.add('dragover');
-  });
-  bar.addEventListener('dragleave', () => bar.classList.remove('dragover'));
-  bar.addEventListener('drop', (e) => {
-    e.preventDefault();
-    bar.classList.remove('dragover');
-    handleFiles((e as DragEvent).dataTransfer?.files ?? null);
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const text = input!.value.trim();
-    if (!text && attached.length === 0) {
-      setStatus('Paste a claim, a link, or attach a file to check.', true);
-      input!.focus();
-      return;
-    }
-
-    submitBtn!.disabled = true;
-    submitBtn!.classList.add('busy');
-    setStatus('Checking — searching fcheck.in, then the fact-checker network…');
-
-    try {
-      const files = await Promise.all(attached.map(toPayloadFile));
-      const res = await fetch('/api/v1/check', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          urls: text.match(URL_RE) ?? [],
-          files,
-          countries: selectedFilter('countries'),
-          languages: selectedFilter('languages'),
-          channel: 'web',
-        }),
-      });
-
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error || `Check failed (${res.status})`);
-      }
-
-      const data = (await res.json()) as { url: string };
-      window.location.assign(data.url);
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
-      submitBtn!.disabled = false;
-      submitBtn!.classList.remove('busy');
-    }
-  });
+  })();
 </script>

@@ -379,6 +379,15 @@ Non-obvious things discovered at launch. Read before changing the build config.
   `body.admin-shell` for exactly this reason — an unqualified `body { display:
   flex }` there once broke the public homepage layout.
 
+- **A component `<script>` must not throw (or NPE) at top level.** Same single
+  chunk as above: every component's client script is merged into one module, so a
+  top-level throw in one aborts the evaluation of *all the others* on that page.
+  `SearchBar.astro`'s init once threw `'SearchBar: expected elements missing'`
+  when its form was absent — which silently killed `ShareBar` (and the mobile
+  menu) on every `/check` and `/article` page. Each component script now guards
+  and returns quietly (an IIFE + early `return`) when its own elements aren't on
+  the page.
+
 - **SSR HTML gets an explicit cache policy** (`src/middleware.ts`,
   `withCachePolicy`): public HTML → `public, max-age=0, must-revalidate` (so a
   deploy is picked up immediately, no stale HTML pointing at an old immutable
