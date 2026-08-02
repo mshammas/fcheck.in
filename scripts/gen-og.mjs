@@ -25,18 +25,32 @@ const CHROME =
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 // { file, label, meaning, bg, text, bd, dot } — palette values from tokens.css.
+// Verdict icons — drawn as inline SVG (white on the coloured badge) so they render
+// crisp and monochrome, with none of the colour-emoji surprises a font glyph risks.
+const ICON = {
+  check: '<polyline points="26,52 44,70 76,32" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>',
+  cross: '<line x1="33" y1="33" x2="67" y2="67" stroke="#fff" stroke-width="12" stroke-linecap="round"/><line x1="67" y1="33" x2="33" y2="67" stroke="#fff" stroke-width="12" stroke-linecap="round"/>',
+  bang: '<line x1="50" y1="27" x2="50" y2="57" stroke="#fff" stroke-width="12" stroke-linecap="round"/><circle cx="50" cy="74" r="7" fill="#fff"/>',
+  clock: '<circle cx="50" cy="50" r="27" fill="none" stroke="#fff" stroke-width="9"/><line x1="50" y1="50" x2="50" y2="33" stroke="#fff" stroke-width="8" stroke-linecap="round"/><line x1="50" y1="50" x2="63" y2="57" stroke="#fff" stroke-width="8" stroke-linecap="round"/>',
+  query: '<text x="50" y="53" text-anchor="middle" dominant-baseline="central" font-family="\'Plus Jakarta Sans\',sans-serif" font-weight="800" font-size="66" fill="#fff">?</text>',
+  smile: '<circle cx="50" cy="50" r="28" fill="none" stroke="#fff" stroke-width="8"/><circle cx="40" cy="44" r="4.5" fill="#fff"/><circle cx="60" cy="44" r="4.5" fill="#fff"/><path d="M38 58 Q50 69 62 58" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>',
+};
+
+// `plain` is the elderly-friendly, plain-language line shown on the card. The
+// precise definitions still live in src/lib/types.ts (VERDICT_MEANINGS) for the
+// on-page copy; these are deliberately shorter and simpler for a glanceable image.
 const CARDS = [
-  { file: 'verdict-false',        label: 'FALSE',        meaning: 'Claim is factually incorrect',                     bg: '#FEF2F2', text: '#B91C1C', bd: '#FECACA', dot: '#EF4444' },
-  { file: 'verdict-true',         label: 'TRUE',         meaning: 'Claim is accurate and supported by evidence',      bg: '#F0FDF4', text: '#15803D', bd: '#BBF7D0', dot: '#22C55E' },
-  { file: 'verdict-misleading',   label: 'MISLEADING',   meaning: 'Contains partial truth, presented deceptively',    bg: '#FFFBEB', text: '#B45309', bd: '#FDE68A', dot: '#F97316' },
-  { file: 'verdict-outdated',     label: 'OUTDATED',     meaning: 'Was true at the time, but no longer accurate',     bg: '#EFF6FF', text: '#1D4ED8', bd: '#BFDBFE', dot: '#EAB308' },
-  { file: 'verdict-unverifiable', label: 'UNVERIFIABLE', meaning: 'Insufficient evidence to confirm or deny',         bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#8B5CF6' },
-  { file: 'verdict-satire',       label: 'SATIRE',       meaning: 'Originates from a satirical source',               bg: '#F5F3FF', text: '#6D28D9', bd: '#DDD6FE', dot: '#EC4899' },
+  { file: 'verdict-false',        label: 'FALSE',        plain: 'This claim is not true.',            icon: ICON.cross, bg: '#FEF2F2', text: '#B91C1C', bd: '#FECACA', dot: '#EF4444' },
+  { file: 'verdict-true',         label: 'TRUE',         plain: 'This claim is true.',                icon: ICON.check, bg: '#F0FDF4', text: '#15803D', bd: '#BBF7D0', dot: '#22C55E' },
+  { file: 'verdict-misleading',   label: 'MISLEADING',   plain: 'This claim is misleading.',          icon: ICON.bang,  bg: '#FFFBEB', text: '#B45309', bd: '#FDE68A', dot: '#F97316' },
+  { file: 'verdict-outdated',     label: 'OUTDATED',     plain: 'This was true before — not anymore.', icon: ICON.clock, bg: '#EFF6FF', text: '#1D4ED8', bd: '#BFDBFE', dot: '#EAB308' },
+  { file: 'verdict-unverifiable', label: 'UNVERIFIABLE', plain: "There isn't enough evidence to say.", icon: ICON.query, bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#8B5CF6' },
+  { file: 'verdict-satire',       label: 'SATIRE',       plain: 'This is satire, not real news.',      icon: ICON.smile, bg: '#F5F3FF', text: '#6D28D9', bd: '#DDD6FE', dot: '#EC4899' },
 ];
 
 // TYPE 4 (submitted, no verdict) — its own single card, not shareable but kept
 // for completeness. Neutral wordmark, no "verified" claim.
-const UNDER_REVIEW = { file: 'under-review', label: 'UNDER REVIEW', meaning: 'Submitted for review — no verdict yet', bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#94A3B8', small: true };
+const UNDER_REVIEW = { file: 'under-review', label: 'UNDER REVIEW', plain: 'Being checked by our team.', icon: ICON.clock, bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#94A3B8' };
 
 // Two branding variants of each verdict card:
 //   ''      → TYPE 1 originals — "Verified by fcheck.in" is accurate (our verdict)
@@ -51,7 +65,9 @@ const VARIANTS = [
 const BRAND = '#0D9488';
 
 function html(c, header) {
-  const wordSize = c.small ? 88 : 108;
+  // Verdict word shrinks for the longest labels so the badge + word stay on one line.
+  const len = c.label.replace(/\s/g, '').length;
+  const wordSize = len >= 12 ? 96 : len >= 10 ? 108 : 124;
   return `<!doctype html><html><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,23 +79,27 @@ function html(c, header) {
     width:1200px; height:630px; position:relative; overflow:hidden;
     background:${c.bg}; border:1px solid ${c.bd};
     font-family:'Inter',system-ui,sans-serif; color:${c.text};
-    padding:84px 90px; display:flex; flex-direction:column; justify-content:center;
+    padding:80px 90px; display:flex; flex-direction:column; justify-content:center;
   }
   .glow { position:absolute; top:-30%; right:-8%; width:55%; height:150%;
     background:radial-gradient(closest-side, ${c.dot} 0%, transparent 70%); opacity:.16; }
-  .tick { font-size:30px; font-weight:700; color:${BRAND}; letter-spacing:.3px; margin-bottom:26px; }
+  .tick { position:absolute; top:64px; left:90px; font-size:32px; font-weight:700; color:${BRAND}; letter-spacing:.3px; }
   .tick b { font-weight:800; }
-  .verdict { display:flex; align-items:center; gap:30px; }
-  .dot { width:${c.small ? 30 : 38}px; height:${c.small ? 30 : 38}px; border-radius:50%; background:${c.dot}; flex:none; }
+  .row { display:flex; align-items:center; gap:40px; }
+  .badge { width:168px; height:168px; border-radius:50%; background:${c.dot}; flex:none; display:flex; align-items:center; justify-content:center; }
+  .badge svg { width:168px; height:168px; }
   .word { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:${wordSize}px; letter-spacing:-2px; line-height:1; }
-  .mean { font-size:34px; font-weight:500; color:${c.text}; opacity:.8; margin-top:26px; }
-  .foot { position:absolute; left:90px; bottom:64px; font-size:24px; font-weight:600; color:${c.text}; opacity:.7; }
+  .mean { font-size:52px; font-weight:600; color:${c.text}; margin-top:38px; line-height:1.2; }
+  .foot { position:absolute; left:90px; bottom:60px; font-size:25px; font-weight:600; color:${c.text}; opacity:.7; }
 </style></head>
 <body><div class="card">
   <div class="glow"></div>
   <div class="tick">${header}</div>
-  <div class="verdict"><span class="dot"></span><span class="word">${c.label}</span></div>
-  <div class="mean">${c.meaning}</div>
+  <div class="row">
+    <div class="badge"><svg viewBox="0 0 100 100">${c.icon}</svg></div>
+    <div class="word">${c.label}</div>
+  </div>
+  <div class="mean">${c.plain}</div>
   <div class="foot">fcheck.in · Non-partisan · Sources shown on every report</div>
 </div></body></html>`;
 }
