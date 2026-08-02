@@ -32,12 +32,25 @@ const CARDS = [
   { file: 'verdict-outdated',     label: 'OUTDATED',     meaning: 'Was true at the time, but no longer accurate',     bg: '#EFF6FF', text: '#1D4ED8', bd: '#BFDBFE', dot: '#EAB308' },
   { file: 'verdict-unverifiable', label: 'UNVERIFIABLE', meaning: 'Insufficient evidence to confirm or deny',         bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#8B5CF6' },
   { file: 'verdict-satire',       label: 'SATIRE',       meaning: 'Originates from a satirical source',               bg: '#F5F3FF', text: '#6D28D9', bd: '#DDD6FE', dot: '#EC4899' },
-  { file: 'under-review',         label: 'UNDER REVIEW', meaning: 'Submitted for review — no verdict yet',            bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#94A3B8', small: true },
+];
+
+// TYPE 4 (submitted, no verdict) — its own single card, not shareable but kept
+// for completeness. Neutral wordmark, no "verified" claim.
+const UNDER_REVIEW = { file: 'under-review', label: 'UNDER REVIEW', meaning: 'Submitted for review — no verdict yet', bg: '#F8FAFC', text: '#475569', bd: '#CBD5E1', dot: '#94A3B8', small: true };
+
+// Two branding variants of each verdict card:
+//   ''      → TYPE 1 originals — "Verified by fcheck.in" is accurate (our verdict)
+//   '-ext'  → TYPE 2 external  — neutral "fcheck.in" wordmark, because the verdict
+//             belongs to the attributed external fact-checker, not us. Claiming
+//             "Verified by fcheck.in" there would breach the credit-external rule.
+const VARIANTS = [
+  { suffix: '',     header: '✓ Verified by <b>fcheck.in</b>' },
+  { suffix: '-ext', header: '✓ <b>fcheck.in</b>' },
 ];
 
 const BRAND = '#0D9488';
 
-function html(c) {
+function html(c, header) {
   const wordSize = c.small ? 88 : 108;
   return `<!doctype html><html><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,7 +77,7 @@ function html(c) {
 </style></head>
 <body><div class="card">
   <div class="glow"></div>
-  <div class="tick">✓ Verified by <b>fcheck.in</b></div>
+  <div class="tick">${header}</div>
   <div class="verdict"><span class="dot"></span><span class="word">${c.label}</span></div>
   <div class="mean">${c.meaning}</div>
   <div class="foot">fcheck.in · Non-partisan · Sources shown on every report</div>
@@ -74,10 +87,10 @@ function html(c) {
 mkdirSync(OUT_DIR, { recursive: true });
 const work = mkdtempSync(join(tmpdir(), 'fcheck-og-'));
 
-for (const c of CARDS) {
-  const htmlPath = join(work, `${c.file}.html`);
-  const outPath = join(OUT_DIR, `${c.file}.png`);
-  writeFileSync(htmlPath, html(c));
+function render(file, markup) {
+  const htmlPath = join(work, `${file}.html`);
+  const outPath = join(OUT_DIR, `${file}.png`);
+  writeFileSync(htmlPath, markup);
   execFileSync(
     CHROME,
     [
@@ -93,7 +106,17 @@ for (const c of CARDS) {
     ],
     { stdio: 'ignore' },
   );
-  console.log(`  ✓ public/og/${c.file}.png`);
+  console.log(`  ✓ public/og/${file}.png`);
 }
 
-console.log(`\nGenerated ${CARDS.length} share cards → public/og/`);
+let count = 0;
+for (const c of CARDS) {
+  for (const v of VARIANTS) {
+    render(`${c.file}${v.suffix}`, html(c, v.header));
+    count++;
+  }
+}
+render(UNDER_REVIEW.file, html(UNDER_REVIEW, '✓ <b>fcheck.in</b>'));
+count++;
+
+console.log(`\nGenerated ${count} share cards → public/og/`);

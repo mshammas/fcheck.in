@@ -63,9 +63,21 @@ const title = report?.headline ?? claim.canonical_text;
 // submitted claims have nothing final to share.
 const shareable = claim.status === 'published' && (type === 'original' || type === 'external');
 const shareUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+
+// Social share card (og:image), only for shareable published verdicts. External
+// (TYPE 2) uses the neutral `-ext` variant — the verdict is the external
+// fact-checker's, so the card must not claim "Verified by fcheck.in". Provisional
+// (TYPE 3) and submitted (TYPE 4) get no card: there is no settled verdict to show.
+const ogImage =
+  shareable && claim.verdict
+    ? new URL(
+        `/og/verdict-${claim.verdict.toLowerCase()}${type === 'external' ? '-ext' : ''}.png`,
+        Astro.site ?? Astro.url.origin,
+      ).toString()
+    : undefined;
 ---
 
-<Base title={`${title} — fcheck.in`} description={report?.summary ?? claim.canonical_text}>
+<Base title={`${title} — fcheck.in`} description={report?.summary ?? claim.canonical_text} image={ogImage}>
   <div class="page">
     <p class="claim-label">The claim you submitted</p>
     <blockquote class="claim-text">{claim.canonical_text}</blockquote>
